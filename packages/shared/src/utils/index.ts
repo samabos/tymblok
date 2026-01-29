@@ -1,4 +1,4 @@
-import { format, parseISO, addMinutes, differenceInMinutes, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, addMinutes, differenceInMinutes, startOfDay } from 'date-fns';
 import type { Priority, ScheduledBlock, Task } from '../types';
 
 // ============================================================================
