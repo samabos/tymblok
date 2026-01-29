@@ -31,19 +31,21 @@ This document provides guidance for AI assistants working with the Tymblok codeb
 - **Background Jobs:** Hangfire
 - **Message Queue:** Azure Service Bus (future)
 
-### Mobile (iOS/Android)
-- **Framework:** React Native 0.76+ with Expo
+### Mobile/Web (iOS/Android/Web)
+- **Framework:** React Native + Expo 52
 - **Navigation:** Expo Router
 - **State Management:** Zustand
 - **Animations:** React Native Reanimated 3
 - **Gestures:** React Native Gesture Handler
 - **Styling:** NativeWind (Tailwind CSS)
 - **HTTP Client:** Axios + React Query
+- **Web:** Supported via Expo (press 'w' in dev server)
 
-### Desktop (Windows)
+### Desktop — Phase 2 (Windows)
 - **Framework:** Tauri 2.0
 - **UI:** React + Vite
 - **Shared:** Common TypeScript library
+- **Status:** Deferred to Phase 2
 
 ### Infrastructure
 - **Hosting:** Azure App Service
@@ -96,8 +98,7 @@ tymblok/
 
 | File | Purpose |
 |------|---------|
-| `tymblok-technical-specification.md` | Complete technical spec with features, schemas, API contracts |
-| `tymblok-scaffold.sh` | Monorepo scaffolding script |
+| `docs/TECHNICAL_SPEC.md` | Complete technical spec with features, schemas, API contracts |
 | `turbo.json` | Turborepo task configuration |
 | `pnpm-workspace.yaml` | Workspace package definitions |
 | `apps/api/Tymblok.sln` | .NET solution file |
@@ -150,6 +151,66 @@ pnpm format             # Format with Prettier
 
 # Clean
 pnpm clean              # Clean all build artifacts
+```
+
+## Current Project Status
+
+### What's Done
+- [x] Monorepo with Turborepo
+- [x] `@tymblok/shared` types and utils
+- [x] Mobile app shell with tab navigation (placeholder screens)
+- [x] Zustand auth store
+- [x] ASP.NET API structure with EF Core entities and DbContext
+- [x] Health endpoint
+
+### What's Next — Phase 1
+
+#### 1. Authentication
+```
+Backend:
+  - POST /api/auth/google
+  - POST /api/auth/github
+  - POST /api/auth/refresh
+
+Mobile:
+  - Google OAuth flow (expo-auth-session)
+  - GitHub OAuth flow
+  - Login screen, onboarding wizard
+  - JWT storage in SecureStore
+```
+
+#### 2. Calendar UI
+```
+Components to build:
+  - DaySwiper.tsx      # Horizontal infinite scroll (PagerView)
+  - DayView.tsx        # Single day container
+  - TimeGrid.tsx       # Hour lines background
+  - TimeBlock.tsx      # Draggable/resizable block
+  - CurrentTimeIndicator.tsx
+
+Requirements:
+  - 60fps animations (Reanimated worklets only)
+  - Drag to move, drag edges to resize
+  - Snap to 15-min increments
+```
+
+#### 3. Tasks CRUD
+```
+Backend:
+  - GET/POST/PATCH/DELETE /api/tasks
+  - GET/POST/PATCH/DELETE /api/schedule/blocks
+
+Mobile:
+  - TaskCard, TaskForm, TaskList
+  - Drag from inbox to calendar
+  - Recurring tasks
+```
+
+#### 4. Google Calendar Sync
+```
+- OAuth with calendar scopes
+- Pull events, push Tymblok blocks
+- Visual distinction between sources
 ```
 
 ## Architecture Patterns
@@ -350,4 +411,4 @@ Priority score calculation:
 ---
 
 *Last updated: January 29, 2026*
-*For detailed technical specifications, see `tymblok-technical-specification.md`*
+*For detailed technical specifications, see `docs/TECHNICAL_SPEC.md`*
