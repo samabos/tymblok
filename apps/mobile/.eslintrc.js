@@ -23,7 +23,7 @@ module.exports = {
   env: {
     browser: true,
     node: true,
-    es2021: true,
+    es2022: true,
   },
   rules: {
     'react/react-in-jsx-scope': 'off',
