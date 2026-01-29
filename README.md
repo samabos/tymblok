@@ -5,7 +5,7 @@ Developer-aware time blocking application.
 ## Tech Stack
 
 - **Mobile**: React Native (Expo) + TypeScript
-- **Desktop**: Tauri + React
+- **Desktop**: Tauri 2.0 + React + Vite + TypeScript
 - **Backend**: ASP.NET Core 8
 - **Database**: PostgreSQL
 - **Monorepo**: Turborepo + pnpm
@@ -18,7 +18,7 @@ Developer-aware time blocking application.
 - pnpm 8+
 - .NET 8 SDK
 - PostgreSQL 16
-- Rust (for desktop app)
+- Rust (required by Tauri to compile the desktop app)
 
 ### Installation
 
