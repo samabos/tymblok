@@ -1,3 +1,4 @@
+import '@expo/metro-runtime';
 import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

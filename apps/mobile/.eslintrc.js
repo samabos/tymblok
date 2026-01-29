@@ -8,11 +8,11 @@ module.exports = {
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
     ecmaFeatures: {
       jsx: true,
     },
-    ecmaVersion: 2022,
-    sourceType: 'module',
   },
   plugins: ['@typescript-eslint', 'react', 'react-hooks'],
   settings: {
@@ -22,13 +22,13 @@ module.exports = {
   },
   env: {
     browser: true,
-    es2022: true,
     node: true,
+    es2022: true,
   },
   rules: {
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
   },
-  ignorePatterns: ['node_modules/', 'dist/', '.expo/', 'babel.config.js'],
+  ignorePatterns: ['node_modules/', '.expo/', 'dist/', '*.config.js'],
 };
