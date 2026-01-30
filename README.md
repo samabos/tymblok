@@ -45,10 +45,19 @@ pnpm install
 
 # Build shared package
 pnpm build:shared
+```
 
-# Setup database
+### Database Setup
+
+Requires PostgreSQL 16 running (default: `localhost:5435`). Update the connection string in `apps/api/src/Tymblok.Api/appsettings.json` if needed.
+
+```bash
+# Install EF Core CLI tools (one-time setup)
+dotnet tool install --global dotnet-ef
+
+# Run migrations
 cd apps/api
-dotnet ef database update
+dotnet ef database update --project src/Tymblok.Infrastructure --startup-project src/Tymblok.Api
 cd ../..
 ```
 

@@ -99,6 +99,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@babel/runtime':
+        specifier: ^7.28.6
+        version: 7.28.6
       '@expo/metro-runtime':
         specifier: ^4.0.1
         version: 4.0.1(react-native@0.76.0)
@@ -153,6 +156,9 @@ importers:
       react-native-gesture-handler:
         specifier: ~2.20.0
         version: 2.20.2(react-native@0.76.0)(react@18.3.1)
+      react-native-helmet-async:
+        specifier: ^2.0.4
+        version: 2.0.4(react@18.3.1)
       react-native-pager-view:
         specifier: 6.5.0
         version: 6.5.0(react-native@0.76.0)(react@18.3.1)
