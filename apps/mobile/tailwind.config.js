@@ -1,10 +1,13 @@
+const path = require('path');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // Use absolute paths to ensure Tailwind finds files in monorepo
   content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
+    path.join(__dirname, './app/**/*.{js,jsx,ts,tsx}'),
+    path.join(__dirname, './components/**/*.{js,jsx,ts,tsx}'),
   ],
-  presets: [require('nativewind/preset')],
+  presets: [require(path.join(__dirname, '../../node_modules/nativewind/preset'))],
   theme: {
     extend: {
       colors: {
