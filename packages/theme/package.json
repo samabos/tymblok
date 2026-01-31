@@ -1,0 +1,45 @@
+{
+  "name": "@tymblok/theme",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./colors": {
+      "import": "./dist/colors.mjs",
+      "require": "./dist/colors.js",
+      "types": "./dist/colors.d.ts"
+    },
+    "./typography": {
+      "import": "./dist/typography.mjs",
+      "require": "./dist/typography.js",
+      "types": "./dist/typography.d.ts"
+    },
+    "./spacing": {
+      "import": "./dist/spacing.mjs",
+      "require": "./dist/spacing.js",
+      "types": "./dist/spacing.d.ts"
+    },
+    "./animations": {
+      "import": "./dist/animations.mjs",
+      "require": "./dist/animations.js",
+      "types": "./dist/animations.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.0"
+  }
+}
