@@ -8,27 +8,40 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, router, type Href } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const setAuth = useAuthStore((state) => state.setAuth);
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter email and password');
+  const handleRegister = async () => {
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await authService.login({ email, password });
+      const response = await authService.register({ email, password, name });
 
       setAuth(
         {
@@ -55,7 +68,7 @@ export default function LoginScreen() {
       router.replace('/(tabs)/today');
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { error?: { message?: string } } } };
-      const message = axiosError.response?.data?.error?.message || 'Login failed. Please try again.';
+      const message = axiosError.response?.data?.error?.message || 'Registration failed. Please try again.';
       Alert.alert('Error', message);
     } finally {
       setIsLoading(false);
@@ -68,13 +81,30 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <View className="flex-1 justify-center px-6">
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          keyboardShouldPersistTaps="handled"
+          className="px-6"
+        >
           <View className="items-center mb-10">
             <Text className="text-4xl font-bold text-primary-600">Tymblok</Text>
-            <Text className="text-gray-500 mt-2">Sign in to your account</Text>
+            <Text className="text-gray-500 mt-2">Create your account</Text>
           </View>
 
           <View className="space-y-4">
+            <View>
+              <Text className="text-gray-700 mb-2 font-medium">Name</Text>
+              <TextInput
+                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
+                placeholder="John Doe"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+                autoCorrect={false}
+                editable={!isLoading}
+              />
+            </View>
+
             <View>
               <Text className="text-gray-700 mb-2 font-medium">Email</Text>
               <TextInput
@@ -101,32 +131,44 @@ export default function LoginScreen() {
               />
             </View>
 
+            <View>
+              <Text className="text-gray-700 mb-2 font-medium">Confirm Password</Text>
+              <TextInput
+                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                editable={!isLoading}
+              />
+            </View>
+
             <TouchableOpacity
               className={`rounded-xl py-4 mt-4 ${
                 isLoading ? 'bg-primary-400' : 'bg-primary-600'
               }`}
-              onPress={handleLogin}
+              onPress={handleRegister}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="white" />
               ) : (
                 <Text className="text-white text-center font-semibold text-lg">
-                  Sign In
+                  Create Account
                 </Text>
               )}
             </TouchableOpacity>
           </View>
 
-          <View className="flex-row justify-center mt-6">
-            <Text className="text-gray-500">{"Don't have an account? "}</Text>
-            <Link href={'/(auth)/register' as Href} asChild>
+          <View className="flex-row justify-center mt-6 mb-8">
+            <Text className="text-gray-500">Already have an account? </Text>
+            <Link href="/(auth)/login" asChild>
               <TouchableOpacity>
-                <Text className="text-primary-600 font-semibold">Sign Up</Text>
+                <Text className="text-primary-600 font-semibold">Sign In</Text>
               </TouchableOpacity>
             </Link>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

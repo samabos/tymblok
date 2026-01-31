@@ -1,5 +1,7 @@
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Serilog;
+using Tymblok.Api.Middleware;
 
 namespace Tymblok.Api.Extensions;
 
@@ -7,6 +9,15 @@ public static class WebApplicationExtensions
 {
     public static WebApplication ConfigurePipeline(this WebApplication app)
     {
+        // Global exception handling (must be first)
+        app.UseGlobalExceptionHandler();
+
+        // Serilog request logging
+        app.UseSerilogRequestLogging(options =>
+        {
+            options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000}ms";
+        });
+
         // Development-only middleware
         if (app.Environment.IsDevelopment())
         {

@@ -14,6 +14,7 @@ public class TymblokDbContext : DbContext
     public DbSet<InboxItem> InboxItems => Set<InboxItem>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserStats> UserStats => Set<UserStats>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +28,7 @@ public class TymblokDbContext : DbContext
         ConfigureInboxItem(modelBuilder);
         ConfigureRefreshToken(modelBuilder);
         ConfigureUserStats(modelBuilder);
+        ConfigureAuditLog(modelBuilder);
 
         // Global query filter for soft deletes
         modelBuilder.Entity<User>()
@@ -322,6 +324,45 @@ public class TymblokDbContext : DbContext
 
             // Indexes
             entity.HasIndex(e => new { e.UserId, e.Date });
+        });
+    }
+
+    private static void ConfigureAuditLog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("audit_logs");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Action)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.EntityType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.EntityId)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.OldValues)
+                .HasMaxLength(4000);
+
+            entity.Property(e => e.NewValues)
+                .HasMaxLength(4000);
+
+            entity.Property(e => e.IpAddress)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.UserAgent)
+                .HasMaxLength(500);
+
+            // Indexes for querying audit logs
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Action);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt });
+            entity.HasIndex(e => new { e.Action, e.CreatedAt });
         });
     }
 

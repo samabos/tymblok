@@ -368,23 +368,37 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/v1
 - [x] Mobile app shell with Expo Router
 - [x] Tab navigation (Today, Inbox, Week, Settings)
 - [x] Auth placeholder screens (login)
-- [x] Backend structure (.NET 8 / EF Core)
-- [x] Core entities: User, Task, Category, ScheduledBlock, OAuthConnection
+- [x] Backend structure (.NET 10 / EF Core 10)
+- [x] Core entities: User, TimeBlock, Category, Integration, InboxItem, RefreshToken
 - [x] TymblokDbContext with relationships
 - [x] Initial database migration (PostgreSQL)
 - [x] Health endpoint (/health)
 - [x] NativeWind (Tailwind CSS) configured
 - [x] Shared types package (@tymblok/shared)
 
-### Not Started Yet (Phase 1: Core API)
-- [ ] Authentication endpoints (POST /api/auth/google, /github, /refresh)
-- [ ] JWT token service
-- [ ] Tasks CRUD endpoints
+### Completed (Phase 1.1: Backend Authentication)
+- [x] JWT authentication with refresh token rotation
+- [x] Auth endpoints (POST /api/auth/register, /login, /refresh)
+- [x] TokenService for JWT generation/validation
+- [x] PasswordHasher with BCrypt
+- [x] AuthService with business logic (Clean Architecture)
+- [x] AuthRepository for data access
+- [x] Swagger UI with JWT authentication support
+- [x] 27 unit and integration tests
+
+### In Progress (Phase 1.2: Frontend Authentication)
+- [ ] API service with Axios
+- [ ] Login screen with email/password
+- [ ] Register screen
+- [ ] Connect to auth store (Zustand + SecureStore)
+- [ ] Token refresh interceptor
+
+### Not Started Yet (Phase 1.3: Tasks CRUD)
+- [ ] Tasks CRUD endpoints (GET/POST/PATCH/DELETE /api/tasks)
 - [ ] Schedule blocks CRUD endpoints
 - [ ] Categories endpoints
 
 ### Not Started Yet (Phase 2: Mobile MVP)
-- [ ] Login screen with OAuth
 - [ ] Day view calendar UI
 - [ ] TimeBlock component (draggable/resizable)
 - [ ] Task cards and forms

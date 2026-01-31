@@ -1,34 +1,28 @@
 using Tymblok.Core.Entities;
+using Tymblok.Core.Exceptions;
 using Tymblok.Core.Interfaces;
 
 namespace Tymblok.Core.Services;
-
-public class AuthException : Exception
-{
-    public string Code { get; }
-
-    public AuthException(string code, string message) : base(message)
-    {
-        Code = code;
-    }
-}
 
 public class AuthService : IAuthService
 {
     private readonly IAuthRepository _repository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
+    private readonly IAuditService _auditService;
     private readonly int _refreshTokenExpiryDays;
 
     public AuthService(
         IAuthRepository repository,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
+        IAuditService auditService,
         int refreshTokenExpiryDays = 7)
     {
         _repository = repository;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
+        _auditService = auditService;
         _refreshTokenExpiryDays = refreshTokenExpiryDays;
     }
 
@@ -66,6 +60,13 @@ public class AuthService : IAuthService
         await _repository.CreateRefreshTokenAsync(refreshToken);
         await _repository.SaveChangesAsync();
 
+        // Audit log
+        await _auditService.LogAuthEventAsync(
+            AuditAction.Register,
+            user.Id,
+            email,
+            ipAddress);
+
         return new AuthResult(tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresIn, user);
     }
 
@@ -74,6 +75,14 @@ public class AuthService : IAuthService
         var user = await _repository.GetUserByEmailAsync(email);
         if (user == null || !_passwordHasher.Verify(password, user.PasswordHash))
         {
+            // Audit failed login attempt
+            await _auditService.LogAuthEventAsync(
+                AuditAction.LoginFailed,
+                user?.Id,
+                email,
+                ipAddress,
+                errorMessage: "Invalid email or password");
+
             throw new AuthException("AUTH_INVALID_CREDENTIALS", "Invalid email or password");
         }
 
@@ -96,6 +105,13 @@ public class AuthService : IAuthService
         await _repository.CreateRefreshTokenAsync(refreshToken);
         await _repository.SaveChangesAsync();
 
+        // Audit successful login
+        await _auditService.LogAuthEventAsync(
+            AuditAction.Login,
+            user.Id,
+            email,
+            ipAddress);
+
         return new AuthResult(tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresIn, user);
     }
 
@@ -105,11 +121,23 @@ public class AuthService : IAuthService
 
         if (refreshToken == null)
         {
+            await _auditService.LogAuthEventAsync(
+                AuditAction.TokenRefreshFailed,
+                ipAddress: ipAddress,
+                errorMessage: "Invalid refresh token");
+
             throw new AuthException("AUTH_TOKEN_INVALID", "Invalid refresh token");
         }
 
         if (!refreshToken.IsActive)
         {
+            await _auditService.LogAuthEventAsync(
+                AuditAction.TokenRefreshFailed,
+                refreshToken.UserId,
+                refreshToken.User?.Email,
+                ipAddress,
+                errorMessage: "Refresh token expired or revoked");
+
             throw new AuthException("AUTH_REFRESH_EXPIRED", "Refresh token has expired or been revoked");
         }
 
@@ -134,6 +162,13 @@ public class AuthService : IAuthService
         await _repository.CreateRefreshTokenAsync(newRefreshToken);
         await _repository.SaveChangesAsync();
 
+        // Audit successful token refresh
+        await _auditService.LogAuthEventAsync(
+            AuditAction.TokenRefresh,
+            refreshToken.UserId,
+            refreshToken.User?.Email,
+            ipAddress);
+
         return new RefreshResult(newTokens.AccessToken, newTokens.RefreshToken, newTokens.ExpiresIn);
     }
 
@@ -155,5 +190,12 @@ public class AuthService : IAuthService
         refreshToken.RevokedByIp = ipAddress;
         await _repository.UpdateRefreshTokenAsync(refreshToken);
         await _repository.SaveChangesAsync();
+
+        // Audit logout
+        await _auditService.LogAuthEventAsync(
+            AuditAction.Logout,
+            refreshToken.UserId,
+            refreshToken.User?.Email,
+            ipAddress);
     }
 }

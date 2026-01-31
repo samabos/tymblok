@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Tymblok.Api.DTOs;
 using Tymblok.Core.Entities;
+using Tymblok.Core.Exceptions;
 using Tymblok.Core.Interfaces;
-using Tymblok.Core.Services;
 
 namespace Tymblok.Api.Controllers;
 
@@ -11,10 +11,12 @@ namespace Tymblok.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, ILogger<AuthController> logger)
     {
         _authService = authService;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -28,11 +30,14 @@ public class AuthController : ControllerBase
             var ipAddress = GetIpAddress();
             var result = await _authService.RegisterAsync(request.Email, request.Password, request.Name, ipAddress);
 
+            _logger.LogInformation("User registered | UserId: {UserId} | IP: {IpAddress}", result.User.Id, ipAddress);
+
             var response = CreateAuthResponse(result);
             return StatusCode(StatusCodes.Status201Created, WrapResponse(response));
         }
         catch (AuthException ex) when (ex.Code == "CONFLICT")
         {
+            _logger.LogWarning("Registration failed - email exists | IP: {IpAddress}", GetIpAddress());
             return Conflict(CreateErrorResponse(ex.Code, ex.Message));
         }
     }
@@ -42,16 +47,19 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
+        var ipAddress = GetIpAddress();
         try
         {
-            var ipAddress = GetIpAddress();
             var result = await _authService.LoginAsync(request.Email, request.Password, ipAddress);
+
+            _logger.LogInformation("User logged in | UserId: {UserId} | IP: {IpAddress}", result.User.Id, ipAddress);
 
             var response = CreateAuthResponse(result);
             return Ok(WrapResponse(response));
         }
         catch (AuthException ex) when (ex.Code == "AUTH_INVALID_CREDENTIALS")
         {
+            _logger.LogWarning("Login failed - invalid credentials | IP: {IpAddress}", ipAddress);
             return Unauthorized(CreateErrorResponse(ex.Code, ex.Message));
         }
     }
@@ -61,16 +69,19 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
     {
+        var ipAddress = GetIpAddress();
         try
         {
-            var ipAddress = GetIpAddress();
             var result = await _authService.RefreshTokenAsync(request.RefreshToken, ipAddress);
+
+            _logger.LogDebug("Token refreshed | IP: {IpAddress}", ipAddress);
 
             var response = new RefreshResponse(result.AccessToken, result.RefreshToken, result.ExpiresIn);
             return Ok(WrapResponse(response));
         }
         catch (AuthException ex)
         {
+            _logger.LogWarning("Token refresh failed | Code: {Code} | IP: {IpAddress}", ex.Code, ipAddress);
             return Unauthorized(CreateErrorResponse(ex.Code, ex.Message));
         }
     }
