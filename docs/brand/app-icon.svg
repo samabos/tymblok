@@ -1,0 +1,32 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tymblok App Icon -->
+  
+  <!-- Background with gradient -->
+  <rect width="512" height="512" rx="108" fill="url(#bg-gradient)"/>
+  
+  <!-- Block Tower (centered and scaled) -->
+  <g transform="translate(136, 116)">
+    <!-- Timeline vertical line -->
+    <rect x="0" y="0" width="8" height="280" rx="4" fill="white" fill-opacity="0.9"/>
+    
+    <!-- Block 1 (top, smallest) -->
+    <rect x="20" y="0" width="100" height="52" rx="12" fill="white"/>
+    
+    <!-- Block 2 (middle) -->
+    <rect x="20" y="68" width="150" height="52" rx="12" fill="white" fill-opacity="0.9"/>
+    
+    <!-- Block 3 (larger) -->
+    <rect x="20" y="136" width="200" height="52" rx="12" fill="white" fill-opacity="0.8"/>
+    
+    <!-- Block 4 (base, largest) -->
+    <rect x="20" y="204" width="220" height="52" rx="12" fill="white" fill-opacity="0.7"/>
+  </g>
+  
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+</svg>
