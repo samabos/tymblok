@@ -2,34 +2,39 @@
   "name": "@tymblok/theme",
   "version": "0.1.0",
   "private": true,
-  "main": "./dist/index.js",
+  "main": "./src/index.ts",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
+      "react-native": "./src/index.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./src/index.ts"
     },
     "./colors": {
+      "react-native": "./src/colors.ts",
       "import": "./dist/colors.mjs",
       "require": "./dist/colors.js",
-      "types": "./dist/colors.d.ts"
+      "types": "./src/colors.ts"
     },
     "./typography": {
+      "react-native": "./src/typography.ts",
       "import": "./dist/typography.mjs",
       "require": "./dist/typography.js",
-      "types": "./dist/typography.d.ts"
+      "types": "./src/typography.ts"
     },
     "./spacing": {
+      "react-native": "./src/spacing.ts",
       "import": "./dist/spacing.mjs",
       "require": "./dist/spacing.js",
-      "types": "./dist/spacing.d.ts"
+      "types": "./src/spacing.ts"
     },
     "./animations": {
+      "react-native": "./src/animations.ts",
       "import": "./dist/animations.mjs",
       "require": "./dist/animations.js",
-      "types": "./dist/animations.d.ts"
+      "types": "./src/animations.ts"
     }
   },
   "scripts": {

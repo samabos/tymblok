@@ -111,6 +111,12 @@ importers:
       '@tymblok/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@tymblok/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
+      '@tymblok/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       axios:
         specifier: ^1.6.0
         version: 1.13.4

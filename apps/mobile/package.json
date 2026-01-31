@@ -25,6 +25,8 @@
     "@expo/metro-runtime": "^4.0.1",
     "@tanstack/react-query": "^5.17.0",
     "@tymblok/shared": "workspace:*",
+    "@tymblok/theme": "workspace:*",
+    "@tymblok/ui": "workspace:*",
     "axios": "^1.6.0",
     "date-fns": "^3.3.0",
     "expo": "~52.0.0",

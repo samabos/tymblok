@@ -14,4 +14,10 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
+// Use react-native export condition for workspace packages
+config.resolver.unstable_conditionNames = ['react-native', 'browser', 'require'];
+
+// Enable package exports resolution
+config.resolver.unstable_enablePackageExports = true;
+
 module.exports = withNativeWind(config, { input: './global.css' });
