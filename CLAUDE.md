@@ -85,10 +85,22 @@ tymblok/
 │       ├── src/                # React frontend
 │       └── src-tauri/          # Rust backend
 ├── packages/
-│   └── shared/                 # Shared TypeScript types & utils
+│   ├── shared/                 # Shared TypeScript types & utils
+│   │   └── src/
+│   │       ├── types/          # Domain models, API types
+│   │       └── utils/          # Date utils, scheduling algorithms
+│   ├── theme/                  # Design tokens (colors, typography, spacing)
+│   │   └── src/
+│   │       ├── colors.ts       # Color palette and theme colors
+│   │       ├── typography.ts   # Font sizes, weights, text styles
+│   │       ├── spacing.ts      # Spacing scale, border radius, shadows
+│   │       └── animations.ts   # Duration, easing, spring configs
+│   └── ui/                     # Shared React Native UI components
 │       └── src/
-│           ├── types/          # Domain models, API types
-│           └── utils/          # Date utils, scheduling algorithms
+│           ├── components/     # Primitives, composite, navigation, modals
+│           ├── screens/        # Auth screens (login, signup, onboarding)
+│           ├── context/        # ThemeProvider
+│           └── hooks/          # Animation hooks
 ├── docs/                       # Documentation
 ├── .github/workflows/          # CI/CD pipelines
 └── scripts/                    # Build/deploy scripts
@@ -135,9 +147,9 @@ pnpm dev:mobile   # Expo dev server
 pnpm dev:desktop  # Tauri dev window
 
 # Build
-pnpm build              # Build all
-pnpm build:api          # Build API
+pnpm build              # Build all packages (requires EAS auth for mobile)
 pnpm build:shared       # Build shared package
+pnpm build:api          # Build API
 
 # Testing
 pnpm test               # Run all tests
@@ -153,11 +165,34 @@ pnpm format             # Format with Prettier
 pnpm clean              # Clean all build artifacts
 ```
 
+### Mobile Build Scripts
+The mobile app has separate build scripts for different purposes:
+
+| Script | Command | Purpose |
+|--------|---------|---------|
+| `build` | `eas build` | Native iOS/Android builds (requires EAS auth) |
+| `build:web` | `expo export --platform web` | Web export for CI/deployment |
+| `build:dev` | `eas build --profile development` | Development build |
+| `build:preview` | `eas build --profile preview` | Preview/testing build |
+| `build:prod` | `eas build --profile production` | Production build |
+
+**Important:** The turbo `test` task depends on `^build` (package dependencies only), not `build`. This allows tests to run in CI without EAS credentials. Do not change this to `dependsOn: ["build"]` as it would require EAS authentication for running tests.
+
 ## Current Project Status
 
 ### What's Done
 - [x] Monorepo with Turborepo
 - [x] `@tymblok/shared` types and utils
+- [x] `@tymblok/theme` design tokens (colors, typography, spacing, animations)
+- [x] `@tymblok/ui` Phase 1 components:
+  - Primitives: Button, Input, Card, Badge, Toggle, Avatar, Skeleton
+  - Navigation: BottomNav, Header, BackButton
+  - Feedback: EmptyState, LoadingScreen
+  - Composite: TaskCard, InboxItem, StatCard, SettingsRow, IntegrationCard
+  - Modals: BottomSheet, AddTaskModal, TaskDetailModal
+  - Auth screens: OnboardingScreen, LoginScreen, SignUpScreen, ForgotPasswordScreen
+  - ThemeProvider with dark/light mode support
+  - Animation hooks (usePressAnimation, useFloatAnimation, etc.)
 - [x] Mobile app shell with tab navigation (placeholder screens)
 - [x] Zustand auth store
 - [x] ASP.NET API structure with EF Core entities and DbContext
@@ -410,5 +445,5 @@ Priority score calculation:
 
 ---
 
-*Last updated: January 29, 2026*
+*Last updated: January 31, 2026*
 *For detailed technical specifications, see `docs/TECHNICAL_SPEC.md`*
