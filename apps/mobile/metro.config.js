@@ -18,5 +18,6 @@ module.exports = withNativeWind(config, {
   input: path.join(projectRoot, 'global.css'),
   projectRoot,
   configPath: path.join(projectRoot, 'tailwind.config.js'),
+  outputDir: path.join(projectRoot, 'node_modules', '.cache', 'nativewind'),
   inlineRem: false,
 });
