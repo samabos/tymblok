@@ -54,8 +54,7 @@ export default function LoginScreen() {
 
       router.replace('/(tabs)/today');
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { error?: { message?: string } } } };
-      const message = axiosError.response?.data?.error?.message || 'Login failed. Please try again.';
+      const message = error instanceof Error ? error.message : 'Login failed. Please try again.';
       Alert.alert('Error', message);
     } finally {
       setIsLoading(false);

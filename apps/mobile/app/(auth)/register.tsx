@@ -67,8 +67,7 @@ export default function RegisterScreen() {
 
       router.replace('/(tabs)/today');
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { error?: { message?: string } } } };
-      const message = axiosError.response?.data?.error?.message || 'Registration failed. Please try again.';
+      const message = error instanceof Error ? error.message : 'Registration failed. Please try again.';
       Alert.alert('Error', message);
     } finally {
       setIsLoading(false);

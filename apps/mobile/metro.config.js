@@ -14,8 +14,4 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
-// Enable package exports and prefer browser condition for axios
-config.resolver.unstable_enablePackageExports = true;
-config.resolver.unstable_conditionNames = ['browser', 'require', 'react-native'];
-
 module.exports = withNativeWind(config, { input: './global.css' });
