@@ -18,7 +18,7 @@ Unlike generic scheduling apps, Tymblok treats PR review age, sprint deadlines, 
 | Layer | Technology |
 |-------|------------|
 | **Mobile/Web** | React Native + Expo 52, Expo Router, Zustand, NativeWind |
-| **Backend** | ASP.NET Core 8, Entity Framework Core 8, PostgreSQL 16 |
+| **Backend** | ASP.NET Core 10, Entity Framework Core 10, PostgreSQL 16 |
 | **Desktop** | Tauri 2.0 + React + Vite (Phase 2) |
 | **Infrastructure** | Azure App Service, Redis, GitHub Actions |
 | **Monorepo** | Turborepo + pnpm |
@@ -29,7 +29,7 @@ Unlike generic scheduling apps, Tymblok treats PR review age, sprint deadlines, 
 
 - Node.js 20+
 - pnpm 8+
-- .NET 8 SDK
+- .NET 10 SDK
 - PostgreSQL 16
 - Rust (for desktop app only)
 

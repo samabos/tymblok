@@ -1,449 +1,422 @@
-# CLAUDE.md - Tymblok AI Assistant Guide
+# CLAUDE.md - Tymblok Project Guide
 
-This document provides guidance for AI assistants working with the Tymblok codebase.
+> This file provides context for Claude Code when working on the Tymblok codebase.
+
+---
 
 ## Project Overview
 
-**Tymblok** is a developer-aware time blocking application that intelligently schedules your day by understanding workload from engineering tools (GitHub, Jira) and calendar. Unlike generic scheduling apps, Tymblok treats PR review age, sprint deadlines, and code review batching as first-class scheduling signals.
+**Tymblok** is a time-blocking productivity app designed for developers. It helps users plan their day with visual time blocks and integrates with tools like GitHub, Jira, and Google Calendar.
 
-**Domain:** tymblok.io
+**Target Users:** Software developers, engineers, technical leads
 
-### Target Users
-- Software developers and engineers
-- Engineering team leads
-- Technical product managers
-- DevOps engineers
+**Core Value Proposition:** Unlike generic productivity apps, Tymblok understands developer workflows — PRs, tickets, deep work sessions, and meetings.
 
-### Core Value Proposition
-1. **Developer-Aware Scheduling** - Understands PR staleness, sprint deadlines, ticket priority
-2. **Context Batching** - Groups similar tasks (all PR reviews together)
-3. **Fluid UI** - Smooth day-sliding, drag-and-drop time blocks
-4. **Smart Replanning** - Adapts when meetings change
+---
 
-## Technology Stack
+## Tech Stack
 
-### Backend
-- **Runtime:** .NET 8
-- **Framework:** ASP.NET Core 8 Web API
-- **ORM:** Entity Framework Core 8
+### Backend (apps/api)
+- **Runtime:** .NET 10
+- **Framework:** ASP.NET Core 10
+- **ORM:** Entity Framework Core 10 (Code-First)
 - **Database:** PostgreSQL 16
-- **Cache:** Redis 7
-- **Background Jobs:** Hangfire
-- **Message Queue:** Azure Service Bus (future)
+- **Cache:** Redis
+- **Auth:** JWT + Refresh Tokens
+- **Payments:** Stripe
 
-### Mobile/Web (iOS/Android/Web)
-- **Framework:** React Native + Expo 52
-- **Navigation:** Expo Router
-- **State Management:** Zustand
+### Frontend (apps/mobile)
+- **Framework:** React Native + Expo (SDK 50+)
+- **Navigation:** Expo Router (file-based)
+- **State:** Zustand
+- **Data Fetching:** TanStack Query
 - **Animations:** React Native Reanimated 3
 - **Gestures:** React Native Gesture Handler
-- **Styling:** NativeWind (Tailwind CSS)
-- **HTTP Client:** Axios + React Query
-- **Web:** Supported via Expo (press 'w' in dev server)
 
-### Desktop — Phase 2 (Windows)
-- **Framework:** Tauri 2.0
-- **UI:** React + Vite
-- **Shared:** Common TypeScript library
-- **Status:** Deferred to Phase 2
+### Shared Packages
+- **@tymblok/ui:** React Native components
+- **@tymblok/theme:** Design tokens (colors, typography, spacing)
+- **@tymblok/shared:** TypeScript types, Zod validators, utilities
+- **@tymblok/api-client:** Typed API client with TanStack Query hooks
 
 ### Infrastructure
-- **Hosting:** Azure App Service
-- **CDN:** Azure CDN
-- **Monitoring:** Application Insights
+- **Cloud:** Azure (App Service, PostgreSQL Flexible Server, Redis Cache)
 - **CI/CD:** GitHub Actions
-- **Monorepo:** Turborepo + pnpm
+- **Monitoring:** Application Insights
+
+---
 
 ## Project Structure
 
 ```
 tymblok/
 ├── apps/
-│   ├── api/                    # ASP.NET Core 8 backend
-│   │   ├── src/
-│   │   │   ├── Tymblok.Api/    # Controllers, middleware, DTOs
-│   │   │   ├── Tymblok.Core/   # Entities, interfaces, domain logic
-│   │   │   └── Tymblok.Infrastructure/  # Data access, external services
-│   │   └── tests/
-│   ├── mobile/                 # React Native + Expo
-│   │   ├── app/                # Expo Router screens
-│   │   │   ├── (auth)/         # Auth flow screens
-│   │   │   └── (tabs)/         # Main tab screens (today, inbox, week, settings)
-│   │   ├── components/         # Reusable UI components
-│   │   │   ├── calendar/       # Day view, time blocks, time grid
-│   │   │   ├── tasks/          # Task cards, forms, lists
-│   │   │   ├── schedule/       # Auto-planning UI
-│   │   │   ├── integrations/   # GitHub, Jira cards
-│   │   │   └── ui/             # Base components
-│   │   ├── hooks/              # Custom React hooks
-│   │   ├── stores/             # Zustand state stores
-│   │   ├── services/           # API clients, OAuth
-│   │   ├── utils/              # Helper functions
-│   │   ├── constants/          # Colors, layout, config
-│   │   └── types/              # TypeScript types
-│   └── desktop/                # Tauri + React
-│       ├── src/                # React frontend
-│       └── src-tauri/          # Rust backend
+│   ├── api/                      # ASP.NET Core API
+│   │   └── src/
+│   │       ├── Tymblok.Api/      # Controllers, Middleware
+│   │       ├── Tymblok.Core/     # Entities, Services, Interfaces
+│   │       ├── Tymblok.Infrastructure/  # EF Core, Repositories
+│   │       └── Tymblok.Shared/   # DTOs
+│   ├── mobile/                   # Expo React Native
+│   │   └── app/                  # Expo Router screens
+│   └── desktop/                  # Tauri (future)
 ├── packages/
-│   ├── shared/                 # Shared TypeScript types & utils
-│   │   └── src/
-│   │       ├── types/          # Domain models, API types
-│   │       └── utils/          # Date utils, scheduling algorithms
-│   ├── theme/                  # Design tokens (colors, typography, spacing)
-│   │   └── src/
-│   │       ├── colors.ts       # Color palette and theme colors
-│   │       ├── typography.ts   # Font sizes, weights, text styles
-│   │       ├── spacing.ts      # Spacing scale, border radius, shadows
-│   │       └── animations.ts   # Duration, easing, spring configs
-│   └── ui/                     # Shared React Native UI components
-│       └── src/
-│           ├── components/     # Primitives, composite, navigation, modals
-│           ├── screens/        # Auth screens (login, signup, onboarding)
-│           ├── context/        # ThemeProvider
-│           └── hooks/          # Animation hooks
-├── docs/                       # Documentation
-├── .github/workflows/          # CI/CD pipelines
-└── scripts/                    # Build/deploy scripts
+│   ├── ui/                       # Shared components
+│   ├── theme/                    # Design tokens
+│   ├── shared/                   # Types, validators
+│   └── api-client/               # API hooks
+├── docs/                         # Project documentation
+│   ├── ARCHITECTURE.md
+│   ├── DATABASE_SCHEMA.md
+│   ├── API_SPEC.md
+│   ├── TYMBLOK_UI_SPEC.md
+│   ├── PRODUCT_REQUIREMENTS.md
+│   ├── IMPLEMENTATION_PLAN.md
+│   └── prototype.jsx
+└── .github/workflows/            # CI/CD
 ```
-
-## Key Files Reference
-
-| File | Purpose |
-|------|---------|
-| `docs/TECHNICAL_SPEC.md` | Complete technical spec with features, schemas, API contracts |
-| `turbo.json` | Turborepo task configuration |
-| `pnpm-workspace.yaml` | Workspace package definitions |
-| `apps/api/Tymblok.sln` | .NET solution file |
-
-## Development Workflows
-
-### Prerequisites
-- Node.js 20+
-- pnpm 8+
-- .NET 8 SDK
-- PostgreSQL 16
-- Rust (for desktop app only)
-
-### Setup
-```bash
-# Install dependencies
-pnpm install
-
-# Build shared package first
-pnpm build:shared
-
-# Setup database
-cd apps/api && dotnet ef database update
-```
-
-### Development Commands
-```bash
-# Start all apps in parallel
-pnpm dev
-
-# Start individual apps
-pnpm dev:api      # Backend on localhost:5000
-pnpm dev:mobile   # Expo dev server
-pnpm dev:desktop  # Tauri dev window
-
-# Build
-pnpm build              # Build all packages (requires EAS auth for mobile)
-pnpm build:shared       # Build shared package
-pnpm build:api          # Build API
-
-# Testing
-pnpm test               # Run all tests
-pnpm test:api           # Run API tests
-
-# Code quality
-pnpm lint               # Lint all code
-pnpm lint:fix           # Auto-fix lint issues
-pnpm typecheck          # Type check all TypeScript
-pnpm format             # Format with Prettier
-
-# Clean
-pnpm clean              # Clean all build artifacts
-```
-
-### Mobile Build Scripts
-The mobile app has separate build scripts for different purposes:
-
-| Script | Command | Purpose |
-|--------|---------|---------|
-| `build` | `eas build` | Native iOS/Android builds (requires EAS auth) |
-| `build:web` | `expo export --platform web` | Web export for CI/deployment |
-| `build:dev` | `eas build --profile development` | Development build |
-| `build:preview` | `eas build --profile preview` | Preview/testing build |
-| `build:prod` | `eas build --profile production` | Production build |
-
-**Important:** The turbo `test` task depends on `^build` (package dependencies only), not `build`. This allows tests to run in CI without EAS credentials. Do not change this to `dependsOn: ["build"]` as it would require EAS authentication for running tests.
-
-## Current Project Status
-
-### What's Done
-- [x] Monorepo with Turborepo
-- [x] `@tymblok/shared` types and utils
-- [x] `@tymblok/theme` design tokens (colors, typography, spacing, animations)
-- [x] `@tymblok/ui` Phase 1 components:
-  - Primitives: Button, Input, Card, Badge, Toggle, Avatar, Skeleton
-  - Navigation: BottomNav, Header, BackButton
-  - Feedback: EmptyState, LoadingScreen
-  - Composite: TaskCard, InboxItem, StatCard, SettingsRow, IntegrationCard
-  - Modals: BottomSheet, AddTaskModal, TaskDetailModal
-  - Auth screens: OnboardingScreen, LoginScreen, SignUpScreen, ForgotPasswordScreen
-  - ThemeProvider with dark/light mode support
-  - Animation hooks (usePressAnimation, useFloatAnimation, etc.)
-- [x] Mobile app shell with tab navigation (placeholder screens)
-- [x] Zustand auth store
-- [x] ASP.NET API structure with EF Core entities and DbContext
-- [x] Health endpoint
-
-### What's Next — Phase 1
-
-#### 1. Authentication
-```
-Backend:
-  - POST /api/auth/google
-  - POST /api/auth/github
-  - POST /api/auth/refresh
-
-Mobile:
-  - Google OAuth flow (expo-auth-session)
-  - GitHub OAuth flow
-  - Login screen, onboarding wizard
-  - JWT storage in SecureStore
-```
-
-#### 2. Calendar UI
-```
-Components to build:
-  - DaySwiper.tsx      # Horizontal infinite scroll (PagerView)
-  - DayView.tsx        # Single day container
-  - TimeGrid.tsx       # Hour lines background
-  - TimeBlock.tsx      # Draggable/resizable block
-  - CurrentTimeIndicator.tsx
-
-Requirements:
-  - 60fps animations (Reanimated worklets only)
-  - Drag to move, drag edges to resize
-  - Snap to 15-min increments
-```
-
-#### 3. Tasks CRUD
-```
-Backend:
-  - GET/POST/PATCH/DELETE /api/tasks
-  - GET/POST/PATCH/DELETE /api/schedule/blocks
-
-Mobile:
-  - TaskCard, TaskForm, TaskList
-  - Drag from inbox to calendar
-  - Recurring tasks
-```
-
-#### 4. Google Calendar Sync
-```
-- OAuth with calendar scopes
-- Pull events, push Tymblok blocks
-- Visual distinction between sources
-```
-
-## Architecture Patterns
-
-### Backend (ASP.NET Core)
-- **Clean Architecture**: Core (entities) -> Infrastructure (data) -> API (controllers)
-- **Repository Pattern**: Data access through EF Core DbContext
-- **Dependency Injection**: Services registered in `DependencyInjection.cs`
-- **JWT Authentication**: Token-based auth with refresh tokens
-
-### Mobile (React Native)
-- **File-based routing**: Expo Router with `app/` directory
-- **State Management**: Zustand stores for auth, schedule, tasks, settings
-- **Data Fetching**: React Query for server state
-- **Gesture System**: React Native Gesture Handler for drag/drop
-- **Animations**: Reanimated 3 for smooth 60fps animations
-
-### Shared Package
-- **Type Definitions**: All domain models in `types/index.ts`
-- **Utility Functions**: Date helpers, scheduling algorithms in `utils/index.ts`
-- **Build Tool**: tsup for CJS/ESM dual builds
-
-## Code Conventions
-
-### TypeScript/JavaScript
-- **Style**: Prettier with single quotes, ES5 trailing commas
-- **Naming**: camelCase for variables/functions, PascalCase for types/components
-- **Imports**: Absolute imports via `@/` path alias
-- **State**: Zustand for global, useState for local, React Query for server
-
-### C# (.NET)
-- **Naming**: PascalCase for public members, camelCase for private
-- **Async**: All I/O operations are async
-- **Nullable**: Nullable reference types enabled
-- **EF Core**: Code-first migrations
-
-### Styling
-- **Mobile**: NativeWind (Tailwind CSS for React Native)
-- **Desktop**: Tailwind CSS
-- **Colors**: Use predefined color constants from `constants/colors.ts`
-- **Layout**: Use spacing constants from `constants/layout.ts`
-
-## Database Schema
-
-### Core Tables
-- `users` - User accounts with timezone and working hours preferences
-- `oauth_connections` - OAuth provider tokens (Google, GitHub, Jira)
-- `categories` - Task categories (work, personal, health, admin)
-- `tasks` - Task definitions (manual and from integrations)
-- `scheduled_blocks` - Calendar time blocks
-- `calendar_events` - Synced Google Calendar events
-- `github_pull_requests` - Synced PRs for review
-- `jira_tickets` - Synced Jira tickets
-- `user_preferences` - User settings
-- `daily_metrics` - Analytics data
-
-### Key Relationships
-- User -> OAuthConnections (1:N)
-- User -> Categories (1:N)
-- User -> Tasks (1:N)
-- Task -> Category (N:1, optional)
-- User -> ScheduledBlocks (1:N)
-- ScheduledBlock -> Task (N:1, optional)
-
-## API Design
-
-### Authentication
-- `POST /api/auth/google` - Google OAuth exchange
-- `POST /api/auth/github` - GitHub OAuth exchange
-- `POST /api/auth/refresh` - Refresh access token
-- `POST /api/auth/link/{provider}` - Link additional provider
-
-### Core Resources
-- `GET/POST /api/tasks` - Task CRUD
-- `GET/POST /api/schedule/blocks` - Schedule block CRUD
-- `POST /api/schedule/auto-plan` - Generate AI schedule
-- `POST /api/schedule/replan` - Replan remaining day
-
-### Integrations
-- `POST /api/integrations/google/sync` - Sync Google Calendar
-- `POST /api/integrations/github/sync` - Sync GitHub PRs/issues
-- `POST /api/integrations/jira/sync` - Sync Jira tickets
-
-## Key Algorithms
-
-### Task Scoring (Auto-Schedule)
-Priority score calculation:
-- Base priority: critical=100, high=75, medium=50, low=25
-- PR staleness: +10 points per 24h age
-- Sprint deadline proximity: +50 if due in 1 day, +30 if 2 days
-- Large PRs (>500 lines): +5 points
-- Large story points (>=5): +10 points
-
-### Time Slot Finding
-1. Parse working hours (default 9am-6pm)
-2. Mark lunch as busy (default 12pm-1pm)
-3. Mark existing calendar events as busy
-4. Find gaps >= 15 minutes
-5. Return available slots sorted by start time
-
-### Context Batching Rules
-- All PR reviews grouped in single block (max 2hr)
-- Code reviews scheduled before 11am (configurable)
-- Similar Jira tickets grouped by epic/project
-- Admin tasks batched to end of day
-
-## Testing Strategy
-
-### Unit Tests
-- Backend: xUnit with test fixtures
-- Frontend: Jest with jest-expo preset
-- Location: `apps/api/tests/` and `__tests__/` directories
-
-### Integration Tests
-- Backend: WebApplicationFactory for API testing
-- Database: PostgreSQL test containers
-
-### E2E Tests
-- Mobile: Detox for React Native
-- Test user authentication, day swiping, task scheduling
-
-## Common Tasks for AI Assistants
-
-### Adding a New Feature
-1. Update types in `packages/shared/src/types/index.ts`
-2. Add backend entity in `apps/api/src/Tymblok.Core/Entities/`
-3. Create/update EF Core configuration in DbContext
-4. Add API endpoint in `apps/api/src/Tymblok.Api/Controllers/`
-5. Add mobile screen in `apps/mobile/app/`
-6. Create UI components in `apps/mobile/components/`
-7. Update Zustand store if needed
-
-### Adding a New API Endpoint
-1. Add DTO types to shared package
-2. Create controller in `Tymblok.Api/Controllers/`
-3. Add service interface in `Tymblok.Core/Interfaces/`
-4. Implement service in `Tymblok.Infrastructure/Services/`
-5. Register in DI container
-
-### Adding a New Mobile Screen
-1. Create screen file in `apps/mobile/app/`
-2. Add to navigation (tabs or stack)
-3. Create necessary components in `components/`
-4. Add hooks for data fetching in `hooks/`
-5. Update stores if needed
-
-### Working with Integrations
-- OAuth flows use expo-auth-session
-- Tokens stored encrypted via expo-secure-store
-- Background sync via API polling (5-15 min intervals)
-- External IDs stored in `source_id` fields
-
-## Error Codes Reference
-
-| Code | Description |
-|------|-------------|
-| AUTH_001 | Invalid OAuth code |
-| AUTH_002 | Token expired |
-| AUTH_003 | Account not linked |
-| SYNC_001 | Calendar sync failed |
-| SYNC_002 | GitHub API rate limited |
-| SYNC_003 | Jira connection error |
-| SCHED_001 | No available slots |
-| SCHED_002 | Overlap detected |
-
-## Important Considerations
-
-### Security
-- OAuth tokens stored encrypted
-- JWT secrets in environment variables
-- CORS configured per environment
-- Input validation via Zod (frontend) and Data Annotations (backend)
-
-### Performance
-- React Query for caching and deduplication
-- Zustand persist for offline-first mobile experience
-- EF Core query optimization with includes
-- Redis caching for frequently accessed data
-
-### Mobile-Specific
-- Gesture-based interactions (long press to drag, swipe to complete)
-- Haptic feedback at interaction points
-- Offline-capable with sync on reconnect
-- Respect system theme preferences
-
-## Glossary
-
-| Term | Definition |
-|------|------------|
-| Block | A scheduled time slot on the calendar |
-| Task | An item to be done (may or may not be scheduled) |
-| Inbox | List of unscheduled tasks |
-| Auto-plan | AI-generated schedule proposal |
-| Batching | Grouping similar tasks together |
-| Staleness | Age of a PR awaiting review |
-| Focus time | Protected deep work periods |
 
 ---
 
-*Last updated: January 31, 2026*
-*For detailed technical specifications, see `docs/TECHNICAL_SPEC.md`*
+## Key Documentation
+
+| Document | Purpose | When to Reference |
+|----------|---------|-------------------|
+| `ARCHITECTURE.md` | System design, auth flows, security | API design, infrastructure |
+| `DATABASE_SCHEMA.md` | EF Core entities, relationships | Database changes, new entities |
+| `API_SPEC.md` | Endpoint contracts, DTOs | Implementing/consuming APIs |
+| `TYMBLOK_UI_SPEC.md` | Design tokens, component specs | Building UI components |
+| `PRODUCT_REQUIREMENTS.md` | User stories, acceptance criteria | Understanding features |
+| `IMPLEMENTATION_PLAN.md` | Task breakdown, prompts | Starting new tasks |
+| `prototype.jsx` | Interactive UI prototype | Visual reference for styling |
+
+---
+
+## Development Workflow
+
+### Branch Naming
+```
+feature/{phase}.{task}-{short-description}
+Example: feature/1.4-timeblocks-endpoints
+```
+
+### Commit Convention
+```
+feat: add user authentication endpoints
+fix: resolve token refresh race condition  
+test: add unit tests for TimeBlockService
+chore: configure eslint for shared packages
+docs: update API documentation
+```
+
+### Task Workflow
+1. Read task from `IMPLEMENTATION_PLAN.md`
+2. Create feature branch
+3. Implement feature
+4. Write tests (>80% coverage)
+5. Run linter (`pnpm lint` / `dotnet format`)
+6. Commit with conventional commits
+7. Push and create PR
+8. Ensure CI passes
+
+---
+
+## Code Standards
+
+### API (.NET)
+
+**Project Organization:**
+- Controllers: Thin, delegate to services
+- Services: Business logic with interfaces
+- Repositories: Data access (via EF Core)
+- DTOs: Separate from entities, in Tymblok.Shared
+
+**Naming:**
+- Async methods: suffix with `Async`
+- Interfaces: prefix with `I`
+- DTOs: suffix with `Dto`, `Request`, `Response`
+
+**Patterns:**
+```csharp
+// Controller
+[HttpPost]
+public async Task<ActionResult<ApiResponse<BlockDto>>> CreateBlock(
+    CreateBlockRequest request,
+    CancellationToken ct)
+{
+    var block = await _blockService.CreateAsync(request, UserId, ct);
+    return CreatedAtAction(nameof(GetBlock), new { id = block.Id }, 
+        ApiResponse.Success(block));
+}
+
+// Service
+public async Task<BlockDto> CreateAsync(
+    CreateBlockRequest request, 
+    Guid userId,
+    CancellationToken ct)
+{
+    // Validate plan limits
+    await _subscriptionService.EnforceLimitAsync(userId, Feature.BlocksPerDay, ct);
+    
+    // Business logic
+    var block = new TimeBlock { ... };
+    _context.TimeBlocks.Add(block);
+    await _context.SaveChangesAsync(ct);
+    
+    // Audit log
+    await _auditService.LogAsync(AuditAction.Create, block, ct);
+    
+    return block.ToDto();
+}
+```
+
+**Testing:**
+- Unit tests for services with mocked dependencies
+- Integration tests for endpoints with test database
+- Use `WebApplicationFactory` for API tests
+
+### Mobile (React Native)
+
+**Component Structure:**
+```typescript
+// components/TaskCard.tsx
+interface TaskCardProps {
+  task: TimeBlockDto;
+  onPress?: () => void;
+  onComplete?: () => void;
+}
+
+export function TaskCard({ task, onPress, onComplete }: TaskCardProps) {
+  const { colors } = useTheme();
+  // ...
+}
+```
+
+**Hooks Pattern:**
+```typescript
+// hooks/useBlocks.ts
+export function useBlocks(date: string) {
+  return useQuery({
+    queryKey: ['blocks', date],
+    queryFn: () => api.blocks.list({ date }),
+  });
+}
+
+export function useCreateBlock() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.blocks.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blocks'] });
+    },
+  });
+}
+```
+
+**File Naming:**
+- Components: PascalCase (`TaskCard.tsx`)
+- Hooks: camelCase with `use` prefix (`useBlocks.ts`)
+- Utils: camelCase (`formatTime.ts`)
+- Types: PascalCase with descriptive suffix (`TimeBlockDto.ts`)
+
+---
+
+## Common Patterns
+
+### API Response Format
+```typescript
+// Success
+{
+  "data": T,
+  "meta": { "timestamp": "...", "requestId": "..." }
+}
+
+// Error
+{
+  "error": { "code": "...", "message": "...", "details": [...] },
+  "meta": { "timestamp": "...", "requestId": "..." }
+}
+```
+
+### Plan Limit Enforcement
+```csharp
+// In services that need plan checks
+await _subscriptionService.EnforceLimitAsync(
+    userId, 
+    Feature.BlocksPerDay,  // or IntegrationsCount, StatsHistoryDays, etc.
+    cancellationToken
+);
+// Throws PlanLimitExceededException if over limit
+```
+
+### Audit Logging
+```csharp
+// Log significant actions
+await _auditService.LogAsync(
+    AuditAction.Create,
+    entityType: "TimeBlock",
+    entityId: block.Id.ToString(),
+    newValues: block,
+    cancellationToken
+);
+```
+
+### Optimistic Updates (Mobile)
+```typescript
+useMutation({
+  mutationFn: api.blocks.complete,
+  onMutate: async (blockId) => {
+    await queryClient.cancelQueries({ queryKey: ['blocks'] });
+    const previous = queryClient.getQueryData(['blocks']);
+    queryClient.setQueryData(['blocks'], (old) => 
+      old?.map(b => b.id === blockId ? { ...b, isCompleted: true } : b)
+    );
+    return { previous };
+  },
+  onError: (err, blockId, context) => {
+    queryClient.setQueryData(['blocks'], context?.previous);
+  },
+});
+```
+
+---
+
+## Security Requirements (SOC2)
+
+When implementing features, ensure:
+
+1. **Audit Logging:** Log all data modifications and auth events
+2. **Input Validation:** Validate all inputs at API boundary
+3. **Authorization:** Check resource ownership before access
+4. **Encryption:** Encrypt sensitive data (tokens, PII)
+5. **Rate Limiting:** Apply to auth and sensitive endpoints
+6. **Error Handling:** Don't leak internal details in errors
+
+---
+
+## Testing Requirements
+
+| Code Type | Coverage Target | Test Types |
+|-----------|-----------------|------------|
+| API Services | >80% | Unit tests |
+| API Endpoints | >70% | Integration tests |
+| Mobile Components | >70% | Snapshot + interaction |
+| Mobile Hooks | >80% | Unit tests |
+| Validators | 100% | Unit tests |
+
+---
+
+## Quick Commands
+
+```bash
+# Root
+pnpm dev              # Start all apps
+pnpm lint             # Lint all packages
+pnpm test             # Run all tests
+pnpm build            # Build all packages
+
+# API (from apps/api)
+dotnet run            # Start API
+dotnet test           # Run tests
+dotnet ef migrations add <Name>  # Add migration
+
+# Mobile (from apps/mobile)
+pnpm start            # Start Expo
+pnpm ios              # Run on iOS
+pnpm android          # Run on Android
+pnpm test             # Run Jest tests
+
+# Docker
+docker-compose up -d  # Start PostgreSQL + Redis
+```
+
+---
+
+## Environment Variables
+
+### API (.env or appsettings)
+```
+ConnectionStrings__DefaultConnection=Host=localhost;Database=tymblok_dev;Username=postgres;Password=postgres
+ConnectionStrings__Redis=localhost:6379
+Jwt__Secret=your-256-bit-secret
+Jwt__Issuer=tymblok
+Stripe__SecretKey=sk_test_...
+Stripe__WebhookSecret=whsec_...
+```
+
+### Mobile (.env)
+```
+EXPO_PUBLIC_API_URL=http://localhost:5000/v1
+```
+
+---
+
+## Getting Help
+
+1. **Feature Requirements:** Check `PRODUCT_REQUIREMENTS.md`
+2. **API Contracts:** Check `API_SPEC.md`
+3. **Database Schema:** Check `DATABASE_SCHEMA.md`
+4. **UI Design:** Check `TYMBLOK_UI_SPEC.md` and `prototype.jsx`
+5. **Task Details:** Check `IMPLEMENTATION_PLAN.md`
+
+---
+
+## Current Status
+
+### Completed (Phase 0: Foundation)
+- [x] Monorepo setup (Turborepo + pnpm)
+- [x] Mobile app shell with Expo Router
+- [x] Tab navigation (Today, Inbox, Week, Settings)
+- [x] Auth placeholder screens (login)
+- [x] Backend structure (.NET 8 / EF Core)
+- [x] Core entities: User, Task, Category, ScheduledBlock, OAuthConnection
+- [x] TymblokDbContext with relationships
+- [x] Initial database migration (PostgreSQL)
+- [x] Health endpoint (/health)
+- [x] NativeWind (Tailwind CSS) configured
+- [x] Shared types package (@tymblok/shared)
+
+### Not Started Yet (Phase 1: Core API)
+- [ ] Authentication endpoints (POST /api/auth/google, /github, /refresh)
+- [ ] JWT token service
+- [ ] Tasks CRUD endpoints
+- [ ] Schedule blocks CRUD endpoints
+- [ ] Categories endpoints
+
+### Not Started Yet (Phase 2: Mobile MVP)
+- [ ] Login screen with OAuth
+- [ ] Day view calendar UI
+- [ ] TimeBlock component (draggable/resizable)
+- [ ] Task cards and forms
+- [ ] Inbox screen with filtering
+- [ ] Settings screen
+
+### Not Started Yet (Phase 3+)
+- [ ] Google Calendar sync
+- [ ] GitHub integration
+- [ ] Jira integration
+- [ ] Auto-planning algorithm
+
+---
+
+## Quick Commands (Updated)
+
+```bash
+# Development
+pnpm dev:mobile       # Start Expo (interactive - press a/w/i)
+pnpm dev:api          # Start .NET API with hot reload
+
+# Build & Test
+pnpm build            # Build all packages (via turbo)
+pnpm test             # Run all tests (via turbo)
+pnpm lint             # Lint all code
+
+# Database
+cd apps/api
+dotnet ef migrations add <Name> --project src/Tymblok.Infrastructure --startup-project src/Tymblok.Api
+dotnet ef database update --project src/Tymblok.Infrastructure --startup-project src/Tymblok.Api
+```
+
+---
+
+*Last updated: January 2026*
