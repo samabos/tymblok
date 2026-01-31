@@ -8,12 +8,17 @@
       "outputs": ["dist/**", "build/**", ".expo/**"],
       "cache": true
     },
+    "build:web": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "cache": true
+    },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "test": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
       "cache": true
     },

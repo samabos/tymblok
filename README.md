@@ -94,7 +94,9 @@ tymblok/
 │   │   └── services/           # API clients, OAuth
 │   └── desktop/                # Tauri + React (Phase 2)
 ├── packages/
-│   └── shared/                 # Shared TypeScript types & utils
+│   ├── shared/                 # Shared TypeScript types & utils
+│   ├── theme/                  # Design tokens (colors, typography, spacing)
+│   └── ui/                     # Shared React Native UI components
 ├── docs/                       # Documentation
 └── .github/workflows/          # CI/CD pipelines
 ```
@@ -124,7 +126,9 @@ tymblok/
 
 ### Completed
 - Monorepo setup with Turborepo
-- Shared types and utils package
+- `@tymblok/shared` — types and utils package
+- `@tymblok/theme` — design tokens (colors, typography, spacing, animations)
+- `@tymblok/ui` — Phase 1 UI components (Button, Input, Card, TaskCard, BottomNav, auth screens, etc.)
 - Mobile app shell with tab navigation
 - ASP.NET API structure with EF Core
 - Health endpoint
