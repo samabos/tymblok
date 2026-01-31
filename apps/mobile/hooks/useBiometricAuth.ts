@@ -29,7 +29,6 @@ export function useBiometricAuth() {
   useEffect(() => {
     // Biometrics not available on web
     if (Platform.OS === 'web') {
-      console.log('[useBiometricAuth] Web platform - biometrics disabled');
       setIsAvailable(false);
       setIsEnabled(false);
       return;

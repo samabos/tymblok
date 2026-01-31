@@ -15,7 +15,6 @@ import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
 
 export default function LoginScreen() {
-  console.log('[LoginScreen] Rendering...');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
