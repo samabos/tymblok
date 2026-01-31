@@ -1,16 +1,16 @@
 namespace Tymblok.Core.Entities;
 
-public class Category
+public class Category : BaseEntity
 {
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
+    public Guid? UserId { get; set; } // Null for system categories
+    public User? User { get; set; }
+
     public string Name { get; set; } = string.Empty;
-    public string Color { get; set; } = "#6366F1";
-    public string? Icon { get; set; }
-    public bool IsDefault { get; set; }
-    public int SortOrder { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string Color { get; set; } = "#6366f1"; // Hex color
+    public string Icon { get; set; } = "default"; // Icon identifier
+
+    public bool IsSystem { get; set; } = false; // System categories can't be deleted
 
     // Navigation
-    public User User { get; set; } = null!;
+    public ICollection<TimeBlock> TimeBlocks { get; set; } = [];
 }
