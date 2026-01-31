@@ -17,4 +17,6 @@ config.resolver.disableHierarchicalLookup = true;
 module.exports = withNativeWind(config, {
   input: path.join(projectRoot, 'global.css'),
   projectRoot,
+  configPath: path.join(projectRoot, 'tailwind.config.js'),
+  inlineRem: false,
 });
