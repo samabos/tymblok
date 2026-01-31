@@ -5,7 +5,6 @@
   "main": "expo-router/entry",
   "scripts": {
     "dev": "expo start",
-    "web": "expo start --web",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "build": "eas build",
@@ -56,6 +55,7 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "autoprefixer": "^10.4.0",
+    "cross-env": "^10.1.0",
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
