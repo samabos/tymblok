@@ -14,16 +14,8 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
-// Force axios to use browser build (avoid Node.js crypto dependency)
-config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName === 'axios' || moduleName.startsWith('axios/')) {
-    // Redirect Node.js axios build to browser build
-    if (moduleName.includes('/node/')) {
-      const browserPath = moduleName.replace('/node/', '/browser/');
-      return context.resolveRequest(context, browserPath, platform);
-    }
-  }
-  return context.resolveRequest(context, moduleName, platform);
-};
+// Enable package exports and prefer browser condition for axios
+config.resolver.unstable_enablePackageExports = true;
+config.resolver.unstable_conditionNames = ['browser', 'require', 'react-native'];
 
 module.exports = withNativeWind(config, { input: './global.css' });
