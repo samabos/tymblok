@@ -20,7 +20,7 @@ async function createConfig() {
 
   return withNativeWind(config, {
     input: './global.css',
-    outputDir: './.cache/nativewind',
+    output: './nativewind-output.js',
   });
 }
 
