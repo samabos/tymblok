@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Tymblok.Api.DTOs;
 using Tymblok.Core.Entities;
+using Tymblok.Core.Exceptions;
 using Tymblok.Core.Interfaces;
-using Tymblok.Core.Services;
 
 namespace Tymblok.Api.Controllers;
 

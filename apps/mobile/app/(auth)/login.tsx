@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, router } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
 
@@ -53,8 +53,9 @@ export default function LoginScreen() {
       );
 
       router.replace('/(tabs)/today');
-    } catch (error: any) {
-      const message = error.response?.data?.error?.message || 'Login failed. Please try again.';
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { error?: { message?: string } } } };
+      const message = axiosError.response?.data?.error?.message || 'Login failed. Please try again.';
       Alert.alert('Error', message);
     } finally {
       setIsLoading(false);
@@ -118,8 +119,8 @@ export default function LoginScreen() {
           </View>
 
           <View className="flex-row justify-center mt-6">
-            <Text className="text-gray-500">Don't have an account? </Text>
-            <Link href={'/(auth)/register' as any} asChild>
+            <Text className="text-gray-500">{"Don't have an account? "}</Text>
+            <Link href={'/(auth)/register' as Href} asChild>
               <TouchableOpacity>
                 <Text className="text-primary-600 font-semibold">Sign Up</Text>
               </TouchableOpacity>

@@ -2,9 +2,12 @@ import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
+import { useBiometricAuth } from '../../hooks/useBiometricAuth';
+import { SettingsRow } from '../../components/SettingsRow';
 
 export default function SettingsScreen() {
   const { user, clearAuth } = useAuthStore();
+  const { isAvailable, isEnabled, biometricType, enableBiometric, disableBiometric } = useBiometricAuth();
 
   const handleLogout = () => {
     Alert.alert(
@@ -22,6 +25,14 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  const handleBiometricToggle = async (value: boolean) => {
+    if (value) {
+      await enableBiometric();
+    } else {
+      await disableBiometric();
+    }
   };
 
   return (
@@ -47,17 +58,29 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Settings Options */}
+        {/* Security Section */}
         <View className="bg-white rounded-xl mb-4">
-          <TouchableOpacity className="p-4 border-b border-gray-100">
-            <Text className="text-gray-900">Notifications</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="p-4 border-b border-gray-100">
-            <Text className="text-gray-900">Appearance</Text>
-          </TouchableOpacity>
-          <TouchableOpacity className="p-4">
-            <Text className="text-gray-900">Working Hours</Text>
-          </TouchableOpacity>
+          <Text className="text-sm text-gray-500 uppercase px-4 pt-4 pb-2">Security</Text>
+          <SettingsRow
+            label={biometricType || 'Biometric Lock'}
+            subtitle={isAvailable ? 'Require biometrics to open app' : 'Not available on this device'}
+            showSwitch
+            value={isEnabled}
+            onValueChange={handleBiometricToggle}
+            disabled={!isAvailable}
+          />
+        </View>
+
+        {/* Preferences Section */}
+        <View className="bg-white rounded-xl mb-4">
+          <Text className="text-sm text-gray-500 uppercase px-4 pt-4 pb-2">Preferences</Text>
+          <View className="border-b border-gray-100">
+            <SettingsRow label="Notifications" onPress={() => {}} />
+          </View>
+          <View className="border-b border-gray-100">
+            <SettingsRow label="Appearance" onPress={() => {}} />
+          </View>
+          <SettingsRow label="Working Hours" onPress={() => {}} />
         </View>
 
         {/* Logout Button */}

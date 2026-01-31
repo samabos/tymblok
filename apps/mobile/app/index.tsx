@@ -1,31 +1,67 @@
-import { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
 import { Redirect } from 'expo-router';
 import { useAuthStore } from '../stores/authStore';
+import { useBiometricAuth } from '../hooks/useBiometricAuth';
+import { LoadingScreen } from '../components/LoadingScreen';
+import { BiometricLockScreen } from '../components/BiometricLockScreen';
 
-export default function Index() {
+type AppState = 'loading' | 'biometric_pending' | 'biometric_failed' | 'authenticated' | 'unauthenticated';
+
+function useAppState() {
   const { isAuthenticated, isLoading, setLoading } = useAuthStore();
+  const { isEnabled, authenticate, biometricType } = useBiometricAuth();
+  const [biometricPassed, setBiometricPassed] = useState(false);
+  const [biometricFailed, setBiometricFailed] = useState(false);
 
   useEffect(() => {
-    // Give the store time to rehydrate from SecureStore
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-
+    const timer = setTimeout(() => setLoading(false), 500);
     return () => clearTimeout(timer);
   }, [setLoading]);
 
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#7c3aed" />
-      </View>
-    );
-  }
+  const performBiometricAuth = useCallback(async () => {
+    setBiometricFailed(false);
+    const success = await authenticate('Unlock Tymblok');
+    if (success) {
+      setBiometricPassed(true);
+    } else {
+      setBiometricFailed(true);
+    }
+  }, [authenticate]);
 
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)/today" />;
-  }
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && isEnabled && !biometricPassed && !biometricFailed) {
+      performBiometricAuth();
+    }
+  }, [isLoading, isAuthenticated, isEnabled, biometricPassed, biometricFailed, performBiometricAuth]);
 
-  return <Redirect href="/(auth)/login" />;
+  const getState = (): AppState => {
+    if (isLoading) return 'loading';
+    if (!isAuthenticated) return 'unauthenticated';
+    if (isEnabled && biometricFailed) return 'biometric_failed';
+    if (isEnabled && !biometricPassed) return 'biometric_pending';
+    return 'authenticated';
+  };
+
+  return {
+    state: getState(),
+    biometricType,
+    retryBiometric: performBiometricAuth,
+  };
+}
+
+export default function Index() {
+  const { state, biometricType, retryBiometric } = useAppState();
+
+  switch (state) {
+    case 'loading':
+      return <LoadingScreen />;
+    case 'biometric_pending':
+      return <LoadingScreen message="Verifying identity..." />;
+    case 'biometric_failed':
+      return <BiometricLockScreen biometricType={biometricType} onRetry={retryBiometric} />;
+    case 'authenticated':
+      return <Redirect href="/(tabs)/today" />;
+    case 'unauthenticated':
+      return <Redirect href="/(auth)/login" />;
+  }
 }

@@ -66,8 +66,9 @@ export default function RegisterScreen() {
       );
 
       router.replace('/(tabs)/today');
-    } catch (error: any) {
-      const message = error.response?.data?.error?.message || 'Registration failed. Please try again.';
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { error?: { message?: string } } } };
+      const message = axiosError.response?.data?.error?.message || 'Registration failed. Please try again.';
       Alert.alert('Error', message);
     } finally {
       setIsLoading(false);

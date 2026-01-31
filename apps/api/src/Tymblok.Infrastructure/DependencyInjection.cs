@@ -38,13 +38,15 @@ public static class DependencyInjection
         // Services
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IAuthService>(sp =>
         {
             var repository = sp.GetRequiredService<IAuthRepository>();
             var passwordHasher = sp.GetRequiredService<IPasswordHasher>();
             var tokenService = sp.GetRequiredService<ITokenService>();
+            var auditService = sp.GetRequiredService<IAuditService>();
             var refreshTokenExpiryDays = configuration.GetValue<int>("Jwt:RefreshTokenExpiryDays", 7);
-            return new AuthService(repository, passwordHasher, tokenService, refreshTokenExpiryDays);
+            return new AuthService(repository, passwordHasher, tokenService, auditService, refreshTokenExpiryDays);
         });
 
         return services;

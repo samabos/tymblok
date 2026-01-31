@@ -1,5 +1,6 @@
 using Moq;
 using Tymblok.Core.Entities;
+using Tymblok.Core.Exceptions;
 using Tymblok.Core.Interfaces;
 using Tymblok.Core.Services;
 
@@ -10,6 +11,7 @@ public class AuthServiceTests
     private readonly Mock<IAuthRepository> _repositoryMock;
     private readonly Mock<IPasswordHasher> _passwordHasherMock;
     private readonly Mock<ITokenService> _tokenServiceMock;
+    private readonly Mock<IAuditService> _auditServiceMock;
     private readonly AuthService _authService;
 
     public AuthServiceTests()
@@ -17,11 +19,13 @@ public class AuthServiceTests
         _repositoryMock = new Mock<IAuthRepository>();
         _passwordHasherMock = new Mock<IPasswordHasher>();
         _tokenServiceMock = new Mock<ITokenService>();
+        _auditServiceMock = new Mock<IAuditService>();
 
         _authService = new AuthService(
             _repositoryMock.Object,
             _passwordHasherMock.Object,
             _tokenServiceMock.Object,
+            _auditServiceMock.Object,
             refreshTokenExpiryDays: 7
         );
     }
@@ -56,6 +60,15 @@ public class AuthServiceTests
         _repositoryMock.Verify(r => r.CreateUserAsync(It.Is<User>(u => u.Email == email && u.PasswordHash == hashedPassword)), Times.Once);
         _repositoryMock.Verify(r => r.CreateRefreshTokenAsync(It.IsAny<RefreshToken>()), Times.Once);
         _repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+
+        // Verify audit logging
+        _auditServiceMock.Verify(a => a.LogAuthEventAsync(
+            AuditAction.Register,
+            It.IsAny<Guid?>(),
+            email,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
@@ -104,21 +117,40 @@ public class AuthServiceTests
 
         _repositoryMock.Verify(r => r.UpdateUserAsync(user), Times.Once);
         _repositoryMock.Verify(r => r.CreateRefreshTokenAsync(It.IsAny<RefreshToken>()), Times.Once);
+
+        // Verify audit logging for successful login
+        _auditServiceMock.Verify(a => a.LogAuthEventAsync(
+            AuditAction.Login,
+            user.Id,
+            email,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
     public async Task LoginAsync_WithInvalidEmail_ThrowsAuthException()
     {
         // Arrange
+        var email = "wrong@example.com";
         _repositoryMock.Setup(r => r.GetUserByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync((User?)null);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<AuthException>(
-            () => _authService.LoginAsync("wrong@example.com", "password")
+            () => _authService.LoginAsync(email, "password")
         );
 
         Assert.Equal("AUTH_INVALID_CREDENTIALS", exception.Code);
+
+        // Verify audit logging for failed login
+        _auditServiceMock.Verify(a => a.LogAuthEventAsync(
+            AuditAction.LoginFailed,
+            null,
+            email,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            "Invalid email or password"), Times.Once);
     }
 
     [Fact]
@@ -169,6 +201,15 @@ public class AuthServiceTests
 
         _repositoryMock.Verify(r => r.UpdateRefreshTokenAsync(oldToken), Times.Once);
         _repositoryMock.Verify(r => r.CreateRefreshTokenAsync(It.IsAny<RefreshToken>()), Times.Once);
+
+        // Verify audit logging for token refresh
+        _auditServiceMock.Verify(a => a.LogAuthEventAsync(
+            AuditAction.TokenRefresh,
+            user.Id,
+            user.Email,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
@@ -184,17 +225,28 @@ public class AuthServiceTests
         );
 
         Assert.Equal("AUTH_TOKEN_INVALID", exception.Code);
+
+        // Verify audit logging for failed token refresh
+        _auditServiceMock.Verify(a => a.LogAuthEventAsync(
+            AuditAction.TokenRefreshFailed,
+            It.IsAny<Guid?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            "Invalid refresh token"), Times.Once);
     }
 
     [Fact]
     public async Task RefreshTokenAsync_WithExpiredToken_ThrowsAuthException()
     {
         // Arrange
+        var user = new User { Id = Guid.NewGuid(), Email = "test@example.com" };
         var expiredToken = new RefreshToken
         {
             Token = "expired",
+            UserId = user.Id,
             ExpiresAt = DateTime.UtcNow.AddDays(-1), // Expired
-            User = new User()
+            User = user
         };
 
         _repositoryMock.Setup(r => r.GetRefreshTokenAsync("expired"))
@@ -206,5 +258,14 @@ public class AuthServiceTests
         );
 
         Assert.Equal("AUTH_REFRESH_EXPIRED", exception.Code);
+
+        // Verify audit logging for failed token refresh
+        _auditServiceMock.Verify(a => a.LogAuthEventAsync(
+            AuditAction.TokenRefreshFailed,
+            user.Id,
+            user.Email,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            "Refresh token expired or revoked"), Times.Once);
     }
 }
