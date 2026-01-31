@@ -1,5 +1,6 @@
 import '@expo/metro-runtime';
 import '../global.css';
+import '../nativewind-setup';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
