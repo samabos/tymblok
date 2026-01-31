@@ -6,7 +6,10 @@ namespace Tymblok.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        bool skipDatabaseHealthCheck = false)
     {
         // Controllers & Swagger
         services.AddControllers();
@@ -28,9 +31,15 @@ public static class ServiceCollectionExtensions
         });
 
         // Health Checks
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        services.AddHealthChecks()
-            .AddNpgSql(connectionString!, name: "postgresql");
+        var healthChecks = services.AddHealthChecks();
+        if (!skipDatabaseHealthCheck)
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                healthChecks.AddNpgSql(connectionString, name: "postgresql");
+            }
+        }
 
         // JWT Authentication
         var jwtSettings = configuration.GetSection("Jwt");
