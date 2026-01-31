@@ -1,8 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Platform } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 
 const BIOMETRIC_ENABLED_KEY = 'biometric_enabled';
+
+// Helper functions for web compatibility
+const getStorageItem = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(key);
+  }
+  return SecureStore.getItemAsync(key);
+};
+
+const setStorageItem = async (key: string, value: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    localStorage.setItem(key, value);
+    return;
+  }
+  return SecureStore.setItemAsync(key, value);
+};
 
 export function useBiometricAuth() {
   const [isAvailable, setIsAvailable] = useState(false);
@@ -10,11 +27,22 @@ export function useBiometricAuth() {
   const [biometricType, setBiometricType] = useState<string | null>(null);
 
   useEffect(() => {
+    // Biometrics not available on web
+    if (Platform.OS === 'web') {
+      console.log('[useBiometricAuth] Web platform - biometrics disabled');
+      setIsAvailable(false);
+      setIsEnabled(false);
+      return;
+    }
     checkBiometricAvailability();
     loadBiometricPreference();
   }, []);
 
   const checkBiometricAvailability = async () => {
+    if (Platform.OS === 'web') {
+      setIsAvailable(false);
+      return;
+    }
     const compatible = await LocalAuthentication.hasHardwareAsync();
     const enrolled = await LocalAuthentication.isEnrolledAsync();
     setIsAvailable(compatible && enrolled);
@@ -32,23 +60,24 @@ export function useBiometricAuth() {
   };
 
   const loadBiometricPreference = async () => {
-    const enabled = await SecureStore.getItemAsync(BIOMETRIC_ENABLED_KEY);
+    const enabled = await getStorageItem(BIOMETRIC_ENABLED_KEY);
     setIsEnabled(enabled === 'true');
   };
 
   const enableBiometric = async () => {
-    await SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, 'true');
+    await setStorageItem(BIOMETRIC_ENABLED_KEY, 'true');
     setIsEnabled(true);
   };
 
   const disableBiometric = async () => {
-    await SecureStore.setItemAsync(BIOMETRIC_ENABLED_KEY, 'false');
+    await setStorageItem(BIOMETRIC_ENABLED_KEY, 'false');
     setIsEnabled(false);
   };
 
   const authenticate = useCallback(async (promptMessage?: string): Promise<boolean> => {
-    if (!isAvailable) {
-      return true; // Skip if biometrics not available
+    // Always pass on web since there's no biometric support
+    if (Platform.OS === 'web' || !isAvailable) {
+      return true;
     }
 
     const result = await LocalAuthentication.authenticateAsync({

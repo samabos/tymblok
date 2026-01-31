@@ -1,5 +1,7 @@
 import '@expo/metro-runtime';
 import '../global.css';
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,6 +10,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  useEffect(() => {
+    console.log('[RootLayout] Mounted, Platform:', Platform.OS);
+  }, []);
+
+  console.log('[RootLayout] Rendering...');
+
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>

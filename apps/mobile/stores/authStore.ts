@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import type { User, AuthTokens } from '@tymblok/shared';
 
@@ -15,14 +16,26 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
+// SecureStore doesn't work on web, use localStorage as fallback
 const secureStorage = {
   getItem: async (name: string) => {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(name);
+    }
     return SecureStore.getItemAsync(name);
   },
   setItem: async (name: string, value: string) => {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(name, value);
+      return;
+    }
     return SecureStore.setItemAsync(name, value);
   },
   removeItem: async (name: string) => {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(name);
+      return;
+    }
     return SecureStore.deleteItemAsync(name);
   },
 };
