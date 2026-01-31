@@ -14,10 +14,18 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
-// Use react-native export condition for workspace packages
-config.resolver.unstable_conditionNames = ['react-native', 'browser', 'require'];
-
-// Enable package exports resolution
-config.resolver.unstable_enablePackageExports = true;
+// Resolve source files for workspace packages
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  // Handle workspace packages - resolve to source
+  if (moduleName.startsWith('@tymblok/')) {
+    const packageName = moduleName.replace('@tymblok/', '');
+    const sourcePath = path.resolve(monorepoRoot, 'packages', packageName, 'src', 'index.ts');
+    if (require('fs').existsSync(sourcePath)) {
+      return { filePath: sourcePath, type: 'sourceFile' };
+    }
+  }
+  // Fall back to default resolution
+  return context.resolveRequest(context, moduleName, platform);
+};
 
 module.exports = withNativeWind(config, { input: './global.css' });
