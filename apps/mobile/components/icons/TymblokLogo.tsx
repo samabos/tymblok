@@ -1,24 +1,28 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, ViewStyle } from 'react-native';
-import Svg, { Rect, Path, Circle } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
-import { colors, borderRadius } from '@tymblok/theme';
+import Svg, { Rect, Defs, LinearGradient as SvgGradient, Stop, G } from 'react-native-svg';
+
+/**
+ * Tymblok App Logo - matches docs/brand/app-icon.svg
+ * Always use this logo for branding consistency
+ */
 
 interface TymblokLogoProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   animated?: boolean;
   style?: ViewStyle;
 }
 
 const sizes = {
-  sm: { box: 40, icon: 24 },
-  md: { box: 56, icon: 32 },
-  lg: { box: 72, icon: 40 },
+  sm: 40,
+  md: 56,
+  lg: 72,
+  xl: 96,
 };
 
 export function TymblokLogo({ size = 'md', animated = true, style }: TymblokLogoProps) {
   const floatAnim = useRef(new Animated.Value(0)).current;
-  const { box, icon } = sizes[size];
+  const boxSize = sizes[size];
 
   useEffect(() => {
     if (!animated) return;
@@ -43,21 +47,35 @@ export function TymblokLogo({ size = 'md', animated = true, style }: TymblokLogo
 
   return (
     <Animated.View style={[styles.wrapper, animatedStyle, style]}>
-      <LinearGradient
-        colors={colors.gradients.primary as unknown as [string, string]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.box, { width: box, height: box, borderRadius: borderRadius.xl }]}
-      >
-        <Svg width={icon} height={icon} viewBox="0 0 48 48" fill="none">
-          <Rect x="14" y="6" width="20" height="8" rx="2" fill="white" fillOpacity={0.4} />
-          <Rect x="14" y="16" width="20" height="8" rx="2" fill="white" fillOpacity={0.6} />
-          <Rect x="14" y="26" width="20" height="8" rx="2" fill="white" fillOpacity={0.8} />
-          <Rect x="14" y="36" width="20" height="8" rx="2" fill="white" />
-          <Path d="M10 10v28" stroke="white" strokeWidth={2} strokeLinecap="round" strokeOpacity={0.5} />
-          <Circle cx={10} cy={30} r={2} fill="white" />
-        </Svg>
-      </LinearGradient>
+      <Svg width={boxSize} height={boxSize} viewBox="0 0 512 512">
+        <Defs>
+          <SvgGradient id="bg-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+            <Stop stopColor="#6366f1" />
+            <Stop offset="1" stopColor="#a855f7" />
+          </SvgGradient>
+        </Defs>
+
+        {/* Background with gradient */}
+        <Rect width="512" height="512" rx="108" fill="url(#bg-gradient)" />
+
+        {/* Block Tower (centered and scaled) */}
+        <G transform="translate(136, 116)">
+          {/* Timeline vertical line */}
+          <Rect x="0" y="0" width="8" height="280" rx="4" fill="white" fillOpacity={0.9} />
+
+          {/* Block 1 (top, smallest) */}
+          <Rect x="20" y="0" width="100" height="52" rx="12" fill="white" />
+
+          {/* Block 2 (middle) */}
+          <Rect x="20" y="68" width="150" height="52" rx="12" fill="white" fillOpacity={0.9} />
+
+          {/* Block 3 (larger) */}
+          <Rect x="20" y="136" width="200" height="52" rx="12" fill="white" fillOpacity={0.8} />
+
+          {/* Block 4 (base, largest) */}
+          <Rect x="20" y="204" width="220" height="52" rx="12" fill="white" fillOpacity={0.7} />
+        </G>
+      </Svg>
     </Animated.View>
   );
 }
@@ -66,11 +84,8 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  box: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.purple[500],
+    // Shadow for depth
+    shadowColor: '#6366f1',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,

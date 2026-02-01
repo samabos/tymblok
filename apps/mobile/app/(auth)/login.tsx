@@ -1,17 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Pressable } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, Link } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
-import { Input, Button, useTheme } from '@tymblok/ui';
-import { EnvelopeIcon } from 'react-native-heroicons/outline';
-import { GoogleIcon, GitHubIcon } from '../../components/icons';
-import { AuthLayout } from '../../components/layouts';
+import { TymblokLogo } from '../../components/icons';
 
 export default function LoginScreen() {
-  const { theme } = useTheme();
-  const themeColors = theme.colors;
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,74 +51,66 @@ export default function LoginScreen() {
   };
 
   return (
-    <AuthLayout
-      subtitle="Time blocking for developers"
-      footer={{
-        text: "Don't have an account?",
-        linkText: 'Sign Up',
-        href: '/(auth)/register',
-      }}
-    >
-      <View className="gap-4">
-        <Input
-          label="Email"
-          type="email"
-          placeholder="you@company.com"
-          value={email}
-          onChangeText={setEmail}
-          disabled={isLoading}
-          rightIcon={<EnvelopeIcon size={20} color={themeColors.textFaint} strokeWidth={1.5} />}
-        />
+    <SafeAreaView className="flex-1 bg-slate-950">
+      <View className="flex-1 justify-center p-6">
+        <View className="items-center mb-6">
+          <TymblokLogo size="md" style={{ marginBottom: 12 }} />
+          <Text className="text-3xl font-bold text-white text-center">Tymblok</Text>
+          <Text className="text-base text-slate-400 text-center mt-2">
+            Time blocking for developers
+          </Text>
+        </View>
 
-        <Input
-          label="Password"
-          type="password"
-          placeholder="Enter your password"
-          value={password}
-          onChangeText={setPassword}
-          disabled={isLoading}
-        />
+        <View className="gap-4">
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Email</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="you@company.com"
+              placeholderTextColor="#64748b"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!isLoading}
+            />
+          </View>
 
-        <Pressable className="items-end">
-          <Text className="text-sm font-medium text-indigo-500">Forgot password?</Text>
-        </Pressable>
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Password</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="Enter your password"
+              placeholderTextColor="#64748b"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
+          </View>
 
-        <Button
-          variant="primary"
-          size="lg"
-          fullWidth
-          loading={isLoading}
-          disabled={!email || !password}
-          onPress={handleLogin}
-        >
-          Sign in
-        </Button>
+          <TouchableOpacity
+            className={`bg-indigo-500 rounded-xl p-4 items-center mt-2 ${
+              !email || !password || isLoading ? 'opacity-50' : ''
+            }`}
+            onPress={handleLogin}
+            disabled={!email || !password || isLoading}
+          >
+            <Text className="text-white text-base font-semibold">
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row justify-center mt-6">
+          <Text className="text-slate-400 text-sm">{"Don't have an account? "}</Text>
+          <Link href="/(auth)/register" asChild>
+            <Pressable>
+              <Text className="text-indigo-500 text-sm font-semibold">Sign Up</Text>
+            </Pressable>
+          </Link>
+        </View>
       </View>
-
-      {/* Divider */}
-      <View className="flex-row items-center my-4 gap-3">
-        <View className="flex-1 h-px bg-slate-800" />
-        <Text className="text-sm text-slate-500">or continue with</Text>
-        <View className="flex-1 h-px bg-slate-800" />
-      </View>
-
-      {/* Social Login */}
-      <View className="flex-row gap-3">
-        <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center gap-2 py-3 rounded-lg border border-slate-700"
-          activeOpacity={0.7}
-        >
-          <GoogleIcon size={20} />
-          <Text className="text-sm font-medium text-white">Google</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center gap-2 py-3 rounded-lg border border-slate-700"
-          activeOpacity={0.7}
-        >
-          <GitHubIcon size={20} color="#fff" />
-          <Text className="text-sm font-medium text-white">GitHub</Text>
-        </TouchableOpacity>
-      </View>
-    </AuthLayout>
+    </SafeAreaView>
   );
 }

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { View } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, Pressable, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, Link } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
-import { Input, Button } from '@tymblok/ui';
-import { AuthLayout } from '../../components/layouts';
+import { TymblokLogo } from '../../components/icons';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -54,66 +54,105 @@ export default function RegisterScreen() {
     }
   };
 
+  const passwordsMatch = !confirmPassword || password === confirmPassword;
+  const isDisabled = !name || !email || !password || !confirmPassword || !passwordsMatch || isLoading;
+
   return (
-    <AuthLayout
-      subtitle="Create your account"
-      footer={{
-        text: 'Already have an account?',
-        linkText: 'Sign In',
-        href: '/(auth)/login',
-      }}
-    >
-      <View className="gap-4">
-        <Input
-          label="Name"
-          placeholder="John Doe"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
-          disabled={isLoading}
-        />
+    <SafeAreaView className="flex-1 bg-slate-950">
+      <ScrollView
+        contentContainerClassName="flex-grow justify-center p-6"
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="items-center mb-6">
+          <TymblokLogo size="md" style={{ marginBottom: 12 }} />
+          <Text className="text-3xl font-bold text-white text-center">Create Account</Text>
+          <Text className="text-base text-slate-400 text-center mt-2">
+            Join Tymblok today
+          </Text>
+        </View>
 
-        <Input
-          label="Email"
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChangeText={setEmail}
-          disabled={isLoading}
-        />
+        <View className="gap-4">
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Name</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="John Doe"
+              placeholderTextColor="#64748b"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              editable={!isLoading}
+            />
+          </View>
 
-        <Input
-          label="Password"
-          type="password"
-          placeholder="At least 8 characters"
-          value={password}
-          onChangeText={setPassword}
-          disabled={isLoading}
-          hint="Must be at least 8 characters"
-        />
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Email</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="you@example.com"
+              placeholderTextColor="#64748b"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!isLoading}
+            />
+          </View>
 
-        <Input
-          label="Confirm Password"
-          type="password"
-          placeholder="Re-enter your password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          disabled={isLoading}
-          error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
-        />
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Password</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="At least 8 characters"
+              placeholderTextColor="#64748b"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
+            <Text className="text-xs text-slate-500">Must be at least 8 characters</Text>
+          </View>
 
-        <Button
-          variant="primary"
-          size="lg"
-          fullWidth
-          loading={isLoading}
-          disabled={!name || !email || !password || !confirmPassword || password !== confirmPassword}
-          onPress={handleRegister}
-          style={{ marginTop: 8 }}
-        >
-          Create Account
-        </Button>
-      </View>
-    </AuthLayout>
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Confirm Password</Text>
+            <TextInput
+              className={`bg-slate-800 rounded-xl p-4 text-white text-base border ${
+                !passwordsMatch ? 'border-red-500' : 'border-slate-700'
+              }`}
+              placeholder="Re-enter your password"
+              placeholderTextColor="#64748b"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
+            {!passwordsMatch && (
+              <Text className="text-xs text-red-500">Passwords do not match</Text>
+            )}
+          </View>
+
+          <TouchableOpacity
+            className={`bg-indigo-500 rounded-xl p-4 items-center mt-2 ${
+              isDisabled ? 'opacity-50' : ''
+            }`}
+            onPress={handleRegister}
+            disabled={isDisabled}
+          >
+            <Text className="text-white text-base font-semibold">
+              {isLoading ? 'Creating account...' : 'Create Account'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row justify-center mt-6">
+          <Text className="text-slate-400 text-sm">Already have an account? </Text>
+          <Link href="/(auth)/login" asChild>
+            <Pressable>
+              <Text className="text-indigo-500 text-sm font-semibold">Sign In</Text>
+            </Pressable>
+          </Link>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

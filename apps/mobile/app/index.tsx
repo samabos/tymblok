@@ -1,6 +1,5 @@
-import "../global.css"
 import { useEffect, useState, useCallback } from 'react';
-import { Redirect } from 'expo-router';
+import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../stores/authStore';
 import { useBiometricAuth } from '../hooks/useBiometricAuth';
@@ -72,6 +71,14 @@ function useAppState() {
 export default function Index() {
   const { state, biometricType, retryBiometric, completeOnboarding } = useAppState();
 
+  useEffect(() => {
+    if (state === 'authenticated') {
+      router.replace('/(tabs)/today');
+    } else if (state === 'unauthenticated') {
+      router.replace('/(auth)/login');
+    }
+  }, [state]);
+
   switch (state) {
     case 'loading':
       return <LoadingScreen />;
@@ -82,8 +89,7 @@ export default function Index() {
     case 'biometric_failed':
       return <BiometricLockScreen biometricType={biometricType} onRetry={retryBiometric} />;
     case 'authenticated':
-      return <Redirect href="/(tabs)/today" />;
     case 'unauthenticated':
-      return <Redirect href="/(auth)/login" />;
+      return <LoadingScreen />;
   }
 }
