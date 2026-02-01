@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
 import { Input, Button, useTheme } from '@tymblok/ui';
-import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
 import { EnvelopeIcon } from 'react-native-heroicons/outline';
 import { GoogleIcon, GitHubIcon } from '../../components/icons';
 import { AuthLayout } from '../../components/layouts';
@@ -65,7 +64,7 @@ export default function LoginScreen() {
         href: '/(auth)/register',
       }}
     >
-      <View style={styles.form}>
+      <View className="gap-4">
         <Input
           label="Email"
           type="email"
@@ -85,10 +84,8 @@ export default function LoginScreen() {
           disabled={isLoading}
         />
 
-        <Pressable style={styles.forgotContainer}>
-          <Text style={[styles.forgotText, { color: colors.indigo[500] }]}>
-            Forgot password?
-          </Text>
+        <Pressable className="items-end">
+          <Text className="text-sm font-medium text-indigo-500">Forgot password?</Text>
         </Pressable>
 
         <Button
@@ -104,75 +101,29 @@ export default function LoginScreen() {
       </View>
 
       {/* Divider */}
-      <View style={styles.divider}>
-        <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
-        <Text style={[styles.dividerText, { color: themeColors.textFaint }]}>
-          or continue with
-        </Text>
-        <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
+      <View className="flex-row items-center my-4 gap-3">
+        <View className="flex-1 h-px bg-slate-800" />
+        <Text className="text-sm text-slate-500">or continue with</Text>
+        <View className="flex-1 h-px bg-slate-800" />
       </View>
 
       {/* Social Login */}
-      <View style={styles.socialRow}>
+      <View className="flex-row gap-3">
         <TouchableOpacity
-          style={[styles.socialButton, { borderColor: themeColors.borderSubtle }]}
+          className="flex-1 flex-row items-center justify-center gap-2 py-3 rounded-lg border border-slate-700"
           activeOpacity={0.7}
         >
           <GoogleIcon size={20} />
-          <Text style={[styles.socialText, { color: themeColors.text }]}>Google</Text>
+          <Text className="text-sm font-medium text-white">Google</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.socialButton, { borderColor: themeColors.borderSubtle }]}
+          className="flex-1 flex-row items-center justify-center gap-2 py-3 rounded-lg border border-slate-700"
           activeOpacity={0.7}
         >
-          <GitHubIcon size={20} color={themeColors.text} />
-          <Text style={[styles.socialText, { color: themeColors.text }]}>GitHub</Text>
+          <GitHubIcon size={20} color="#fff" />
+          <Text className="text-sm font-medium text-white">GitHub</Text>
         </TouchableOpacity>
       </View>
     </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  form: {
-    gap: spacing[4],
-  },
-  forgotContainer: {
-    alignItems: 'flex-end',
-  },
-  forgotText: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: spacing[4],
-    gap: spacing[3],
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: typography.sizes.sm,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    gap: spacing[3],
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    paddingVertical: spacing[3],
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-  },
-  socialText: {
-    fontWeight: typography.weights.medium,
-    fontSize: typography.sizes.sm,
-  },
-});

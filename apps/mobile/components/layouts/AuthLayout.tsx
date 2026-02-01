@@ -1,17 +1,8 @@
 import { ReactNode } from 'react';
-import {
-  View,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Pressable,
-} from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, type Href } from 'expo-router';
-import { useTheme, Card } from '@tymblok/ui';
-import { colors, spacing, typography } from '@tymblok/theme';
+import { Card } from '@tymblok/ui';
 import { TymblokLogo } from '../icons';
 
 interface AuthLayoutProps {
@@ -33,35 +24,30 @@ export function AuthLayout({
   showLogo = true,
   footer,
 }: AuthLayoutProps) {
-  const { theme } = useTheme();
-  const themeColors = theme.colors;
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.bg }]}>
+    <SafeAreaView className="flex-1 bg-slate-950">
       {/* Ambient glow effects */}
-      <View style={styles.ambientContainer}>
-        <View style={styles.topGlow} />
-        <View style={styles.bottomGlow} />
+      <View className="absolute inset-0 overflow-hidden">
+        <View className="absolute -top-[300px] left-1/2 -ml-[400px] w-[800px] h-[800px] rounded-full bg-indigo-500/5" />
+        <View className="absolute -bottom-[300px] -right-[300px] w-[600px] h-[600px] rounded-full bg-purple-500/[0.03]" />
       </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex1}
+        className="flex-1"
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerClassName="flex-grow justify-center"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.content}>
+          <View className="flex-1 justify-center px-5 py-4">
             {/* Branding */}
-            <View style={styles.brandingContainer}>
-              {showLogo && <TymblokLogo size="md" style={styles.logo} />}
-              <Text style={[styles.title, { color: themeColors.text }]}>{title}</Text>
+            <View className="items-center mb-6">
+              {showLogo && <TymblokLogo size="md" style={{ marginBottom: 12 }} />}
+              <Text className="text-xl font-bold text-white">{title}</Text>
               {subtitle && (
-                <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
-                  {subtitle}
-                </Text>
+                <Text className="mt-1 text-sm text-slate-400">{subtitle}</Text>
               )}
             </View>
 
@@ -72,13 +58,11 @@ export function AuthLayout({
 
             {/* Footer link */}
             {footer && (
-              <View style={styles.footerContainer}>
-                <Text style={[styles.footerText, { color: themeColors.textMuted }]}>
-                  {footer.text}{' '}
-                </Text>
+              <View className="flex-row justify-center mt-5">
+                <Text className="text-sm text-slate-400">{footer.text} </Text>
                 <Link href={footer.href} asChild>
                   <Pressable>
-                    <Text style={[styles.footerLink, { color: colors.indigo[500] }]}>
+                    <Text className="text-sm font-semibold text-indigo-500">
                       {footer.linkText}
                     </Text>
                   </Pressable>
@@ -91,75 +75,3 @@ export function AuthLayout({
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  flex1: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing[5],
-    paddingVertical: spacing[4],
-  },
-  // Ambient glow
-  ambientContainer: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-  },
-  topGlow: {
-    position: 'absolute',
-    top: -300,
-    left: '50%',
-    marginLeft: -400,
-    width: 800,
-    height: 800,
-    borderRadius: 9999,
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-  },
-  bottomGlow: {
-    position: 'absolute',
-    bottom: -300,
-    right: -300,
-    width: 600,
-    height: 600,
-    borderRadius: 9999,
-    backgroundColor: 'rgba(168, 85, 247, 0.03)',
-  },
-  // Branding
-  brandingContainer: {
-    alignItems: 'center',
-    marginBottom: spacing[6],
-  },
-  logo: {
-    marginBottom: spacing[3],
-  },
-  title: {
-    fontSize: typography.sizes['2xl'],
-    fontWeight: typography.weights.bold,
-  },
-  subtitle: {
-    marginTop: spacing[1],
-    fontSize: typography.sizes.sm,
-  },
-  // Footer
-  footerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacing[5],
-  },
-  footerText: {
-    fontSize: typography.sizes.sm,
-  },
-  footerLink: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-  },
-});

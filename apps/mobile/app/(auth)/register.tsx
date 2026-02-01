@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
 import { Input, Button } from '@tymblok/ui';
-import { spacing } from '@tymblok/theme';
 import { AuthLayout } from '../../components/layouts';
 
 export default function RegisterScreen() {
@@ -64,7 +63,7 @@ export default function RegisterScreen() {
         href: '/(auth)/login',
       }}
     >
-      <View style={styles.form}>
+      <View className="gap-4">
         <Input
           label="Name"
           placeholder="John Doe"
@@ -110,7 +109,7 @@ export default function RegisterScreen() {
           loading={isLoading}
           disabled={!name || !email || !password || !confirmPassword || password !== confirmPassword}
           onPress={handleRegister}
-          style={styles.button}
+          style={{ marginTop: 8 }}
         >
           Create Account
         </Button>
@@ -118,12 +117,3 @@ export default function RegisterScreen() {
     </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  form: {
-    gap: spacing[4],
-  },
-  button: {
-    marginTop: spacing[2],
-  },
-});
