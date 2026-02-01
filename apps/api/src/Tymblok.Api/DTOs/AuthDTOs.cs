@@ -17,6 +17,25 @@ public record RefreshRequest(
     [Required] string RefreshToken
 );
 
+public record ForgotPasswordRequest(
+    [Required][EmailAddress] string Email
+);
+
+public record ResetPasswordRequest(
+    [Required][EmailAddress] string Email,
+    [Required] string Token,
+    [Required][MinLength(8)] string NewPassword
+);
+
+public record VerifyEmailRequest(
+    [Required] Guid UserId,
+    [Required] string Token
+);
+
+public record ResendVerificationRequest(
+    [Required] Guid UserId
+);
+
 public record UserDto(
     Guid Id,
     string Email,
@@ -27,6 +46,7 @@ public record UserDto(
     bool ReduceMotion,
     string TextSize,
     bool EmailVerified,
+    IList<string> Roles,
     DateTime CreatedAt
 );
 
@@ -41,6 +61,10 @@ public record RefreshResponse(
     string AccessToken,
     string RefreshToken,
     int ExpiresIn
+);
+
+public record MessageResponse(
+    string Message
 );
 
 public record ApiResponse<T>(

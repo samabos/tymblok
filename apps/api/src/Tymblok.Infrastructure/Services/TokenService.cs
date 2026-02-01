@@ -26,9 +26,9 @@ public class TokenService : ITokenService
         _settings = settings.Value;
     }
 
-    public TokenResult GenerateTokens(User user)
+    public TokenResult GenerateTokens(ApplicationUser user, IList<string>? roles = null)
     {
-        var accessToken = GenerateAccessToken(user);
+        var accessToken = GenerateAccessToken(user, roles);
         var refreshToken = GenerateRefreshToken();
 
         return new TokenResult(accessToken, refreshToken, _settings.ExpiryMinutes * 60);
@@ -77,18 +77,28 @@ public class TokenService : ITokenService
         return Convert.ToBase64String(randomBytes);
     }
 
-    private string GenerateAccessToken(User user)
+    private string GenerateAccessToken(ApplicationUser user, IList<string>? roles)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.Name),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Email, user.Email ?? string.Empty),
+            new(ClaimTypes.Name, user.Name),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("email_verified", user.EmailConfirmed.ToString().ToLowerInvariant())
         };
+
+        // Add role claims
+        if (roles != null)
+        {
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+        }
 
         var token = new JwtSecurityToken(
             issuer: _settings.Issuer,

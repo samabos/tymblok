@@ -3,7 +3,7 @@ namespace Tymblok.Core.Entities;
 public class TimeBlock : BaseEntity
 {
     public Guid UserId { get; set; }
-    public User User { get; set; } = null!;
+    public ApplicationUser User { get; set; } = null!;
 
     public Guid CategoryId { get; set; }
     public Category Category { get; set; } = null!;

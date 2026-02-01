@@ -3,7 +3,7 @@ namespace Tymblok.Core.Entities;
 public class Category : BaseEntity
 {
     public Guid? UserId { get; set; } // Null for system categories
-    public User? User { get; set; }
+    public ApplicationUser? User { get; set; }
 
     public string Name { get; set; } = string.Empty;
     public string Color { get; set; } = "#6366f1"; // Hex color

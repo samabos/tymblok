@@ -6,7 +6,7 @@ public record TokenResult(string AccessToken, string RefreshToken, int ExpiresIn
 
 public interface ITokenService
 {
-    TokenResult GenerateTokens(User user);
+    TokenResult GenerateTokens(ApplicationUser user, IList<string>? roles = null);
     Guid? ValidateAccessToken(string token);
     string GenerateRefreshToken();
 }

@@ -5,6 +5,11 @@ using Tymblok.Infrastructure.Data;
 
 namespace Tymblok.Infrastructure.Repositories;
 
+/// <summary>
+/// Repository for auth-related data access.
+/// Note: User management is handled by Identity's UserManager.
+/// This repository handles RefreshToken operations.
+/// </summary>
 public class AuthRepository : IAuthRepository
 {
     private readonly TymblokDbContext _context;
@@ -12,23 +17,6 @@ public class AuthRepository : IAuthRepository
     public AuthRepository(TymblokDbContext context)
     {
         _context = context;
-    }
-
-    public async Task<User?> GetUserByEmailAsync(string email)
-    {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-    }
-
-    public async Task<User> CreateUserAsync(User user)
-    {
-        _context.Users.Add(user);
-        return user;
-    }
-
-    public Task UpdateUserAsync(User user)
-    {
-        _context.Users.Update(user);
-        return Task.CompletedTask;
     }
 
     public async Task<RefreshToken?> GetRefreshTokenAsync(string token)

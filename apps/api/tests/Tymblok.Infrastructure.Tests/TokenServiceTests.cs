@@ -26,7 +26,7 @@ public class TokenServiceTests
     public void GenerateTokens_ReturnsValidTokenResult()
     {
         // Arrange
-        var user = new User
+        var user = new ApplicationUser
         {
             Id = Guid.NewGuid(),
             Email = "test@example.com",
@@ -44,10 +44,30 @@ public class TokenServiceTests
     }
 
     [Fact]
+    public void GenerateTokens_WithRoles_IncludesRolesInToken()
+    {
+        // Arrange
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            Email = "test@example.com",
+            Name = "Test User"
+        };
+        var roles = new List<string> { RoleNames.ServiceUser, RoleNames.Administrator };
+
+        // Act
+        var result = _tokenService.GenerateTokens(user, roles);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.AccessToken);
+    }
+
+    [Fact]
     public void GenerateTokens_AccessTokenIsValidJwt()
     {
         // Arrange
-        var user = new User
+        var user = new ApplicationUser
         {
             Id = Guid.NewGuid(),
             Email = "test@example.com",
@@ -67,7 +87,7 @@ public class TokenServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User
+        var user = new ApplicationUser
         {
             Id = userId,
             Email = "test@example.com",

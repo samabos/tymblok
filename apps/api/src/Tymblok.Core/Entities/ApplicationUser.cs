@@ -1,9 +1,13 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace Tymblok.Core.Entities;
 
-public class User : BaseEntity
+/// <summary>
+/// Application user extending ASP.NET Core Identity.
+/// Keeps all custom Tymblok-specific properties while gaining Identity features.
+/// </summary>
+public class ApplicationUser : IdentityUser<Guid>
 {
-    public string Email { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
 
@@ -20,11 +24,13 @@ public class User : BaseEntity
     public TimeOnly LunchStart { get; set; } = new(12, 0);
     public int LunchDurationMinutes { get; set; } = 60;
 
-    // Account status
-    public bool EmailVerified { get; set; } = false;
-    public DateTime? EmailVerifiedAt { get; set; }
+    // Account status (some overlap with Identity but we keep for backwards compatibility)
     public DateTime? LastLoginAt { get; set; }
     public DateTime? DeletedAt { get; set; } // Soft delete
+
+    // Timestamps (Identity doesn't have these)
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
     public ICollection<TimeBlock> TimeBlocks { get; set; } = new List<TimeBlock>();

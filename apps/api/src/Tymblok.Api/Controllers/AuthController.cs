@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Tymblok.Api.DTOs;
 using Tymblok.Core.Entities;
@@ -11,11 +12,16 @@ namespace Tymblok.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService authService,
+        UserManager<ApplicationUser> userManager,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
+        _userManager = userManager;
         _logger = logger;
     }
 
@@ -32,13 +38,19 @@ public class AuthController : ControllerBase
 
             _logger.LogInformation("User registered | UserId: {UserId} | IP: {IpAddress}", result.User.Id, ipAddress);
 
-            var response = CreateAuthResponse(result);
+            var roles = await _userManager.GetRolesAsync(result.User);
+            var response = CreateAuthResponse(result, roles);
             return StatusCode(StatusCodes.Status201Created, WrapResponse(response));
         }
         catch (AuthException ex) when (ex.Code == "CONFLICT")
         {
             _logger.LogWarning("Registration failed - email exists | IP: {IpAddress}", GetIpAddress());
             return Conflict(CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (AuthException ex) when (ex.Code == "VALIDATION_ERROR")
+        {
+            _logger.LogWarning("Registration failed - validation error | IP: {IpAddress}", GetIpAddress());
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
         }
     }
 
@@ -54,12 +66,18 @@ public class AuthController : ControllerBase
 
             _logger.LogInformation("User logged in | UserId: {UserId} | IP: {IpAddress}", result.User.Id, ipAddress);
 
-            var response = CreateAuthResponse(result);
+            var roles = await _userManager.GetRolesAsync(result.User);
+            var response = CreateAuthResponse(result, roles);
             return Ok(WrapResponse(response));
         }
         catch (AuthException ex) when (ex.Code == "AUTH_INVALID_CREDENTIALS")
         {
             _logger.LogWarning("Login failed - invalid credentials | IP: {IpAddress}", ipAddress);
+            return Unauthorized(CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (AuthException ex) when (ex.Code == "AUTH_LOCKED_OUT")
+        {
+            _logger.LogWarning("Login failed - account locked | IP: {IpAddress}", ipAddress);
             return Unauthorized(CreateErrorResponse(ex.Code, ex.Message));
         }
     }
@@ -86,24 +104,101 @@ public class AuthController : ControllerBase
         }
     }
 
-    private static AuthResponse CreateAuthResponse(AuthResult result)
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
-        var userDto = MapToUserDto(result.User);
+        var ipAddress = GetIpAddress();
+
+        // Always return success to not reveal if email exists
+        await _authService.SendPasswordResetAsync(request.Email);
+
+        _logger.LogInformation("Password reset requested | Email: {Email} | IP: {IpAddress}",
+            request.Email.Substring(0, Math.Min(3, request.Email.Length)) + "***", ipAddress);
+
+        return Ok(WrapResponse(new MessageResponse("If this email exists, a password reset link has been sent.")));
+    }
+
+    [HttpPost("reset-password")]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        var decodedToken = Uri.UnescapeDataString(request.Token);
+
+        var success = await _authService.ResetPasswordAsync(request.Email, decodedToken, request.NewPassword);
+
+        if (!success)
+        {
+            _logger.LogWarning("Password reset failed - invalid token | IP: {IpAddress}", ipAddress);
+            return BadRequest(CreateErrorResponse("INVALID_TOKEN", "The password reset link is invalid or has expired."));
+        }
+
+        _logger.LogInformation("Password reset successful | IP: {IpAddress}", ipAddress);
+        return Ok(WrapResponse(new MessageResponse("Your password has been reset successfully.")));
+    }
+
+    [HttpPost("verify-email")]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        var decodedToken = Uri.UnescapeDataString(request.Token);
+
+        var success = await _authService.VerifyEmailAsync(request.UserId, decodedToken);
+
+        if (!success)
+        {
+            _logger.LogWarning("Email verification failed - invalid token | UserId: {UserId} | IP: {IpAddress}",
+                request.UserId, ipAddress);
+            return BadRequest(CreateErrorResponse("INVALID_TOKEN", "The verification link is invalid or has expired."));
+        }
+
+        _logger.LogInformation("Email verified | UserId: {UserId} | IP: {IpAddress}", request.UserId, ipAddress);
+        return Ok(WrapResponse(new MessageResponse("Your email has been verified successfully.")));
+    }
+
+    [HttpPost("resend-verification")]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest request)
+    {
+        var ipAddress = GetIpAddress();
+
+        try
+        {
+            await _authService.SendEmailVerificationAsync(request.UserId);
+            _logger.LogInformation("Verification email resent | UserId: {UserId} | IP: {IpAddress}",
+                request.UserId, ipAddress);
+            return Ok(WrapResponse(new MessageResponse("Verification email has been sent.")));
+        }
+        catch (AuthException ex) when (ex.Code == "USER_NOT_FOUND")
+        {
+            return NotFound(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    private static AuthResponse CreateAuthResponse(AuthResult result, IList<string> roles)
+    {
+        var userDto = MapToUserDto(result.User, roles);
         return new AuthResponse(result.AccessToken, result.RefreshToken, result.ExpiresIn, userDto);
     }
 
-    private static UserDto MapToUserDto(User user)
+    private static UserDto MapToUserDto(ApplicationUser user, IList<string> roles)
     {
         return new UserDto(
             user.Id,
-            user.Email,
+            user.Email ?? string.Empty,
             user.Name,
             user.AvatarUrl,
             user.Theme.ToString().ToLowerInvariant(),
             user.HighContrast,
             user.ReduceMotion,
             user.TextSize.ToString().ToLowerInvariant(),
-            user.EmailVerified,
+            user.EmailConfirmed,
+            roles,
             user.CreatedAt
         );
     }

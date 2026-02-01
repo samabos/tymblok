@@ -32,7 +32,7 @@ try
 
     var app = builder.Build();
 
-    // Apply migrations on startup (Development only)
+    // Apply migrations and seed data on startup (Development only)
     if (app.Environment.IsDevelopment() && !isTestEnvironment)
     {
         using var scope = app.Services.CreateScope();
@@ -41,6 +41,11 @@ try
         Log.Information("Applying database migrations...");
         db.Database.Migrate();
         Log.Information("Database migrations applied successfully");
+
+        // Seed initial data (roles, etc.)
+        Log.Information("Seeding initial data...");
+        await DataSeeder.SeedAsync(app.Services);
+        Log.Information("Data seeding completed");
     }
 
     // Configure middleware pipeline
