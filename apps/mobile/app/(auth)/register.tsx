@@ -76,7 +76,7 @@ export default function RegisterScreen() {
             <Text className="text-sm font-medium text-slate-200">Name</Text>
             <TextInput
               className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
-              placeholder="John Doe"
+              placeholder="Firstname Lastname"
               placeholderTextColor="#64748b"
               value={name}
               onChangeText={setName}

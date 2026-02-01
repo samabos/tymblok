@@ -33,5 +33,32 @@ jest.mock('expo-router', () => ({
   useRootNavigation: jest.fn(),
 }));
 
+// Mock react-native-svg
+jest.mock('react-native-svg', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ children, ...props }) => React.createElement(View, { testID: 'svg', ...props }, children),
+    Svg: ({ children, ...props }) => React.createElement(View, { testID: 'svg', ...props }, children),
+    Rect: (props) => React.createElement(View, { testID: 'rect', ...props }),
+    Defs: ({ children }) => React.createElement(View, { testID: 'defs' }, children),
+    LinearGradient: ({ children }) => React.createElement(View, { testID: 'linearGradient' }, children),
+    Stop: () => React.createElement(View, { testID: 'stop' }),
+    G: ({ children }) => React.createElement(View, { testID: 'g' }, children),
+    Path: (props) => React.createElement(View, { testID: 'path', ...props }),
+    Circle: (props) => React.createElement(View, { testID: 'circle', ...props }),
+  };
+});
+
+// Mock TymblokLogo to avoid animation issues in tests
+jest.mock('./components/icons', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    TymblokLogo: () => React.createElement(View, { testID: 'tymblok-logo' }),
+  };
+});
+
 // Silence console warnings in tests
 jest.spyOn(console, 'warn').mockImplementation(() => {});
