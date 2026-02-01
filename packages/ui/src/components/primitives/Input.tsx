@@ -8,6 +8,7 @@ import {
   TextInputProps,
   ViewStyle,
   TextStyle,
+  StyleProp,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -30,8 +31,8 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
-  containerStyle?: ViewStyle;
-  inputStyle?: TextStyle;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
   disabled?: boolean;
 }
 
@@ -144,8 +145,8 @@ export const Input = forwardRef<TextInput, InputProps>(
               {
                 color: themeColors.text,
               },
-              leftIcon && styles.inputWithLeftIcon,
-              (rightIcon || isPassword) && styles.inputWithRightIcon,
+              leftIcon ? styles.inputWithLeftIcon : undefined,
+              (rightIcon || isPassword) ? styles.inputWithRightIcon : undefined,
               inputStyle,
             ]}
             placeholderTextColor={themeColors.textFaint}

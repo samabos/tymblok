@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, Image, StyleSheet, ViewStyle, StyleProp, ImageStyle } from 'react-native';
 import { colors, spacing, borderRadius, typography, layout } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -9,7 +9,7 @@ export interface AvatarProps {
   name: string;
   imageUrl?: string;
   size?: AvatarSize;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Avatar({ name, imageUrl, size = 'md', style }: AvatarProps) {
@@ -24,7 +24,7 @@ export function Avatar({ name, imageUrl, size = 'md', style }: AvatarProps) {
     return (
       <Image
         source={{ uri: imageUrl }}
-        style={[styles.base, sizeStyles.container, style]}
+        style={[styles.base, sizeStyles.container, style] as StyleProp<ImageStyle>}
       />
     );
   }

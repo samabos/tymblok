@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../primitives/Card';
@@ -19,7 +19,7 @@ export interface IntegrationCardProps {
   onDisconnect?: () => void;
   onSync?: () => void;
   icon?: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function IntegrationCard({
@@ -142,7 +142,7 @@ export interface ApiKeyCardProps {
   apiKey: string;
   onCopy?: () => void;
   onRegenerate?: () => void;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function ApiKeyCard({

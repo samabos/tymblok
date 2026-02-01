@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   ViewStyle,
   TextStyle,
+  StyleProp,
   PressableProps,
 } from 'react-native';
 import Animated, {
@@ -31,8 +32,8 @@ export interface ButtonProps extends Omit<PressableProps, 'style'> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   children: React.ReactNode;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
   hapticFeedback?: boolean;
 }
 
@@ -112,8 +113,8 @@ export function Button({
               styles.text,
               { color: variantStyles.textColor },
               sizeStyles.text,
-              leftIcon && styles.textWithLeftIcon,
-              rightIcon && styles.textWithRightIcon,
+              leftIcon ? styles.textWithLeftIcon : undefined,
+              rightIcon ? styles.textWithRightIcon : undefined,
               textStyle,
             ]}
           >

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../primitives/Card';
@@ -12,7 +12,7 @@ export interface StatCardProps {
     positive?: boolean;
   };
   icon?: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function StatCard({ title, value, change, icon, style }: StatCardProps) {
@@ -50,7 +50,7 @@ export function StatCard({ title, value, change, icon, style }: StatCardProps) {
 export interface StreakCardProps {
   currentStreak: number;
   bestStreak: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function StreakCard({ currentStreak, bestStreak, style }: StreakCardProps) {
@@ -77,7 +77,7 @@ export function StreakCard({ currentStreak, bestStreak, style }: StreakCardProps
 // Focus score card variant
 export interface FocusScoreCardProps {
   score: number; // 0-100
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function FocusScoreCard({ score, style }: FocusScoreCardProps) {
@@ -122,7 +122,7 @@ export interface CategoryBreakdownProps {
     percent: number;
     color?: string;
   }>;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function CategoryBreakdown({ categories, style }: CategoryBreakdownProps) {

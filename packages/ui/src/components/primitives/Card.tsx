@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle, Pressable, PressableProps } from 'react-native';
+import { View, StyleSheet, ViewStyle, StyleProp, Pressable, PressableProps } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,7 +18,7 @@ export interface CardProps extends Omit<PressableProps, 'style'> {
   variant?: CardVariant;
   padding?: CardPadding;
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   pressable?: boolean;
   hapticFeedback?: boolean;
 }
