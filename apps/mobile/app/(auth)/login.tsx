@@ -2,25 +2,26 @@ import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ScrollView,
   Animated,
   StyleSheet,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router, type Href } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
+import { Input, Button, useTheme } from '@tymblok/ui';
+import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
 import Svg, { Rect, Path, Circle } from 'react-native-svg';
-import { EnvelopeIcon, EyeIcon, EyeSlashIcon } from 'react-native-heroicons/outline';
+import { EnvelopeIcon } from 'react-native-heroicons/outline';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// Custom Google Icon (from prototype)
+// Custom Google Icon
 function GoogleIcon({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -32,7 +33,7 @@ function GoogleIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-// Custom GitHub Icon (from prototype)
+// Custom GitHub Icon
 function GitHubIcon({ size = 20, color = '#fff' }: { size?: number; color?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -41,7 +42,7 @@ function GitHubIcon({ size = 20, color = '#fff' }: { size?: number; color?: stri
   );
 }
 
-// Floating logo in gradient box with glow (matching prototype)
+// Floating logo with gradient
 function FloatingLogo() {
   const floatAnim = useRef(new Animated.Value(0)).current;
 
@@ -63,25 +64,18 @@ function FloatingLogo() {
   }, [floatAnim]);
 
   return (
-    <Animated.View
-      style={[
-        styles.logoWrapper,
-        { transform: [{ translateY: floatAnim }] },
-      ]}
-    >
+    <Animated.View style={[styles.logoWrapper, { transform: [{ translateY: floatAnim }] }]}>
       <LinearGradient
-        colors={['#6366f1', '#a855f7']}
+        colors={colors.gradients.primary as unknown as [string, string]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.logoBox}
       >
         <Svg width={32} height={32} viewBox="0 0 48 48" fill="none">
-          {/* Block Tower - white blocks with varying opacity */}
           <Rect x="14" y="6" width="20" height="8" rx="2" fill="white" fillOpacity={0.4} />
           <Rect x="14" y="16" width="20" height="8" rx="2" fill="white" fillOpacity={0.6} />
           <Rect x="14" y="26" width="20" height="8" rx="2" fill="white" fillOpacity={0.8} />
           <Rect x="14" y="36" width="20" height="8" rx="2" fill="white" />
-          {/* Side time indicator */}
           <Path d="M10 10v28" stroke="white" strokeWidth={2} strokeLinecap="round" strokeOpacity={0.5} />
           <Circle cx={10} cy={30} r={2} fill="white" />
         </Svg>
@@ -91,10 +85,12 @@ function FloatingLogo() {
 }
 
 export default function LoginScreen() {
+  const { theme } = useTheme();
+  const themeColors = theme.colors;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleLogin = async () => {
@@ -106,7 +102,6 @@ export default function LoginScreen() {
     console.log('[Login] Starting login for:', email);
     setIsLoading(true);
     try {
-      console.log('[Login] Calling authService.login...');
       const response = await authService.login({ email, password });
       console.log('[Login] Response received:', response);
 
@@ -143,7 +138,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.bg }]}>
       {/* Ambient glow effects */}
       <View style={styles.ambientContainer}>
         <View style={[styles.ambientGlow, styles.topGlow]} />
@@ -162,113 +157,96 @@ export default function LoginScreen() {
             {/* Logo & Branding */}
             <View style={styles.brandingContainer}>
               <FloatingLogo />
-              <Text style={styles.title}>Tymblok</Text>
-              <Text style={styles.subtitle}>Time blocking for developers</Text>
+              <Text style={[styles.title, { color: themeColors.text }]}>Tymblok</Text>
+              <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
+                Time blocking for developers
+              </Text>
             </View>
 
             {/* Login Card */}
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
               <View style={styles.formContainer}>
-                {/* Email */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Email</Text>
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="you@company.com"
-                      placeholderTextColor="#64748b"
-                      value={email}
-                      onChangeText={setEmail}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="email-address"
-                      editable={!isLoading}
-                    />
-                    <View style={styles.inputIcon}>
-                      <EnvelopeIcon size={20} color="#64748b" strokeWidth={1.5} />
-                    </View>
-                  </View>
-                </View>
+                {/* Email Input */}
+                <Input
+                  label="Email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  disabled={isLoading}
+                  rightIcon={<EnvelopeIcon size={20} color={themeColors.textFaint} strokeWidth={1.5} />}
+                />
 
-                {/* Password */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Password</Text>
-                  <View style={styles.inputWrapper}>
-                    <TextInput
-                      style={[styles.input, styles.passwordInput]}
-                      placeholder="••••••••"
-                      placeholderTextColor="#64748b"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!showPassword}
-                      editable={!isLoading}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      style={styles.inputIcon}
-                    >
-                      {showPassword ? (
-                        <EyeSlashIcon size={20} color="#64748b" strokeWidth={1.5} />
-                      ) : (
-                        <EyeIcon size={20} color="#64748b" strokeWidth={1.5} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
+                {/* Password Input */}
+                <View style={styles.passwordContainer}>
+                  <Input
+                    label="Password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChangeText={setPassword}
+                    disabled={isLoading}
+                  />
                 </View>
 
                 {/* Forgot Password */}
-                <View style={styles.forgotContainer}>
-                  <TouchableOpacity>
-                    <Text style={styles.forgotText}>Forgot password?</Text>
-                  </TouchableOpacity>
-                </View>
+                <Pressable style={styles.forgotContainer} onPress={() => {}}>
+                  <Text style={[styles.forgotText, { color: colors.indigo[500] }]}>
+                    Forgot password?
+                  </Text>
+                </Pressable>
 
-                {/* Login Button with glow */}
-                <TouchableOpacity
-                  style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                {/* Login Button */}
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  loading={isLoading}
+                  disabled={!email || !password}
                   onPress={handleLogin}
-                  disabled={isLoading}
-                  activeOpacity={0.8}
                 >
-                  {isLoading ? (
-                    <View style={styles.loadingRow}>
-                      <ActivityIndicator color="white" size="small" />
-                      <Text style={styles.buttonText}>Signing in...</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.buttonText}>Sign in</Text>
-                  )}
-                </TouchableOpacity>
+                  Sign in
+                </Button>
               </View>
 
               {/* Divider */}
               <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
+                <View style={[styles.dividerLine, { backgroundColor: themeColors.border }]} />
                 <View style={styles.dividerTextContainer}>
-                  <Text style={styles.dividerText}>or continue with</Text>
+                  <Text style={[styles.dividerText, { backgroundColor: themeColors.card, color: themeColors.textFaint }]}>
+                    or continue with
+                  </Text>
                 </View>
               </View>
 
               {/* Social Login */}
               <View style={styles.socialRow}>
-                <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: themeColors.borderSubtle, backgroundColor: themeColors.input + '80' }]}
+                  activeOpacity={0.7}
+                >
                   <GoogleIcon size={20} />
-                  <Text style={styles.socialText}>Google</Text>
+                  <Text style={[styles.socialText, { color: themeColors.text }]}>Google</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
-                  <GitHubIcon size={20} color="#fff" />
-                  <Text style={styles.socialText}>GitHub</Text>
+                <TouchableOpacity
+                  style={[styles.socialButton, { borderColor: themeColors.borderSubtle, backgroundColor: themeColors.input + '80' }]}
+                  activeOpacity={0.7}
+                >
+                  <GitHubIcon size={20} color={themeColors.text} />
+                  <Text style={[styles.socialText, { color: themeColors.text }]}>GitHub</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Sign Up Link */}
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>{"Don't have an account? "}</Text>
+              <Text style={[styles.signupText, { color: themeColors.textMuted }]}>
+                {"Don't have an account? "}
+              </Text>
               <Link href={'/(auth)/register' as Href} asChild>
-                <TouchableOpacity>
-                  <Text style={styles.signupLink}>Sign Up</Text>
-                </TouchableOpacity>
+                <Pressable>
+                  <Text style={[styles.signupLink, { color: colors.indigo[500] }]}>Sign Up</Text>
+                </Pressable>
               </Link>
             </View>
           </View>
@@ -281,7 +259,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#020617', // slate-950
   },
   flex1: {
     flex: 1,
@@ -293,8 +270,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[4],
   },
   // Ambient glow
   ambientContainer: {
@@ -315,7 +292,6 @@ const styles = StyleSheet.create({
     marginLeft: -400,
     width: 800,
     height: 800,
-    // Very subtle - compensating for lack of CSS blur
     backgroundColor: 'rgba(99, 102, 241, 0.05)',
   },
   bottomGlow: {
@@ -329,16 +305,15 @@ const styles = StyleSheet.create({
   logoWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: spacing[3],
   },
   logoBox: {
     width: 56,
     height: 56,
-    borderRadius: 16,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    // Glow effect
-    shadowColor: '#8b5cf6',
+    shadowColor: colors.purple[500],
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
@@ -347,101 +322,39 @@ const styles = StyleSheet.create({
   // Branding
   brandingContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing[6],
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#ffffff',
+    fontSize: typography.sizes['2xl'],
+    fontWeight: typography.weights.bold,
   },
   subtitle: {
-    marginTop: 4,
-    color: '#94a3b8', // slate-400
-    fontSize: 14,
+    marginTop: spacing[1],
+    fontSize: typography.sizes.sm,
   },
   // Card
   card: {
-    backgroundColor: '#0f172a', // slate-900
-    borderRadius: 20,
+    borderRadius: borderRadius['2xl'],
     borderWidth: 1,
-    borderColor: '#1e293b', // slate-800
-    padding: 20,
+    padding: spacing[5],
   },
   formContainer: {
-    gap: 16,
+    gap: spacing[4],
   },
-  // Input
-  inputGroup: {
-    gap: 6,
+  passwordContainer: {
+    // Additional spacing handled by Input component
   },
-  label: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#94a3b8', // slate-400
-  },
-  inputWrapper: {
-    position: 'relative',
-  },
-  input: {
-    width: '100%',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#1e293b', // slate-800
-    borderWidth: 1,
-    borderColor: '#334155', // slate-700
-    color: '#ffffff',
-    fontSize: 15,
-  },
-  passwordInput: {
-    paddingRight: 48,
-  },
-  inputIcon: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    transform: [{ translateY: -10 }],
-  },
-  // Forgot
   forgotContainer: {
     alignItems: 'flex-end',
   },
   forgotText: {
-    fontSize: 14,
-    color: '#6366f1', // indigo-500
-    fontWeight: '500',
-  },
-  // Button
-  loginButton: {
-    width: '100%',
-    paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: '#6366f1', // indigo-600
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#6366f1',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  loginButtonDisabled: {
-    backgroundColor: '#4f46e5', // indigo-700
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
   },
   // Divider
   dividerContainer: {
     position: 'relative',
-    marginVertical: 16,
+    marginVertical: spacing[4],
   },
   dividerLine: {
     position: 'absolute',
@@ -449,51 +362,45 @@ const styles = StyleSheet.create({
     right: 0,
     top: '50%',
     height: 1,
-    backgroundColor: '#1e293b', // slate-800
   },
   dividerTextContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
   },
   dividerText: {
-    paddingHorizontal: 12,
-    backgroundColor: '#0f172a', // slate-900
-    color: '#64748b', // slate-500
-    fontSize: 13,
+    paddingHorizontal: spacing[3],
+    fontSize: typography.sizes.sm,
   },
   // Social
   socialRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing[3],
   },
   socialButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
+    gap: spacing[2],
+    paddingVertical: spacing[3],
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: '#334155', // slate-700
-    backgroundColor: 'rgba(30, 41, 59, 0.5)', // slate-800/50
   },
   socialText: {
-    color: '#ffffff',
-    fontWeight: '500',
-    fontSize: 14,
+    fontWeight: typography.weights.medium,
+    fontSize: typography.sizes.sm,
   },
   // Sign Up
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: spacing[5],
   },
   signupText: {
-    color: '#94a3b8', // slate-400
+    fontSize: typography.sizes.sm,
   },
   signupLink: {
-    color: '#6366f1', // indigo-500
-    fontWeight: '600',
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
   },
 });

@@ -2,20 +2,24 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ScrollView,
+  StyleSheet,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, router } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
+import { Input, Button, useTheme } from '@tymblok/ui';
+import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
 
 export default function RegisterScreen() {
+  const { theme } = useTheme();
+  const themeColors = theme.colors;
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,100 +79,190 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.bg }]}>
+      {/* Ambient glow effects */}
+      <View style={styles.ambientContainer}>
+        <View style={[styles.ambientGlow, styles.topGlow]} />
+        <View style={[styles.ambientGlow, styles.bottomGlow]} />
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={styles.flex1}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          className="px-6"
         >
-          <View className="items-center mb-10">
-            <Text className="text-4xl font-bold text-primary-600">Tymblok</Text>
-            <Text className="text-gray-500 mt-2">Create your account</Text>
-          </View>
-
-          <View className="space-y-4">
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Name</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="John Doe"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
+          <View style={styles.content}>
+            {/* Branding */}
+            <View style={styles.brandingContainer}>
+              <Text style={[styles.title, { color: themeColors.text }]}>Tymblok</Text>
+              <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
+                Create your account
+              </Text>
             </View>
 
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Email</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!isLoading}
-              />
+            {/* Register Card */}
+            <View style={[styles.card, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+              <View style={styles.formContainer}>
+                {/* Name Input */}
+                <Input
+                  label="Name"
+                  placeholder="John Doe"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  disabled={isLoading}
+                />
+
+                {/* Email Input */}
+                <Input
+                  label="Email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  disabled={isLoading}
+                />
+
+                {/* Password Input */}
+                <Input
+                  label="Password"
+                  type="password"
+                  placeholder="At least 8 characters"
+                  value={password}
+                  onChangeText={setPassword}
+                  disabled={isLoading}
+                  hint="Must be at least 8 characters"
+                />
+
+                {/* Confirm Password Input */}
+                <Input
+                  label="Confirm Password"
+                  type="password"
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  disabled={isLoading}
+                  error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
+                />
+
+                {/* Register Button */}
+                <View style={styles.buttonContainer}>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    fullWidth
+                    loading={isLoading}
+                    disabled={!name || !email || !password || !confirmPassword}
+                    onPress={handleRegister}
+                  >
+                    Create Account
+                  </Button>
+                </View>
+              </View>
             </View>
 
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Password</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="••••••••"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!isLoading}
-              />
+            {/* Sign In Link */}
+            <View style={styles.signinContainer}>
+              <Text style={[styles.signinText, { color: themeColors.textMuted }]}>
+                Already have an account?{' '}
+              </Text>
+              <Link href={'/(auth)/login' as Href} asChild>
+                <Pressable>
+                  <Text style={[styles.signinLink, { color: colors.indigo[500] }]}>Sign In</Text>
+                </Pressable>
+              </Link>
             </View>
-
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Confirm Password</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                editable={!isLoading}
-              />
-            </View>
-
-            <TouchableOpacity
-              className={`rounded-xl py-4 mt-4 ${
-                isLoading ? 'bg-primary-400' : 'bg-primary-600'
-              }`}
-              onPress={handleRegister}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white text-center font-semibold text-lg">
-                  Create Account
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View className="flex-row justify-center mt-6 mb-8">
-            <Text className="text-gray-500">Already have an account? </Text>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity>
-                <Text className="text-primary-600 font-semibold">Sign In</Text>
-              </TouchableOpacity>
-            </Link>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  flex1: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[4],
+  },
+  // Ambient glow
+  ambientContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
+  ambientGlow: {
+    position: 'absolute',
+    borderRadius: 9999,
+  },
+  topGlow: {
+    top: -300,
+    left: '50%',
+    marginLeft: -400,
+    width: 800,
+    height: 800,
+    backgroundColor: 'rgba(99, 102, 241, 0.05)',
+  },
+  bottomGlow: {
+    bottom: -300,
+    right: -300,
+    width: 600,
+    height: 600,
+    backgroundColor: 'rgba(168, 85, 247, 0.03)',
+  },
+  // Branding
+  brandingContainer: {
+    alignItems: 'center',
+    marginBottom: spacing[6],
+  },
+  title: {
+    fontSize: typography.sizes['2xl'],
+    fontWeight: typography.weights.bold,
+  },
+  subtitle: {
+    marginTop: spacing[1],
+    fontSize: typography.sizes.sm,
+  },
+  // Card
+  card: {
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    padding: spacing[5],
+  },
+  formContainer: {
+    gap: spacing[4],
+  },
+  buttonContainer: {
+    marginTop: spacing[2],
+  },
+  // Sign In
+  signinContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: spacing[5],
+  },
+  signinText: {
+    fontSize: typography.sizes.sm,
+  },
+  signinLink: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+  },
+});
