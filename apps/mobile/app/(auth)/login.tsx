@@ -113,6 +113,12 @@ export default function LoginScreen() {
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Text>
           </TouchableOpacity>
+
+          <Link href="/(auth)/forgot-password" asChild>
+            <Pressable className="mt-4 items-center">
+              <Text className="text-indigo-500 text-sm">Forgot password?</Text>
+            </Pressable>
+          </Link>
         </View>
 
         <View className="flex-row justify-center mt-6">

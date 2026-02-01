@@ -119,25 +119,24 @@ export function BottomSheet({
 
   const animatedBackdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
-    pointerEvents: backdropOpacity.value > 0 ? 'auto' : 'none',
   }));
 
-  if (!visible && backdropOpacity.value === 0) {
+  if (!visible) {
     return null;
   }
 
   return (
-    <View style={styles.overlay}>
+    <View style={styles.overlay} pointerEvents="box-none">
       {/* Backdrop */}
-      <Animated.View
-        style={[
-          styles.backdrop,
-          { backgroundColor: themeColors.overlay },
-          animatedBackdropStyle,
-        ]}
-      >
-        <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet} />
-      </Animated.View>
+      <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
+        <Animated.View
+          style={[
+            styles.backdrop,
+            { backgroundColor: themeColors.overlay },
+            animatedBackdropStyle,
+          ]}
+        />
+      </Pressable>
 
       {/* Sheet */}
       <GestureDetector gesture={gesture}>

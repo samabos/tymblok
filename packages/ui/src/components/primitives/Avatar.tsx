@@ -9,15 +9,16 @@ export interface AvatarProps {
   name: string;
   imageUrl?: string;
   size?: AvatarSize;
+  color?: string;
   style?: StyleProp<ViewStyle>;
 }
 
-export function Avatar({ name, imageUrl, size = 'md', style }: AvatarProps) {
+export function Avatar({ name, imageUrl, size = 'md', color, style }: AvatarProps) {
   useTheme();
 
   const initials = getInitials(name);
   const sizeStyles = getSizeStyles(size);
-  const backgroundColor = getBackgroundColor(name);
+  const backgroundColor = color || getBackgroundColor(name);
 
   if (imageUrl) {
     return (
@@ -50,9 +51,9 @@ function getBackgroundColor(name: string): string {
   const colorOptions = [
     colors.indigo[500],
     colors.purple[500],
-    colors.taskType.github,
-    colors.taskType.jira,
-    colors.taskType.focus,
+    colors.label.github,
+    colors.label.jira,
+    colors.label.focus,
     colors.status.live,
   ];
 

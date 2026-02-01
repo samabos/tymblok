@@ -4,13 +4,15 @@
  */
 
 // Colors
-export { colors } from './colors';
+export { colors, getLabelColor } from './colors';
 export type {
   Colors,
   ThemeColors,
-  TaskTypeColor,
+  LabelColor,
   StatusColor,
   PriorityColor,
+  // Deprecated - use LabelColor instead
+  TaskTypeColor,
   SourceColor,
 } from './colors';
 

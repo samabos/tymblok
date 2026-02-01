@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
+import { colors, spacing, borderRadius, typography, getLabelColor } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { BottomSheet } from './BottomSheet';
 import { Input } from '../primitives/Input';
@@ -229,10 +229,13 @@ export interface TaskDetailModalProps {
     type: TaskCategory;
     startTime: string;
     endTime: string;
+    durationMinutes?: number;
     status?: 'pending' | 'in_progress' | 'completed';
     progress?: number;
+    completed?: boolean;
+    isNow?: boolean;
   };
-  onEdit?: () => void;
+  onEdit?: (taskId: string) => void;
   onComplete?: () => void;
 }
 
@@ -330,13 +333,16 @@ export function TaskDetailModal({
         {onEdit && (
           <Button
             variant="secondary"
-            onPress={onEdit}
+            onPress={() => {
+              onClose();
+              onEdit(task.id);
+            }}
             style={{ flex: 1, marginRight: spacing[2] }}
           >
             Edit
           </Button>
         )}
-        {onComplete && (
+        {onComplete && task.status !== 'completed' && (
           <Button
             variant="primary"
             onPress={onComplete}
@@ -345,19 +351,23 @@ export function TaskDetailModal({
             Complete
           </Button>
         )}
+        {task.status === 'completed' && (
+          <Button
+            variant="secondary"
+            onPress={onComplete}
+            style={{ flex: 1, marginLeft: onEdit ? spacing[2] : 0 }}
+          >
+            Reopen
+          </Button>
+        )}
       </View>
     </BottomSheet>
   );
 }
 
 function getTypeColor(type: TaskCategory): string {
-  const typeColors: Record<TaskCategory, string> = {
-    github: colors.taskType.github,
-    jira: colors.taskType.jira,
-    meeting: colors.taskType.meeting,
-    focus: colors.taskType.focus,
-  };
-  return typeColors[type] || colors.indigo[500];
+  // Use centralized getLabelColor for consistency across all components
+  return getLabelColor(type);
 }
 
 const styles = StyleSheet.create({

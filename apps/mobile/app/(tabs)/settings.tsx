@@ -1,11 +1,89 @@
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { useBiometricAuth } from '../../hooks/useBiometricAuth';
-import { SettingsRow } from '../../components/SettingsRow';
+import { useTheme, Avatar, Card } from '@tymblok/ui';
+import { colors } from '@tymblok/theme';
+import { Ionicons } from '@expo/vector-icons';
+
+interface SettingsRowProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  sublabel?: string;
+  onPress?: () => void;
+  showSwitch?: boolean;
+  value?: boolean;
+  onValueChange?: (value: boolean) => void;
+  disabled?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
+}
+
+function SettingsRow({
+  icon,
+  label,
+  sublabel,
+  onPress,
+  showSwitch,
+  value,
+  onValueChange,
+  disabled,
+}: SettingsRowProps) {
+  const { theme } = useTheme();
+  const themeColors = theme.colors;
+
+  const content = (
+    <View className="p-4 flex-row items-center justify-between">
+      <View className="flex-row items-center gap-3 flex-1">
+        <View
+          className="w-9 h-9 rounded-xl items-center justify-center"
+          style={{ backgroundColor: themeColors.input }}
+        >
+          <Ionicons name={icon} size={18} color={themeColors.textMuted} />
+        </View>
+        <View className="flex-1">
+          <Text
+            className="font-medium"
+            style={{ color: disabled ? themeColors.textFaint : themeColors.text }}
+          >
+            {label}
+          </Text>
+          {sublabel && (
+            <Text className="text-sm" style={{ color: themeColors.textMuted }}>
+              {sublabel}
+            </Text>
+          )}
+        </View>
+      </View>
+      {showSwitch ? (
+        <Switch
+          value={value}
+          onValueChange={onValueChange}
+          disabled={disabled}
+          trackColor={{ false: themeColors.input, true: colors.indigo[500] }}
+          thumbColor={colors.white}
+        />
+      ) : onPress ? (
+        <Ionicons name="chevron-forward" size={18} color={themeColors.textFaint} />
+      ) : null}
+    </View>
+  );
+
+  if (onPress && !showSwitch) {
+    return (
+      <TouchableOpacity onPress={onPress} disabled={disabled}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  return content;
+}
 
 export default function SettingsScreen() {
+  const { theme, toggleTheme, isDark } = useTheme();
+  const themeColors = theme.colors;
   const { user, clearAuth } = useAuthStore();
   const { isAvailable, isEnabled, biometricType, enableBiometric, disableBiometric } = useBiometricAuth();
 
@@ -36,65 +114,165 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="px-4 pt-4">
-        <Text className="text-2xl font-bold text-gray-900">Settings</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
+      {/* Header */}
+      <View className="px-5 pt-4 pb-2">
+        <Text
+          className="text-2xl font-bold"
+          style={{ color: themeColors.text }}
+        >
+          Settings
+        </Text>
       </View>
 
-      <View className="flex-1 px-4 pt-6">
+      <ScrollView
+        className="flex-1 px-5"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* Profile Section */}
-        <View className="bg-white rounded-xl p-4 mb-4">
-          <Text className="text-sm text-gray-500 uppercase mb-2">Account</Text>
-          <View className="flex-row items-center">
-            <View className="w-12 h-12 bg-primary-100 rounded-full items-center justify-center">
-              <Text className="text-primary-600 font-bold text-lg">
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </Text>
+        <View className="pt-4">
+          <Card variant="default" padding="md" pressable onPress={() => router.push('/profile')}>
+            <View className="flex-row items-center">
+              <Avatar name={user?.name || 'User'} size="md" color={colors.indigo[500]} />
+              <View className="ml-3 flex-1">
+                <Text className="font-medium" style={{ color: themeColors.text }}>
+                  {user?.name || 'User'}
+                </Text>
+                <Text className="text-sm" style={{ color: themeColors.textMuted }}>
+                  {user?.email || 'No email'}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={themeColors.textFaint} />
             </View>
-            <View className="ml-3 flex-1">
-              <Text className="text-gray-900 font-medium">{user?.name || 'User'}</Text>
-              <Text className="text-gray-500 text-sm">{user?.email || 'No email'}</Text>
-            </View>
-          </View>
+          </Card>
         </View>
 
-        {/* Security Section */}
-        <View className="bg-white rounded-xl mb-4">
-          <Text className="text-sm text-gray-500 uppercase px-4 pt-4 pb-2">Security</Text>
-          <SettingsRow
-            label={biometricType || 'Biometric Lock'}
-            subtitle={isAvailable ? 'Require biometrics to open app' : 'Not available on this device'}
-            showSwitch
-            value={isEnabled}
-            onValueChange={handleBiometricToggle}
-            disabled={!isAvailable}
-          />
+        {/* Integrations Section */}
+        <View className="mt-4">
+          <Text
+            className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
+            style={{ color: themeColors.textMuted }}
+          >
+            Connections
+          </Text>
+          <Card variant="default" padding="none">
+            <SettingsRow
+              icon="git-branch-outline"
+              label="Integrations"
+              sublabel="GitHub, Jira, Calendar & more"
+              onPress={() => router.push('/integrations')}
+            />
+          </Card>
         </View>
 
         {/* Preferences Section */}
-        <View className="bg-white rounded-xl mb-4">
-          <Text className="text-sm text-gray-500 uppercase px-4 pt-4 pb-2">Preferences</Text>
-          <View className="border-b border-gray-100">
-            <SettingsRow label="Notifications" onPress={() => {}} />
-          </View>
-          <View className="border-b border-gray-100">
-            <SettingsRow label="Appearance" onPress={() => {}} />
-          </View>
-          <SettingsRow label="Working Hours" onPress={() => {}} />
+        <View className="mt-4">
+          <Text
+            className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
+            style={{ color: themeColors.textMuted }}
+          >
+            Preferences
+          </Text>
+          <Card variant="default" padding="none">
+            <SettingsRow
+              icon="notifications-outline"
+              label="Notifications"
+              sublabel="Push notifications & reminders"
+              onPress={() => console.log('[Settings] Notifications')}
+            />
+            <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
+              <SettingsRow
+                icon="moon-outline"
+                label="Dark Mode"
+                sublabel={isDark ? 'Currently enabled' : 'Currently disabled'}
+                showSwitch
+                value={isDark}
+                onValueChange={toggleTheme}
+              />
+            </View>
+            <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
+              <SettingsRow
+                icon="time-outline"
+                label="Working Hours"
+                sublabel="9:00 AM - 5:00 PM"
+                onPress={() => console.log('[Settings] Working hours')}
+              />
+            </View>
+          </Card>
         </View>
 
-        {/* Logout Button */}
+        {/* Security Section */}
+        <View className="mt-4">
+          <Text
+            className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
+            style={{ color: themeColors.textMuted }}
+          >
+            Security
+          </Text>
+          <Card variant="default" padding="none">
+            <SettingsRow
+              icon="finger-print-outline"
+              label={biometricType || 'Biometric Lock'}
+              sublabel={isAvailable ? 'Require biometrics to open app' : 'Not available on this device'}
+              showSwitch
+              value={isEnabled}
+              onValueChange={handleBiometricToggle}
+              disabled={!isAvailable}
+            />
+          </Card>
+        </View>
+
+        {/* Support Section */}
+        <View className="mt-4">
+          <Text
+            className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
+            style={{ color: themeColors.textMuted }}
+          >
+            Support
+          </Text>
+          <Card variant="default" padding="none">
+            <SettingsRow
+              icon="help-circle-outline"
+              label="Help & FAQ"
+              onPress={() => console.log('[Settings] Help')}
+            />
+            <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
+              <SettingsRow
+                icon="chatbubble-outline"
+                label="Contact Support"
+                onPress={() => console.log('[Settings] Support')}
+              />
+            </View>
+            <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
+              <SettingsRow
+                icon="document-text-outline"
+                label="Privacy Policy"
+                onPress={() => console.log('[Settings] Privacy')}
+              />
+            </View>
+          </Card>
+        </View>
+
+        {/* Sign Out Button */}
         <TouchableOpacity
-          className="bg-white rounded-xl p-4"
+          className="mt-6 p-4 rounded-2xl items-center"
+          style={{ backgroundColor: themeColors.card }}
           onPress={handleLogout}
         >
-          <Text className="text-red-600 text-center font-medium">Sign Out</Text>
+          <Text className="font-medium" style={{ color: colors.status.urgent }}>
+            Sign Out
+          </Text>
         </TouchableOpacity>
-      </View>
 
-      <View className="px-4 pb-4">
-        <Text className="text-center text-gray-400 text-sm">Tymblok v0.1.0</Text>
-      </View>
+        {/* Version */}
+        <Text
+          className="text-center mt-4 text-sm"
+          style={{ color: themeColors.textFaint }}
+        >
+          Tymblok v0.1.0
+        </Text>
+      </ScrollView>
     </SafeAreaView>
   );
 }
