@@ -37,7 +37,7 @@ export function BottomNav({
   onAddPress,
   style,
 }: BottomNavProps) {
-  const { isDark, theme } = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const themeColors = theme.colors;
 

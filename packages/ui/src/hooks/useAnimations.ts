@@ -6,7 +6,6 @@ import {
   withTiming,
   withRepeat,
   withSequence,
-  runOnJS,
   Easing,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -168,12 +167,12 @@ export function useSlideAnimation(
   const translateX = useSharedValue(direction === 'left' ? -distance : direction === 'right' ? distance : 0);
   const translateY = useSharedValue(direction === 'up' ? distance : direction === 'down' ? -distance : 0);
 
-  const slideIn = useCallback((durationMs: number = duration.slow) => {
+  const slideIn = useCallback(() => {
     translateX.value = withSpring(0, springConfig.gentle);
     translateY.value = withSpring(0, springConfig.gentle);
   }, []);
 
-  const slideOut = useCallback((durationMs: number = duration.slow) => {
+  const slideOut = useCallback(() => {
     translateX.value = withSpring(
       direction === 'left' ? -distance : direction === 'right' ? distance : 0,
       springConfig.gentle

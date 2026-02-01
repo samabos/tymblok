@@ -103,7 +103,7 @@ export function SearchEmptyState({ query }: { query: string }) {
 
 // Simple icon components (placeholder implementations)
 function InboxZeroIcon() {
-  const { theme } = useTheme();
+  useTheme();
   return (
     <View style={iconStyles.container}>
       <View style={[iconStyles.checkCircle, { borderColor: colors.status.done }]}>

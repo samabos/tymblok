@@ -15,7 +15,8 @@
       "bundleIdentifier": "io.tymblok.app"
     },
     "android": {
-      "package": "io.tymblok.app"
+      "package": "io.tymblok.app",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro"

@@ -43,17 +43,17 @@ export interface RefreshRequest {
 
 export const authService = {
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', data);
-    return response.data.data;
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', data, { skipAuth: true });
+    return response.data;
   },
 
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', data);
-    return response.data.data;
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', data, { skipAuth: true });
+    return response.data;
   },
 
   async refresh(data: RefreshRequest): Promise<RefreshResponse> {
-    const response = await api.post<ApiResponse<RefreshResponse>>('/auth/refresh', data);
-    return response.data.data;
+    const response = await api.post<ApiResponse<RefreshResponse>>('/auth/refresh', data, { skipAuth: true });
+    return response.data;
   },
 };

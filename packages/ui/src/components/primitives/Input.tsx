@@ -8,6 +8,7 @@ import {
   TextInputProps,
   ViewStyle,
   TextStyle,
+  StyleProp,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -15,7 +16,7 @@ import Animated, {
   withTiming,
   interpolateColor,
 } from 'react-native-reanimated';
-import { colors, spacing, borderRadius, layout, typography, duration } from '@tymblok/theme';
+import { colors, spacing, layout, typography, duration } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -30,8 +31,8 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
-  containerStyle?: ViewStyle;
-  inputStyle?: TextStyle;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
   disabled?: boolean;
 }
 
@@ -54,8 +55,8 @@ export const Input = forwardRef<TextInput, InputProps>(
     },
     ref
   ) => {
-    const { isDark, theme } = useTheme();
-    const [isFocused, setIsFocused] = useState(false);
+    const { theme } = useTheme();
+    const [, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const focusAnimation = useSharedValue(0);
 
@@ -144,8 +145,8 @@ export const Input = forwardRef<TextInput, InputProps>(
               {
                 color: themeColors.text,
               },
-              leftIcon && styles.inputWithLeftIcon,
-              (rightIcon || isPassword) && styles.inputWithRightIcon,
+              leftIcon ? styles.inputWithLeftIcon : undefined,
+              (rightIcon || isPassword) ? styles.inputWithRightIcon : undefined,
               inputStyle,
             ]}
             placeholderTextColor={themeColors.textFaint}

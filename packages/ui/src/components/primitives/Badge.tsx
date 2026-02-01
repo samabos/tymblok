@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
   useSharedValue,
 } from 'react-native-reanimated';
-import { colors, spacing, borderRadius, layout, typography, duration } from '@tymblok/theme';
+import { colors, spacing, borderRadius, layout, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export type BadgeVariant =
@@ -42,7 +42,7 @@ export function Badge({
   style,
   textStyle,
 }: BadgeProps) {
-  const { isDark, theme } = useTheme();
+  const { isDark } = useTheme();
   const opacity = useSharedValue(1);
 
   React.useEffect(() => {

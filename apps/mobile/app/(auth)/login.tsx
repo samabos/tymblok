@@ -1,18 +1,10 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, router, type Href } from 'expo-router';
+import { router, Link } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
+import { TymblokLogo } from '../../components/icons';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -21,10 +13,7 @@ export default function LoginScreen() {
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter email and password');
-      return;
-    }
+    if (!email.trim() || !password.trim()) return;
 
     setIsLoading(true);
     try {
@@ -54,80 +43,74 @@ export default function LoginScreen() {
 
       router.replace('/(tabs)/today');
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { error?: { message?: string } } } };
-      const message = axiosError.response?.data?.error?.message || 'Login failed. Please try again.';
-      Alert.alert('Error', message);
+      const message = error instanceof Error ? error.message : 'Login failed';
+      console.error('[Login]', message);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <View className="flex-1 justify-center px-6">
-          <View className="items-center mb-10">
-            <Text className="text-4xl font-bold text-primary-600">Tymblok</Text>
-            <Text className="text-gray-500 mt-2">Sign in to your account</Text>
-          </View>
-
-          <View className="space-y-4">
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Email</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!isLoading}
-              />
-            </View>
-
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Password</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="••••••••"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!isLoading}
-              />
-            </View>
-
-            <TouchableOpacity
-              className={`rounded-xl py-4 mt-4 ${
-                isLoading ? 'bg-primary-400' : 'bg-primary-600'
-              }`}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white text-center font-semibold text-lg">
-                  Sign In
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View className="flex-row justify-center mt-6">
-            <Text className="text-gray-500">{"Don't have an account? "}</Text>
-            <Link href={'/(auth)/register' as Href} asChild>
-              <TouchableOpacity>
-                <Text className="text-primary-600 font-semibold">Sign Up</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
+    <SafeAreaView className="flex-1 bg-slate-950">
+      <View className="flex-1 justify-center p-6">
+        <View className="items-center mb-6">
+          <TymblokLogo size="md" style={{ marginBottom: 12 }} />
+          <Text className="text-3xl font-bold text-white text-center">Tymblok</Text>
+          <Text className="text-base text-slate-400 text-center mt-2">
+            Time blocking for developers
+          </Text>
         </View>
-      </KeyboardAvoidingView>
+
+        <View className="gap-4">
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Email</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="you@company.com"
+              placeholderTextColor="#64748b"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!isLoading}
+            />
+          </View>
+
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Password</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="Enter your password"
+              placeholderTextColor="#64748b"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
+          </View>
+
+          <TouchableOpacity
+            className={`bg-indigo-500 rounded-xl p-4 items-center mt-2 ${
+              !email || !password || isLoading ? 'opacity-50' : ''
+            }`}
+            onPress={handleLogin}
+            disabled={!email || !password || isLoading}
+          >
+            <Text className="text-white text-base font-semibold">
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row justify-center mt-6">
+          <Text className="text-slate-400 text-sm">{"Don't have an account? "}</Text>
+          <Link href="/(auth)/register" asChild>
+            <Pressable>
+              <Text className="text-indigo-500 text-sm font-semibold">Sign Up</Text>
+            </Pressable>
+          </Link>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }

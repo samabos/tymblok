@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
   interpolateColor,
 } from 'react-native-reanimated';
-import { colors, spacing, borderRadius, duration } from '@tymblok/theme';
+import { colors, spacing, borderRadius } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export type SkeletonVariant = 'text' | 'circular' | 'rectangular' | 'card';
@@ -27,8 +27,7 @@ export function Skeleton({
   style,
   animate = true,
 }: SkeletonProps) {
-  const { isDark, theme } = useTheme();
-  const themeColors = theme.colors;
+  const { isDark } = useTheme();
   const shimmer = useSharedValue(0);
 
   useEffect(() => {

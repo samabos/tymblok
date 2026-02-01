@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, layout, typography } from '@tymblok/theme';
+import { spacing, layout, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export interface HeaderProps {

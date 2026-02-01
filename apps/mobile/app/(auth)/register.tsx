@@ -1,19 +1,10 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link, router } from 'expo-router';
+import { router, Link } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
+import { TymblokLogo } from '../../components/icons';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -24,20 +15,9 @@ export default function RegisterScreen() {
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
-      return;
-    }
+    if (!name.trim() || !email.trim() || !password.trim()) return;
+    if (password !== confirmPassword) return;
+    if (password.length < 8) return;
 
     setIsLoading(true);
     try {
@@ -67,109 +47,112 @@ export default function RegisterScreen() {
 
       router.replace('/(tabs)/today');
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { error?: { message?: string } } } };
-      const message = axiosError.response?.data?.error?.message || 'Registration failed. Please try again.';
-      Alert.alert('Error', message);
+      const message = error instanceof Error ? error.message : 'Registration failed';
+      console.error('[Register]', message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const passwordsMatch = !confirmPassword || password === confirmPassword;
+  const isDisabled = !name || !email || !password || !confirmPassword || !passwordsMatch || isLoading;
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+    <SafeAreaView className="flex-1 bg-slate-950">
+      <ScrollView
+        contentContainerClassName="flex-grow justify-center p-6"
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-          keyboardShouldPersistTaps="handled"
-          className="px-6"
-        >
-          <View className="items-center mb-10">
-            <Text className="text-4xl font-bold text-primary-600">Tymblok</Text>
-            <Text className="text-gray-500 mt-2">Create your account</Text>
+        <View className="items-center mb-6">
+          <TymblokLogo size="md" style={{ marginBottom: 12 }} />
+          <Text className="text-3xl font-bold text-white text-center">Create Account</Text>
+          <Text className="text-base text-slate-400 text-center mt-2">
+            Join Tymblok today
+          </Text>
+        </View>
+
+        <View className="gap-4">
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Name</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="Firstname Lastname"
+              placeholderTextColor="#64748b"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              editable={!isLoading}
+            />
           </View>
 
-          <View className="space-y-4">
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Name</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="John Doe"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-            </View>
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Email</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="you@example.com"
+              placeholderTextColor="#64748b"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!isLoading}
+            />
+          </View>
 
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Email</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!isLoading}
-              />
-            </View>
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Password</Text>
+            <TextInput
+              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              placeholder="At least 8 characters"
+              placeholderTextColor="#64748b"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
+            <Text className="text-xs text-slate-500">Must be at least 8 characters</Text>
+          </View>
 
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Password</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="••••••••"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!isLoading}
-              />
-            </View>
-
-            <View>
-              <Text className="text-gray-700 mb-2 font-medium">Confirm Password</Text>
-              <TextInput
-                className="bg-gray-100 rounded-xl px-4 py-3 text-gray-900"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                editable={!isLoading}
-              />
-            </View>
-
-            <TouchableOpacity
-              className={`rounded-xl py-4 mt-4 ${
-                isLoading ? 'bg-primary-400' : 'bg-primary-600'
+          <View className="gap-2">
+            <Text className="text-sm font-medium text-slate-200">Confirm Password</Text>
+            <TextInput
+              className={`bg-slate-800 rounded-xl p-4 text-white text-base border ${
+                !passwordsMatch ? 'border-red-500' : 'border-slate-700'
               }`}
-              onPress={handleRegister}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white text-center font-semibold text-lg">
-                  Create Account
-                </Text>
-              )}
-            </TouchableOpacity>
+              placeholder="Re-enter your password"
+              placeholderTextColor="#64748b"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
+            {!passwordsMatch && (
+              <Text className="text-xs text-red-500">Passwords do not match</Text>
+            )}
           </View>
 
-          <View className="flex-row justify-center mt-6 mb-8">
-            <Text className="text-gray-500">Already have an account? </Text>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity>
-                <Text className="text-primary-600 font-semibold">Sign In</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <TouchableOpacity
+            className={`bg-indigo-500 rounded-xl p-4 items-center mt-2 ${
+              isDisabled ? 'opacity-50' : ''
+            }`}
+            onPress={handleRegister}
+            disabled={isDisabled}
+          >
+            <Text className="text-white text-base font-semibold">
+              {isLoading ? 'Creating account...' : 'Create Account'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row justify-center mt-6">
+          <Text className="text-slate-400 text-sm">Already have an account? </Text>
+          <Link href="/(auth)/login" asChild>
+            <Pressable>
+              <Text className="text-indigo-500 text-sm font-semibold">Sign In</Text>
+            </Pressable>
+          </Link>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

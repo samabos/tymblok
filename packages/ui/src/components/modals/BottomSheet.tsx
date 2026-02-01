@@ -6,13 +6,11 @@ import Animated, {
   withSpring,
   withTiming,
   runOnJS,
-  interpolate,
-  Extrapolation,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, layout, springConfig, duration } from '@tymblok/theme';
+import { spacing, borderRadius, springConfig, duration } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
