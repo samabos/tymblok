@@ -50,7 +50,7 @@ export function InboxItem({
   onPress,
   style,
 }: InboxItemProps) {
-  const { isDark, theme } = useTheme();
+  const { theme } = useTheme();
   const themeColors = theme.colors;
   const scale = useSharedValue(1);
 

@@ -25,7 +25,7 @@ export function Toggle({
   hapticFeedback = true,
   style,
 }: ToggleProps) {
-  const { isDark, theme } = useTheme();
+  const { theme } = useTheme();
   const themeColors = theme.colors;
   const progress = useSharedValue(enabled ? 1 : 0);
 

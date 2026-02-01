@@ -14,11 +14,9 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  interpolate,
-  Extrapolation,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
+import { colors, spacing, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../../components/primitives/Button';
 

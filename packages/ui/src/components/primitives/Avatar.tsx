@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, ViewStyle, StyleProp, ImageStyle } from 'react-native';
-import { colors, spacing, borderRadius, typography, layout } from '@tymblok/theme';
+import { colors, typography, layout } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -13,8 +13,7 @@ export interface AvatarProps {
 }
 
 export function Avatar({ name, imageUrl, size = 'md', style }: AvatarProps) {
-  const { isDark, theme } = useTheme();
-  const themeColors = theme.colors;
+  useTheme();
 
   const initials = getInitials(name);
   const sizeStyles = getSizeStyles(size);

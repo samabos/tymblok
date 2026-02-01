@@ -16,7 +16,7 @@ import Animated, {
   withTiming,
   interpolateColor,
 } from 'react-native-reanimated';
-import { colors, spacing, borderRadius, layout, typography, duration } from '@tymblok/theme';
+import { colors, spacing, layout, typography, duration } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -55,8 +55,8 @@ export const Input = forwardRef<TextInput, InputProps>(
     },
     ref
   ) => {
-    const { isDark, theme } = useTheme();
-    const [isFocused, setIsFocused] = useState(false);
+    const { theme } = useTheme();
+    const [, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const focusAnimation = useSharedValue(0);
 

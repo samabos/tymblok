@@ -14,11 +14,10 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, borderRadius, typography, springConfig } from '@tymblok/theme';
+import { colors, spacing, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../../components/primitives/Button';
 import { Input } from '../../components/primitives/Input';

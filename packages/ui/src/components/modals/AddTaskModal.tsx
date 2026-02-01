@@ -26,7 +26,6 @@ export function AddTaskModal({
   visible,
   onClose,
   onSubmit,
-  initialDate = new Date(),
 }: AddTaskModalProps) {
   const { theme } = useTheme();
   const themeColors = theme.colors;
@@ -244,7 +243,7 @@ export function TaskDetailModal({
   onEdit,
   onComplete,
 }: TaskDetailModalProps) {
-  const { isDark, theme } = useTheme();
+  const { theme } = useTheme();
   const themeColors = theme.colors;
 
   if (!task) return null;

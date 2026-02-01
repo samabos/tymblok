@@ -6,7 +6,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, shadows, springConfig } from '@tymblok/theme';
+import { spacing, borderRadius, shadows, springConfig } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);

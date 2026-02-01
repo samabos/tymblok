@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
+import { colors, spacing, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../primitives/Card';
 
@@ -54,7 +54,7 @@ export interface StreakCardProps {
 }
 
 export function StreakCard({ currentStreak, bestStreak, style }: StreakCardProps) {
-  const { isDark, theme } = useTheme();
+  const { theme } = useTheme();
   const themeColors = theme.colors;
 
   return (
@@ -81,7 +81,7 @@ export interface FocusScoreCardProps {
 }
 
 export function FocusScoreCard({ score, style }: FocusScoreCardProps) {
-  const { isDark, theme } = useTheme();
+  const { theme } = useTheme();
   const themeColors = theme.colors;
 
   const getScoreColor = () => {

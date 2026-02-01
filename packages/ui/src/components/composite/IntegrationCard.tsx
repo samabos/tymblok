@@ -23,7 +23,6 @@ export interface IntegrationCardProps {
 }
 
 export function IntegrationCard({
-  id,
   type,
   name,
   description,

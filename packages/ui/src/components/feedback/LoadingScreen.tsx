@@ -9,7 +9,7 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-import { colors, spacing, typography, borderRadius, duration } from '@tymblok/theme';
+import { colors, spacing, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 export interface LoadingScreenProps {
@@ -64,7 +64,6 @@ export function LoadingScreen({
 
 // Animated logo component (block tower)
 function AnimatedLogo() {
-  const { isDark } = useTheme();
   const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
 
@@ -159,7 +158,7 @@ function AnimatedBlock({
 
 // Loading progress bar
 function LoadingBar({ progress }: { progress?: number }) {
-  const { isDark, theme } = useTheme();
+  const { theme } = useTheme();
   const themeColors = theme.colors;
   const animatedProgress = useSharedValue(0);
 
