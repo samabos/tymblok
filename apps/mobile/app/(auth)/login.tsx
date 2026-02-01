@@ -10,10 +10,16 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) return;
+    setError(null);
+
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter email and password');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -42,8 +48,9 @@ export default function LoginScreen() {
       );
 
       router.replace('/(tabs)/today');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Login failed';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      setError(message);
       console.error('[Login]', message);
     } finally {
       setIsLoading(false);
@@ -88,6 +95,12 @@ export default function LoginScreen() {
               editable={!isLoading}
             />
           </View>
+
+          {error && (
+            <View className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+              <Text className="text-sm text-red-400 text-center">{error}</Text>
+            </View>
+          )}
 
           <TouchableOpacity
             className={`bg-indigo-500 rounded-xl p-4 items-center mt-2 ${

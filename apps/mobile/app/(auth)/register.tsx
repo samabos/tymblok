@@ -12,12 +12,24 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) return;
-    if (password !== confirmPassword) return;
-    if (password.length < 8) return;
+    setError(null);
+
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError('Please fill in all fields');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -46,8 +58,9 @@ export default function RegisterScreen() {
       );
 
       router.replace('/(tabs)/today');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Registration failed';
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+      setError(message);
       console.error('[Register]', message);
     } finally {
       setIsLoading(false);
@@ -55,7 +68,8 @@ export default function RegisterScreen() {
   };
 
   const passwordsMatch = !confirmPassword || password === confirmPassword;
-  const isDisabled = !name || !email || !password || !confirmPassword || !passwordsMatch || isLoading;
+  const passwordLongEnough = !password || password.length >= 8;
+  const isDisabled = !name || !email || !password || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
@@ -102,7 +116,9 @@ export default function RegisterScreen() {
           <View className="gap-2">
             <Text className="text-sm font-medium text-slate-200">Password</Text>
             <TextInput
-              className="bg-slate-800 rounded-xl p-4 text-white text-base border border-slate-700"
+              className={`bg-slate-800 rounded-xl p-4 text-white text-base border ${
+                !passwordLongEnough ? 'border-red-500' : 'border-slate-700'
+              }`}
               placeholder="At least 8 characters"
               placeholderTextColor="#64748b"
               value={password}
@@ -110,7 +126,9 @@ export default function RegisterScreen() {
               secureTextEntry
               editable={!isLoading}
             />
-            <Text className="text-xs text-slate-500">Must be at least 8 characters</Text>
+            <Text className={`text-xs ${!passwordLongEnough ? 'text-red-500' : 'text-slate-500'}`}>
+              Must be at least 8 characters
+            </Text>
           </View>
 
           <View className="gap-2">
@@ -130,6 +148,12 @@ export default function RegisterScreen() {
               <Text className="text-xs text-red-500">Passwords do not match</Text>
             )}
           </View>
+
+          {error && (
+            <View className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+              <Text className="text-sm text-red-400 text-center">{error}</Text>
+            </View>
+          )}
 
           <TouchableOpacity
             className={`bg-indigo-500 rounded-xl p-4 items-center mt-2 ${
