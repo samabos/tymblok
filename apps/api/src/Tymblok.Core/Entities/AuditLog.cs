@@ -18,12 +18,16 @@ public class AuditLog : BaseEntity
 public static class AuditAction
 {
     public const string Register = "user.register";
+    public const string RegisterExternal = "user.register_external";
     public const string Login = "user.login";
     public const string LoginFailed = "user.login_failed";
+    public const string LoginExternal = "user.login_external";
     public const string Logout = "user.logout";
     public const string TokenRefresh = "user.token_refresh";
     public const string TokenRefreshFailed = "user.token_refresh_failed";
     public const string PasswordChange = "user.password_change";
+    public const string ExternalLoginLinked = "user.external_login_linked";
+    public const string ExternalLoginUnlinked = "user.external_login_unlinked";
 
     public const string Create = "create";
     public const string Update = "update";

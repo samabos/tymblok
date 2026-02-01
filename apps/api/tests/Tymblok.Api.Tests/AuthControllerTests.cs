@@ -125,4 +125,54 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Fact]
+    public async Task ExternalLogin_WithInvalidProvider_ReturnsBadRequest()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/auth/external/invalidprovider");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<ApiError>();
+        Assert.NotNull(result);
+        Assert.Equal("INVALID_PROVIDER", result.Error.Code);
+    }
+
+    [Fact]
+    public async Task GetLinkedProviders_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/auth/external/providers");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExternalLogin_ValidProviderNotConfigured_ReturnsError()
+    {
+        // Act - Request for Google (not configured in test environment)
+        var response = await _client.GetAsync("/api/auth/external/google");
+
+        // Assert - In test environment without OAuth configured,
+        // we expect an error (500 or redirect to error)
+        // This validates the endpoint exists and handles unconfigured providers
+        Assert.True(
+            response.StatusCode == HttpStatusCode.InternalServerError ||
+            response.StatusCode == HttpStatusCode.BadRequest ||
+            response.StatusCode == HttpStatusCode.Redirect,
+            $"Expected error status for unconfigured OAuth, got {response.StatusCode}");
+    }
+
+    [Fact]
+    public async Task UnlinkExternalProvider_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Act
+        var response = await _client.DeleteAsync("/api/auth/external/link/google");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }

@@ -358,4 +358,211 @@ public class AuthService : IAuthService
 
         return false;
     }
+
+    public async Task<AuthResult> ExternalLoginAsync(
+        string provider,
+        string providerKey,
+        string? email,
+        string? name,
+        string? avatarUrl,
+        string? ipAddress = null)
+    {
+        // 1. Check if this external login already exists
+        var existingUser = await _userManager.FindByLoginAsync(provider, providerKey);
+
+        if (existingUser != null)
+        {
+            // User has logged in with this provider before - just log them in
+            return await CreateAuthResultForExternalLoginAsync(existingUser, ipAddress);
+        }
+
+        // 2. Check if a user with this email already exists
+        ApplicationUser? user = null;
+        if (!string.IsNullOrEmpty(email))
+        {
+            user = await _userManager.FindByEmailAsync(email);
+        }
+
+        if (user != null)
+        {
+            // Link this external login to existing account
+            var loginInfo = new UserLoginInfo(provider, providerKey, provider);
+            var addLoginResult = await _userManager.AddLoginAsync(user, loginInfo);
+
+            if (!addLoginResult.Succeeded)
+            {
+                var errors = string.Join(", ", addLoginResult.Errors.Select(e => e.Description));
+                throw new AuthException("EXTERNAL_LOGIN_FAILED", $"Failed to link account: {errors}");
+            }
+
+            // Audit: linked external account
+            await _auditService.LogAuthEventAsync(
+                AuditAction.ExternalLoginLinked,
+                user.Id,
+                email,
+                ipAddress);
+
+            return await CreateAuthResultForExternalLoginAsync(user, ipAddress);
+        }
+
+        // 3. Create new user with external login
+        user = new ApplicationUser
+        {
+            Email = email,
+            UserName = email ?? $"{provider}_{providerKey}",
+            Name = name ?? "User",
+            AvatarUrl = avatarUrl,
+            EmailConfirmed = true // OAuth emails are verified by provider
+        };
+
+        var createResult = await _userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
+        {
+            var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+            throw new AuthException("EXTERNAL_LOGIN_FAILED", $"Failed to create user: {errors}");
+        }
+
+        // Add external login
+        var newLoginInfo = new UserLoginInfo(provider, providerKey, provider);
+        await _userManager.AddLoginAsync(user, newLoginInfo);
+
+        // Ensure default role exists and assign
+        if (!await _roleManager.RoleExistsAsync(RoleNames.ServiceUser))
+        {
+            await _roleManager.CreateAsync(new ApplicationRole(RoleNames.ServiceUser, "Default user role"));
+        }
+        await _userManager.AddToRoleAsync(user, RoleNames.ServiceUser);
+
+        // Audit: new user via external login
+        await _auditService.LogAuthEventAsync(
+            AuditAction.RegisterExternal,
+            user.Id,
+            email,
+            ipAddress);
+
+        return await CreateAuthResultForExternalLoginAsync(user, ipAddress);
+    }
+
+    private async Task<AuthResult> CreateAuthResultForExternalLoginAsync(
+        ApplicationUser user,
+        string? ipAddress)
+    {
+        // Update last login
+        user.LastLoginAt = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+
+        // Get roles and generate tokens
+        var roles = await _userManager.GetRolesAsync(user);
+        var tokens = _tokenService.GenerateTokens(user, roles);
+
+        // Create refresh token
+        var refreshToken = new RefreshToken
+        {
+            UserId = user.Id,
+            Token = tokens.RefreshToken,
+            ExpiresAt = DateTime.UtcNow.AddDays(_settings.RefreshTokenExpiryDays),
+            CreatedByIp = ipAddress
+        };
+
+        await _repository.CreateRefreshTokenAsync(refreshToken);
+        await _repository.SaveChangesAsync();
+
+        return new AuthResult(tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresIn, user);
+    }
+
+    public async Task LinkExternalLoginAsync(
+        Guid userId,
+        string provider,
+        string providerKey,
+        string? email = null)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            throw new AuthException("USER_NOT_FOUND", "User not found");
+        }
+
+        // Check if this provider is already linked to another account
+        var existingUser = await _userManager.FindByLoginAsync(provider, providerKey);
+        if (existingUser != null && existingUser.Id != userId)
+        {
+            throw new AuthException("PROVIDER_ALREADY_LINKED",
+                "This external account is already linked to another user");
+        }
+
+        var loginInfo = new UserLoginInfo(provider, providerKey, provider);
+        var result = await _userManager.AddLoginAsync(user, loginInfo);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new AuthException("LINK_FAILED", errors);
+        }
+
+        await _auditService.LogAuthEventAsync(
+            AuditAction.ExternalLoginLinked,
+            user.Id,
+            user.Email,
+            email);
+    }
+
+    public async Task UnlinkExternalLoginAsync(Guid userId, string provider)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            throw new AuthException("USER_NOT_FOUND", "User not found");
+        }
+
+        var logins = await _userManager.GetLoginsAsync(user);
+        var login = logins.FirstOrDefault(l => l.LoginProvider.Equals(provider, StringComparison.OrdinalIgnoreCase));
+
+        if (login == null)
+        {
+            throw new AuthException("LOGIN_NOT_FOUND", "External login not found");
+        }
+
+        // Ensure user has another way to sign in
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        if (!hasPassword && logins.Count <= 1)
+        {
+            throw new AuthException("CANNOT_UNLINK",
+                "Cannot remove the only sign-in method. Add a password first.");
+        }
+
+        var result = await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new AuthException("UNLINK_FAILED", errors);
+        }
+
+        await _auditService.LogAuthEventAsync(
+            AuditAction.ExternalLoginUnlinked,
+            user.Id,
+            user.Email);
+    }
+
+    public async Task<IList<string>> GetLinkedProvidersAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return new List<string>();
+        }
+
+        var logins = await _userManager.GetLoginsAsync(user);
+        return logins.Select(l => l.LoginProvider).ToList();
+    }
+
+    public async Task<bool> HasPasswordAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return false;
+        }
+
+        return await _userManager.HasPasswordAsync(user);
+    }
 }

@@ -56,4 +56,40 @@ public interface IAuthService
     /// Reset password with token
     /// </summary>
     Task<bool> ResetPasswordAsync(string email, string token, string newPassword);
+
+    /// <summary>
+    /// Process external login callback and return tokens.
+    /// Links to existing account by email if found, otherwise creates new user.
+    /// </summary>
+    Task<AuthResult> ExternalLoginAsync(
+        string provider,
+        string providerKey,
+        string? email,
+        string? name,
+        string? avatarUrl,
+        string? ipAddress = null);
+
+    /// <summary>
+    /// Link an external provider to an existing user account
+    /// </summary>
+    Task LinkExternalLoginAsync(
+        Guid userId,
+        string provider,
+        string providerKey,
+        string? email = null);
+
+    /// <summary>
+    /// Unlink an external provider from a user account
+    /// </summary>
+    Task UnlinkExternalLoginAsync(Guid userId, string provider);
+
+    /// <summary>
+    /// Get all linked external providers for a user
+    /// </summary>
+    Task<IList<string>> GetLinkedProvidersAsync(Guid userId);
+
+    /// <summary>
+    /// Check if a user has a password set
+    /// </summary>
+    Task<bool> HasPasswordAsync(Guid userId);
 }
