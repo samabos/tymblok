@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import { colors, spacing, borderRadius, typography } from '@tymblok/theme';
+import { colors, spacing, borderRadius, typography, getLabelColor } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../primitives/Card';
 import { Button } from '../primitives/Button';
@@ -117,13 +117,8 @@ export function IntegrationCard({
 }
 
 function getIntegrationColor(type: IntegrationType): string {
-  const colors_map: Record<IntegrationType, string> = {
-    github: colors.taskType.github,
-    jira: colors.taskType.jira,
-    'google-calendar': colors.taskType.meeting,
-    slack: colors.source.slack,
-  };
-  return colors_map[type] || colors.indigo[500];
+  // Use centralized getLabelColor for consistency
+  return getLabelColor(type);
 }
 
 function getIntegrationEmoji(type: IntegrationType): string {

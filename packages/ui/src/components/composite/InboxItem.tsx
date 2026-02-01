@@ -9,7 +9,7 @@ import Animated, {
   Layout,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, typography, springConfig } from '@tymblok/theme';
+import { colors, spacing, borderRadius, typography, springConfig, getLabelColor } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Badge } from '../primitives/Badge';
 
@@ -50,11 +50,12 @@ export function InboxItem({
   onPress,
   style,
 }: InboxItemProps) {
-  const { theme } = useTheme();
+  const { isDark, theme } = useTheme();
   const themeColors = theme.colors;
   const scale = useSharedValue(1);
 
-  const sourceColor = getSourceColor(item.source);
+  // Mute the accent color for a softer appearance
+  const sourceColor = `${getSourceColor(item.source)}80`; // 50% opacity
   const sourceLabel = getSourceLabel(item.source);
 
   const handlePressIn = () => {
@@ -82,8 +83,11 @@ export function InboxItem({
       style={[
         styles.container,
         {
-          backgroundColor: themeColors.card,
+          backgroundColor: isDark
+            ? 'rgba(15, 23, 42, 0.5)'
+            : 'rgba(248, 250, 252, 0.6)',
           borderColor: themeColors.border,
+          opacity: 0.75,
         },
         animatedStyle,
         style,
@@ -99,7 +103,7 @@ export function InboxItem({
       <View style={styles.content}>
         <View style={styles.header}>
           <Text
-            style={[styles.title, { color: themeColors.text }]}
+            style={[styles.title, { color: themeColors.textMuted }]}
             numberOfLines={1}
           >
             {item.title}
@@ -110,7 +114,7 @@ export function InboxItem({
         </View>
 
         <View style={styles.meta}>
-          <Text style={[styles.source, { color: sourceColor }]}>
+          <Text style={[styles.source, { color: themeColors.textFaint }]}>
             {sourceLabel}
           </Text>
           <Text style={[styles.separator, { color: themeColors.textFaint }]}>
@@ -123,7 +127,7 @@ export function InboxItem({
 
         {item.description && (
           <Text
-            style={[styles.description, { color: themeColors.textMuted }]}
+            style={[styles.description, { color: themeColors.textFaint }]}
             numberOfLines={2}
           >
             {item.description}
@@ -168,15 +172,8 @@ export function InboxItem({
 }
 
 function getSourceColor(source: InboxSource): string {
-  const sourceColors: Record<InboxSource, string> = {
-    'google-drive': colors.source.googleDrive,
-    jira: colors.source.jira,
-    calendar: colors.source.calendar,
-    github: colors.source.github,
-    slack: colors.source.slack,
-    manual: colors.source.manual,
-  };
-  return sourceColors[source] || colors.indigo[500];
+  // Use centralized getLabelColor for consistency across all components
+  return getLabelColor(source);
 }
 
 function getSourceLabel(source: InboxSource): string {
@@ -242,9 +239,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },

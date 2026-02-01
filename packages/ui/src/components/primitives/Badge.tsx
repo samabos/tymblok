@@ -117,39 +117,40 @@ export function Badge({
 }
 
 function getVariantStyles(variant: BadgeVariant, isDark: boolean) {
+  // Use centralized label colors for consistency
   const variants = {
     github: {
-      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
-      textColor: colors.taskType.github,
-      dotColor: colors.taskType.github,
+      backgroundColor: isDark ? `${colors.label.github}26` : `${colors.label.github}1A`,
+      textColor: colors.label.github,
+      dotColor: colors.label.github,
     },
     jira: {
-      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)',
-      textColor: colors.taskType.jira,
-      dotColor: colors.taskType.jira,
+      backgroundColor: isDark ? `${colors.label.jira}26` : `${colors.label.jira}1A`,
+      textColor: colors.label.jira,
+      dotColor: colors.label.jira,
     },
     meeting: {
-      backgroundColor: isDark ? 'rgba(168, 85, 247, 0.15)' : 'rgba(168, 85, 247, 0.1)',
-      textColor: colors.taskType.meeting,
-      dotColor: colors.taskType.meeting,
+      backgroundColor: isDark ? `${colors.label.meeting}26` : `${colors.label.meeting}1A`,
+      textColor: colors.label.meeting,
+      dotColor: colors.label.meeting,
     },
     focus: {
-      backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
-      textColor: colors.taskType.focus,
-      dotColor: colors.taskType.focus,
+      backgroundColor: isDark ? `${colors.label.focus}26` : `${colors.label.focus}1A`,
+      textColor: colors.label.focus,
+      dotColor: colors.label.focus,
     },
     urgent: {
-      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+      backgroundColor: isDark ? `${colors.status.urgent}26` : `${colors.status.urgent}1A`,
       textColor: colors.status.urgent,
       dotColor: colors.status.urgent,
     },
     live: {
-      backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)',
+      backgroundColor: isDark ? `${colors.status.live}26` : `${colors.status.live}1A`,
       textColor: colors.status.live,
       dotColor: colors.status.live,
     },
     done: {
-      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+      backgroundColor: isDark ? `${colors.status.done}26` : `${colors.status.done}1A`,
       textColor: colors.status.done,
       dotColor: colors.status.done,
     },

@@ -8,7 +8,8 @@ import Animated, {
   Layout,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, typography, layout, springConfig } from '@tymblok/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, typography, layout, springConfig, getLabelColor } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Badge } from '../primitives/Badge';
 import { Button } from '../primitives/Button';
@@ -29,39 +30,54 @@ export interface TaskCardData {
   urgent?: boolean;
   isNow?: boolean;
   progress?: number;
-  elapsed?: string;
 }
 
 export interface TaskCardProps {
   task: TaskCardData;
+  expanded?: boolean;
   onPress?: () => void;
+  onLongPress?: () => void;
   onExpand?: () => void;
   onComplete?: () => void;
-  onPause?: () => void;
+  onUndoComplete?: () => void;
+  onStart?: () => void;
   dragging?: boolean;
   style?: ViewStyle;
 }
 
 export function TaskCard({
   task,
+  expanded: externalExpanded,
   onPress,
+  onLongPress,
   onExpand,
   onComplete,
-  onPause,
+  onUndoComplete,
+  onStart,
   dragging = false,
   style,
 }: TaskCardProps) {
   const { isDark, theme } = useTheme();
   const themeColors = theme.colors;
-  const [expanded, setExpanded] = useState(false);
+  const [internalExpanded, setInternalExpanded] = useState(false);
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
-  const typeColor = getTypeColor(task.type);
+  // Use external expanded state if provided, otherwise use internal state
+  const expanded = externalExpanded !== undefined ? externalExpanded : internalExpanded;
+
+  // Mute the accent color for non-active tasks
+  const typeColor = task.completed
+    ? themeColors.textFaint
+    : task.isNow
+      ? getTypeColor(task.type)
+      : `${getTypeColor(task.type)}80`; // 50% opacity for scheduled
   const durationText = formatDuration(task.durationMinutes);
 
   const handlePress = () => {
-    setExpanded(!expanded);
+    if (externalExpanded === undefined) {
+      setInternalExpanded(!internalExpanded);
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress?.();
   };
@@ -83,19 +99,45 @@ export function TaskCard({
     ? { borderColor: colors.indigo[500], borderWidth: 2 }
     : { borderColor: themeColors.border, borderWidth: 1 };
 
+  const taskStatusLabel = task.completed
+    ? 'Completed'
+    : task.isNow
+      ? 'In progress'
+      : 'Scheduled';
+
+  const handleLongPress = () => {
+    if (onLongPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onLongPress();
+    }
+  };
+
   return (
     <AnimatedPressable
       onPress={handlePress}
+      onLongPress={handleLongPress}
+      delayLongPress={200}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
+      accessibilityLabel={`${task.title}. ${taskStatusLabel}. ${task.time}${task.endTime ? ` to ${task.endTime}` : ''}`}
+      accessibilityRole="button"
+      accessibilityHint={expanded ? 'Tap to collapse' : 'Tap to expand. Long press to drag.'}
+      accessibilityState={{ expanded }}
       style={[
         styles.container,
         {
           backgroundColor: task.completed
             ? isDark
-              ? 'rgba(15, 23, 42, 0.5)'
-              : 'rgba(248, 250, 252, 0.5)'
-            : themeColors.card,
+              ? 'rgba(15, 23, 42, 0.4)'
+              : 'rgba(248, 250, 252, 0.4)'
+            : task.isNow
+              ? isDark
+                ? 'rgba(99, 102, 241, 0.15)'
+                : 'rgba(99, 102, 241, 0.08)'
+              : isDark
+                ? 'rgba(15, 23, 42, 0.5)'
+                : 'rgba(248, 250, 252, 0.6)',
+          opacity: task.isNow ? 1 : task.completed ? 0.5 : 0.6,
         },
         cardBorderStyle,
         task.completed && styles.completed,
@@ -106,56 +148,85 @@ export function TaskCard({
       layout={Layout.springify()}
     >
       {/* Left accent bar */}
-      <View style={[styles.accentBar, { backgroundColor: typeColor }]} />
+      <View
+        style={[styles.accentBar, { backgroundColor: typeColor }]}
+        accessibilityElementsHidden
+      />
 
       <View style={styles.content}>
         {/* Header row */}
         <View style={styles.headerRow}>
-          <View style={styles.timeContainer}>
-            <Text
-              style={[
-                styles.time,
-                { color: themeColors.text },
-                task.completed && styles.completedText,
-              ]}
-            >
-              {task.time}
-            </Text>
+          <View style={styles.timeContainer} accessibilityLabel={`${durationText ? `Duration: ${durationText}` : ''}${task.time ? `, Time: ${task.time}` : ''}`}>
             {durationText && (
+              <Text
+                style={[
+                  styles.time,
+                  {
+                    color: task.completed
+                      ? themeColors.textFaint
+                      : task.isNow
+                        ? themeColors.text
+                        : themeColors.textMuted,
+                  },
+                  task.completed && styles.completedText,
+                ]}
+                accessibilityElementsHidden
+              >
+                {durationText}
+              </Text>
+            )}
+            {task.time && (
               <Text
                 style={[
                   styles.duration,
                   { color: themeColors.textFaint },
                   task.completed && styles.completedText,
                 ]}
+                accessibilityElementsHidden
               >
-                {durationText}
+                {task.time}
               </Text>
             )}
           </View>
 
-          <View style={styles.badges}>
-            <Badge
-              variant={task.type as any}
-              size="sm"
-              label={getTypeLabel(task.type)}
-            />
-            {task.urgent && (
+          <View style={styles.badges} accessibilityRole="text">
+            <View accessibilityLabel={`Type: ${getTypeLabel(task.type)}`}>
               <Badge
-                variant="urgent"
+                variant={task.completed || !task.isNow ? 'default' : (task.type as 'github' | 'jira' | 'meeting' | 'focus')}
                 size="sm"
-                label="Urgent"
-                style={{ marginLeft: spacing[1] }}
+                label={getTypeLabel(task.type)}
               />
+            </View>
+            {task.completed && (
+              <View accessibilityLabel="Status: Done">
+                <Badge
+                  variant="default"
+                  size="sm"
+                  label="Done"
+                  style={{ marginLeft: spacing[1] }}
+                />
+              </View>
             )}
-            {task.isNow && (
-              <Badge
-                variant="live"
-                size="sm"
-                label="Live"
-                pulse
-                style={{ marginLeft: spacing[1] }}
-              />
+            {!task.completed && task.urgent && (
+              <View accessibilityLabel="Priority: Urgent">
+                <Badge
+                  variant="urgent"
+                  size="sm"
+                  label="Urgent"
+                  style={{ marginLeft: spacing[1] }}
+                />
+              </View>
+            )}
+            {!task.completed && task.isNow && (
+              <View accessibilityLabel="Status: In progress">
+                <Badge
+                  variant="live"
+                  size="sm"
+                  label="Live"
+                  pulse
+                  style={{ marginLeft: spacing[1] }}
+                />
+              </View>
             )}
           </View>
         </View>
@@ -164,10 +235,17 @@ export function TaskCard({
         <Text
           style={[
             styles.title,
-            { color: themeColors.text },
+            {
+              color: task.completed
+                ? themeColors.textFaint
+                : task.isNow
+                  ? themeColors.text
+                  : themeColors.textMuted,
+            },
             task.completed && styles.completedText,
           ]}
           numberOfLines={2}
+          accessibilityRole="header"
         >
           {task.title}
         </Text>
@@ -177,113 +255,163 @@ export function TaskCard({
           <Text
             style={[
               styles.subtitle,
-              { color: themeColors.textMuted },
+              {
+                color: task.completed
+                  ? themeColors.textFaint
+                  : task.isNow
+                    ? themeColors.textMuted
+                    : themeColors.textFaint,
+              },
               task.completed && styles.completedText,
             ]}
             numberOfLines={1}
+            accessibilityRole="text"
           >
             {task.subtitle}
           </Text>
         )}
 
         {/* Expanded content */}
-        {expanded && !task.completed && (
+        {expanded && (
           <Animated.View
             entering={FadeIn.duration(200)}
             style={styles.expandedContent}
           >
-            {task.elapsed && (
-              <View style={styles.elapsedContainer}>
-                <Text style={[styles.elapsedLabel, { color: themeColors.textMuted }]}>
-                  Elapsed
-                </Text>
-                <Text style={[styles.elapsedTime, { color: themeColors.text }]}>
-                  {task.elapsed}
-                </Text>
-              </View>
-            )}
-
-            {task.progress !== undefined && (
-              <View style={styles.progressContainer}>
-                <View
-                  style={[styles.progressBar, { backgroundColor: themeColors.input }]}
-                >
+            {/* Progress bar as divider */}
+            <View
+              style={styles.progressDivider}
+              accessibilityLabel={
+                !task.completed && task.isNow && task.progress !== undefined
+                  ? `Progress: ${task.progress} percent${task.progress > 100 ? ', over time' : ''}`
+                  : undefined
+              }
+              accessibilityRole={!task.completed && task.isNow ? 'progressbar' : undefined}
+              accessibilityValue={
+                !task.completed && task.isNow && task.progress !== undefined
+                  ? { min: 0, max: 100, now: Math.min(task.progress, 100) }
+                  : undefined
+              }
+            >
+              <View
+                style={[styles.progressBar, { backgroundColor: themeColors.input }]}
+              >
+                {!task.completed && task.isNow && task.progress !== undefined && (
                   <View
                     style={[
                       styles.progressFill,
                       {
-                        width: `${task.progress}%`,
-                        backgroundColor: colors.indigo[500],
+                        width: `${Math.min(task.progress, 100)}%`,
+                        backgroundColor: task.progress > 100
+                          ? colors.status.urgent
+                          : task.progress > 80
+                            ? colors.label.focus
+                            : colors.indigo[500],
                       },
                     ]}
                   />
-                </View>
-                <Text style={[styles.progressText, { color: themeColors.textMuted }]}>
+                )}
+              </View>
+              {!task.completed && task.isNow && task.progress !== undefined && (
+                <Text
+                  style={[
+                    styles.progressText,
+                    {
+                      color: task.progress > 100
+                        ? colors.status.urgent
+                        : themeColors.textMuted,
+                    },
+                  ]}
+                >
                   {task.progress}%
                 </Text>
-              </View>
-            )}
+              )}
+            </View>
 
             <View style={styles.actions}>
-              {onPause && (
-                <Button variant="secondary" size="sm" onPress={onPause}>
-                  {task.isNow ? 'Pause' : 'Start'}
-                </Button>
-              )}
-              {onComplete && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onPress={onComplete}
-                  style={{ marginLeft: spacing[2] }}
-                >
-                  Complete
-                </Button>
-              )}
+              {/* Left side - expand/more button */}
+              <View style={styles.actionsLeft}>
+                {!task.completed && onExpand && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      onExpand();
+                    }}
+                    accessibilityLabel="Open task details"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons
+                      name="expand-outline"
+                      size={16}
+                      color={themeColors.text}
+                    />
+                  </Button>
+                )}
+              </View>
+
+              {/* Right side - start/complete/undo buttons */}
+              <View style={styles.actionsRight}>
+                {!task.completed && !task.isNow && onStart && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onPress={onStart}
+                    accessibilityLabel="Start task"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons
+                      name="play"
+                      size={16}
+                      color={themeColors.text}
+                    />
+                  </Button>
+                )}
+                {!task.completed && onComplete && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onPress={onComplete}
+                    style={{ marginLeft: spacing[2] }}
+                    accessibilityLabel="Mark task as complete"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons
+                      name="checkmark"
+                      size={16}
+                      color={colors.white}
+                    />
+                  </Button>
+                )}
+                {task.completed && onUndoComplete && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onPress={onUndoComplete}
+                    accessibilityLabel="Undo completion"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons
+                      name="arrow-undo"
+                      size={16}
+                      color={themeColors.text}
+                    />
+                  </Button>
+                )}
+              </View>
             </View>
           </Animated.View>
         )}
 
-        {/* Completed checkmark */}
-        {task.completed && (
-          <View style={styles.checkmark}>
-            <View
-              style={[styles.checkCircle, { backgroundColor: colors.status.done }]}
-            >
-              <Text style={styles.checkIcon}>✓</Text>
-            </View>
-          </View>
-        )}
       </View>
 
-      {/* Expand button */}
-      {onExpand && !task.completed && (
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onExpand();
-          }}
-          style={styles.expandButton}
-          hitSlop={8}
-        >
-          <Text style={[styles.expandIcon, { color: themeColors.textFaint }]}>
-            ⤢
-          </Text>
-        </Pressable>
-      )}
     </AnimatedPressable>
   );
 }
 
 function getTypeColor(type: TaskType): string {
-  const typeColors: Record<TaskType, string> = {
-    github: colors.taskType.github,
-    jira: colors.taskType.jira,
-    meeting: colors.taskType.meeting,
-    focus: colors.taskType.focus,
-    manual: colors.indigo[500],
-  };
-  return typeColors[type] || colors.indigo[500];
+  // Use centralized getLabelColor for consistency across all components
+  return getLabelColor(type);
 }
 
 function getTypeLabel(type: TaskType): string {
@@ -352,7 +480,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
   },
   completed: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   completedText: {
     textDecorationLine: 'line-through',
@@ -360,25 +488,8 @@ const styles = StyleSheet.create({
   },
   expandedContent: {
     marginTop: spacing[4],
-    paddingTop: spacing[4],
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
-  elapsedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  elapsedLabel: {
-    fontSize: typography.sizes.sm,
-    marginRight: spacing[2],
-  },
-  elapsedTime: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold,
-    fontFamily: typography.fonts.mono,
-  },
-  progressContainer: {
+  progressDivider: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing[3],
@@ -401,32 +512,15 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  checkmark: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  checkIcon: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: typography.weights.bold,
+  actionsLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  expandButton: {
-    position: 'absolute',
-    right: spacing[3],
-    top: spacing[3],
-    padding: spacing[1],
-  },
-  expandIcon: {
-    fontSize: 16,
+  actionsRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

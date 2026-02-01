@@ -17,13 +17,23 @@ export const colors = {
     600: '#9333ea',
   },
 
-  // Semantic - Task Types
-  taskType: {
-    github: '#10b981', // emerald-500
-    jira: '#3b82f6', // blue-500
-    meeting: '#a855f7', // purple-500
-    focus: '#f59e0b', // amber-500
-    manual: '#6b7280', // gray-500
+  /**
+   * Unified Label Colors
+   * Single source of truth for all label/category/type colors.
+   * Used by TaskCard, InboxItem, Badge, and all other components.
+   * Backend returns the label key, frontend maps to color here.
+   */
+  label: {
+    github: '#10b981', // emerald-500 - code/PRs
+    jira: '#3b82f6', // blue-500 - tickets
+    meeting: '#a855f7', // purple-500 - calendar events
+    calendar: '#a855f7', // purple-500 - alias for meeting
+    focus: '#f59e0b', // amber-500 - deep work
+    slack: '#ec4899', // pink-500 - messages
+    googleDrive: '#f59e0b', // amber-500 - documents
+    linear: '#6366f1', // indigo-500 - issues
+    notion: '#6b7280', // gray-500 - docs
+    manual: '#6366f1', // indigo-500 - user-created
   },
 
   // Status Colors
@@ -42,14 +52,27 @@ export const colors = {
     low: '#22c55e', // green-500
   },
 
-  // Source Colors (for integrations)
+  /**
+   * @deprecated Use colors.label instead for consistency
+   */
+  taskType: {
+    github: '#10b981',
+    jira: '#3b82f6',
+    meeting: '#a855f7',
+    focus: '#f59e0b',
+    manual: '#6b7280',
+  },
+
+  /**
+   * @deprecated Use colors.label instead for consistency
+   */
   source: {
-    googleDrive: '#f59e0b', // Yellow/Amber
-    jira: '#3b82f6', // Blue
-    github: '#6b7280', // Gray (adapts to dark/light)
-    calendar: '#a855f7', // Purple
-    slack: '#ec4899', // Pink
-    manual: '#6366f1', // Indigo
+    googleDrive: '#f59e0b',
+    jira: '#3b82f6',
+    github: '#10b981', // Updated to match label.github
+    calendar: '#a855f7',
+    slack: '#ec4899',
+    manual: '#6366f1',
   },
 
   // Dark Theme Palette
@@ -101,7 +124,38 @@ export const colors = {
 // Type exports
 export type Colors = typeof colors;
 export type ThemeColors = typeof colors.dark | typeof colors.light;
-export type TaskTypeColor = keyof typeof colors.taskType;
+export type LabelColor = keyof typeof colors.label;
 export type StatusColor = keyof typeof colors.status;
 export type PriorityColor = keyof typeof colors.priority;
+
+/** @deprecated Use LabelColor instead */
+export type TaskTypeColor = keyof typeof colors.taskType;
+/** @deprecated Use LabelColor instead */
 export type SourceColor = keyof typeof colors.source;
+
+/**
+ * Get the color for a label/category/type.
+ * This is the single source of truth for label-to-color mapping.
+ * @param label - The label key (e.g., 'github', 'jira', 'meeting')
+ * @param fallback - Fallback color if label not found (defaults to indigo-500)
+ */
+export function getLabelColor(label: string, fallback = colors.indigo[500]): string {
+  const normalizedLabel = label.toLowerCase().replace(/[-_\s]/g, '') as LabelColor;
+
+  // Handle common aliases
+  const aliasMap: Record<string, LabelColor> = {
+    'googledrive': 'googleDrive',
+    'google-drive': 'googleDrive',
+    'pr': 'github',
+    'pullrequest': 'github',
+    'issue': 'jira',
+    'ticket': 'jira',
+    'event': 'meeting',
+    'call': 'meeting',
+    'deepwork': 'focus',
+    'work': 'focus',
+  };
+
+  const mappedLabel = aliasMap[normalizedLabel] || normalizedLabel;
+  return colors.label[mappedLabel as LabelColor] || fallback;
+}

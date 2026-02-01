@@ -86,7 +86,7 @@ export function FocusScoreCard({ score, style }: FocusScoreCardProps) {
 
   const getScoreColor = () => {
     if (score >= 80) return colors.status.done;
-    if (score >= 60) return colors.taskType.focus;
+    if (score >= 60) return colors.label.focus;
     if (score >= 40) return colors.priority.medium;
     return colors.status.urgent;
   };
@@ -132,8 +132,8 @@ export function CategoryBreakdown({ categories, style }: CategoryBreakdownProps)
   const categoryColors = [
     colors.indigo[500],
     colors.purple[500],
-    colors.taskType.github,
-    colors.taskType.focus,
+    colors.label.github,
+    colors.label.focus,
   ];
 
   return (
