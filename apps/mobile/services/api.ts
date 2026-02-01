@@ -1,7 +1,20 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+// Android emulator uses 10.0.2.2 to reach host machine's localhost
+const getDefaultApiUrl = () => {
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:5000';
+  }
+  return 'http://localhost:5000';
+};
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || getDefaultApiUrl();
+
+// Log the API URL at startup for debugging
+console.log('[API] Using API URL:', API_URL);
+console.log('[API] Platform:', Platform.OS);
+console.log('[API] Env var:', process.env.EXPO_PUBLIC_API_URL);
 
 export interface ApiError {
   code: string;
@@ -152,6 +165,10 @@ interface RequestOptions {
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {}, skipAuth = false } = options;
 
+  const url = `${API_URL}/api${endpoint}`;
+  console.log(`[API] ${method} ${url}`);
+  if (body) console.log('[API] Body:', JSON.stringify(body));
+
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     ...headers,
@@ -174,7 +191,8 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     config.body = JSON.stringify(body);
   }
 
-  let response = await fetch(`${API_URL}/api${endpoint}`, config);
+  let response = await fetch(url, config);
+  console.log(`[API] Response status: ${response.status}`);
 
   // Handle 401 - try to refresh token
   if (response.status === 401 && !skipAuth) {

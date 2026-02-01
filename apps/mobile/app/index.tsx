@@ -1,17 +1,30 @@
+import "../global.css"
 import { useEffect, useState, useCallback } from 'react';
 import { Redirect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../stores/authStore';
 import { useBiometricAuth } from '../hooks/useBiometricAuth';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { BiometricLockScreen } from '../components/BiometricLockScreen';
+import { OnboardingScreen } from '../components/OnboardingScreen';
 
-type AppState = 'loading' | 'biometric_pending' | 'biometric_failed' | 'authenticated' | 'unauthenticated';
+const ONBOARDING_KEY = 'tymblok-onboarding-completed';
+
+type AppState = 'loading' | 'onboarding' | 'biometric_pending' | 'biometric_failed' | 'authenticated' | 'unauthenticated';
 
 function useAppState() {
   const { isAuthenticated, isLoading, setLoading } = useAuthStore();
   const { isEnabled, authenticate, biometricType } = useBiometricAuth();
   const [biometricPassed, setBiometricPassed] = useState(false);
   const [biometricFailed, setBiometricFailed] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
+
+  // Check if onboarding has been completed
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY).then((value: string | null) => {
+      setOnboardingCompleted(value === 'true');
+    });
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 500);
@@ -34,8 +47,14 @@ function useAppState() {
     }
   }, [isLoading, isAuthenticated, isEnabled, biometricPassed, biometricFailed, performBiometricAuth]);
 
+  const completeOnboarding = useCallback(async () => {
+    await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+    setOnboardingCompleted(true);
+  }, []);
+
   const getState = (): AppState => {
-    if (isLoading) return 'loading';
+    if (isLoading || onboardingCompleted === null) return 'loading';
+    if (!onboardingCompleted) return 'onboarding';
     if (!isAuthenticated) return 'unauthenticated';
     if (isEnabled && biometricFailed) return 'biometric_failed';
     if (isEnabled && !biometricPassed) return 'biometric_pending';
@@ -46,15 +65,18 @@ function useAppState() {
     state: getState(),
     biometricType,
     retryBiometric: performBiometricAuth,
+    completeOnboarding,
   };
 }
 
 export default function Index() {
-  const { state, biometricType, retryBiometric } = useAppState();
+  const { state, biometricType, retryBiometric, completeOnboarding } = useAppState();
 
   switch (state) {
     case 'loading':
       return <LoadingScreen />;
+    case 'onboarding':
+      return <OnboardingScreen onComplete={completeOnboarding} />;
     case 'biometric_pending':
       return <LoadingScreen message="Verifying identity..." />;
     case 'biometric_failed':
