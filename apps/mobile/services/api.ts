@@ -191,7 +191,14 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     config.body = JSON.stringify(body);
   }
 
-  let response = await fetch(url, config);
+  let response: Response;
+  try {
+    response = await fetch(url, config);
+  } catch (err) {
+    // Network error - no response from server
+    console.error('[API] Network error:', err);
+    throw new FetchError('Unable to connect. Please check your internet connection.', 0);
+  }
   console.log(`[API] Response status: ${response.status}`);
 
   // Handle 401 - try to refresh token
@@ -207,10 +214,15 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
     if (newToken) {
       requestHeaders['Authorization'] = `Bearer ${newToken}`;
-      response = await fetch(`${API_URL}/api${endpoint}`, {
-        ...config,
-        headers: requestHeaders,
-      });
+      try {
+        response = await fetch(`${API_URL}/api${endpoint}`, {
+          ...config,
+          headers: requestHeaders,
+        });
+      } catch (err) {
+        console.error('[API] Network error on retry:', err);
+        throw new FetchError('Unable to connect. Please check your internet connection.', 0);
+      }
     } else {
       throw new FetchError('Session expired', 401);
     }
@@ -219,11 +231,24 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new FetchError(
-      data?.error?.message || `Request failed with status ${response.status}`,
-      response.status,
-      data
-    );
+    // Extract error message from different API response formats
+    let errorMessage = 'Something went wrong. Please try again.';
+
+    if (data?.error?.message) {
+      // Our custom API error format: { error: { code, message } }
+      errorMessage = data.error.message;
+    } else if (data?.errors) {
+      // .NET validation error format: { errors: { field: [messages] } }
+      const firstField = Object.keys(data.errors)[0];
+      if (firstField && data.errors[firstField]?.[0]) {
+        errorMessage = data.errors[firstField][0];
+      }
+    } else if (data?.title) {
+      // .NET ProblemDetails format: { title: "..." }
+      errorMessage = data.title;
+    }
+
+    throw new FetchError(errorMessage, response.status, data);
   }
 
   return data;
