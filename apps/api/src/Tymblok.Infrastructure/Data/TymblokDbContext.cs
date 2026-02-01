@@ -1,13 +1,16 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Tymblok.Core.Entities;
 
 namespace Tymblok.Infrastructure.Data;
 
-public class TymblokDbContext : DbContext
+public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid,
+    IdentityUserClaim<Guid>, IdentityUserRole<Guid>, IdentityUserLogin<Guid>,
+    IdentityRoleClaim<Guid>, IdentityUserToken<Guid>>
 {
     public TymblokDbContext(DbContextOptions<TymblokDbContext> options) : base(options) { }
 
-    public DbSet<User> Users => Set<User>();
     public DbSet<TimeBlock> TimeBlocks => Set<TimeBlock>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Integration> Integrations => Set<Integration>();
@@ -20,8 +23,11 @@ public class TymblokDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Configure Identity tables with custom names
+        ConfigureIdentityTables(modelBuilder);
+
         // Apply configurations
-        ConfigureUser(modelBuilder);
+        ConfigureApplicationUser(modelBuilder);
         ConfigureTimeBlock(modelBuilder);
         ConfigureCategory(modelBuilder);
         ConfigureIntegration(modelBuilder);
@@ -31,25 +37,28 @@ public class TymblokDbContext : DbContext
         ConfigureAuditLog(modelBuilder);
 
         // Global query filter for soft deletes
-        modelBuilder.Entity<User>()
+        modelBuilder.Entity<ApplicationUser>()
             .HasQueryFilter(u => u.DeletedAt == null);
     }
 
-    private static void ConfigureUser(ModelBuilder modelBuilder)
+    private static void ConfigureIdentityTables(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>(entity =>
+        // Rename Identity tables to follow our naming convention
+        modelBuilder.Entity<ApplicationUser>().ToTable("users");
+        modelBuilder.Entity<ApplicationRole>().ToTable("roles");
+        modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("user_roles");
+        modelBuilder.Entity<IdentityUserClaim<Guid>>().ToTable("user_claims");
+        modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("user_logins");
+        modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("role_claims");
+        modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("user_tokens");
+    }
+
+    private static void ConfigureApplicationUser(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ApplicationUser>(entity =>
         {
-            entity.ToTable("users");
-            entity.HasKey(e => e.Id);
-
+            // Email configuration (Identity already has this, but we set max length)
             entity.Property(e => e.Email)
-                .IsRequired()
-                .HasMaxLength(255);
-
-            entity.HasIndex(e => e.Email).IsUnique();
-
-            entity.Property(e => e.PasswordHash)
-                .IsRequired()
                 .HasMaxLength(255);
 
             entity.Property(e => e.Name)
@@ -369,6 +378,15 @@ public class TymblokDbContext : DbContext
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+        {
+            if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        // Also update ApplicationUser timestamps
+        foreach (var entry in ChangeTracker.Entries<ApplicationUser>())
         {
             if (entry.State == EntityState.Modified)
             {

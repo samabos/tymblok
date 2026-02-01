@@ -3,7 +3,7 @@ namespace Tymblok.Core.Entities;
 public class InboxItem : BaseEntity
 {
     public Guid UserId { get; set; }
-    public User User { get; set; } = null!;
+    public ApplicationUser User { get; set; } = null!;
 
     public Guid? IntegrationId { get; set; }
     public Integration? Integration { get; set; }

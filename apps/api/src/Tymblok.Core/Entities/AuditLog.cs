@@ -12,7 +12,7 @@ public class AuditLog : BaseEntity
     public string? UserAgent { get; set; }
 
     // Navigation
-    public User? User { get; set; }
+    public ApplicationUser? User { get; set; }
 }
 
 public static class AuditAction
