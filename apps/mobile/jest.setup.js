@@ -60,5 +60,14 @@ jest.mock('./components/icons', () => {
   };
 });
 
+// Mock @expo/vector-icons
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  return {
+    Ionicons: ({ name, ...props }) => React.createElement(Text, props, name),
+  };
+});
+
 // Silence console warnings in tests
 jest.spyOn(console, 'warn').mockImplementation(() => {});

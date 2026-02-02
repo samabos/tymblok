@@ -8,6 +8,7 @@ export interface User {
   email: string;
   name: string;
   avatar_url: string | null;
+  email_verified?: boolean;
   timezone: string;
   working_hours_start: string;
   working_hours_end: string;

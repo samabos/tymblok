@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../../stores/authStore';
-import { authService } from '../../services/authService';
+import { authService, OAuthProvider } from '../../services/authService';
 import { TymblokLogo } from '../../components/icons';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -57,6 +60,28 @@ export default function LoginScreen() {
     }
   };
 
+  const handleOAuthLogin = async (provider: OAuthProvider) => {
+    setError(null);
+    setOauthLoading(provider);
+
+    try {
+      const url = authService.getExternalLoginUrl(provider);
+      console.log(`[Login] Opening OAuth for ${provider}:`, url);
+
+      // Open the OAuth URL in system browser
+      // The browser will redirect back to our app via deep link
+      await WebBrowser.openAuthSessionAsync(url, 'tymblok://auth/callback');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : `${provider} login failed`;
+      setError(message);
+      console.error(`[Login] ${provider} OAuth error:`, err);
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
+  const isAnyLoading = isLoading || oauthLoading !== null;
+
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
       <View className="flex-1 justify-center p-6">
@@ -79,7 +104,7 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
-              editable={!isLoading}
+              editable={!isAnyLoading}
             />
           </View>
 
@@ -92,7 +117,7 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              editable={!isLoading}
+              editable={!isAnyLoading}
             />
           </View>
 
@@ -104,10 +129,10 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             className={`bg-indigo-500 rounded-xl p-4 items-center mt-2 ${
-              !email || !password || isLoading ? 'opacity-50' : ''
+              !email || !password || isAnyLoading ? 'opacity-50' : ''
             }`}
             onPress={handleLogin}
-            disabled={!email || !password || isLoading}
+            disabled={!email || !password || isAnyLoading}
           >
             <Text className="text-white text-base font-semibold">
               {isLoading ? 'Signing in...' : 'Sign in'}
@@ -115,10 +140,46 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <Link href="/(auth)/forgot-password" asChild>
-            <Pressable className="mt-4 items-center">
+            <Pressable className="mt-2 items-center">
               <Text className="text-indigo-500 text-sm">Forgot password?</Text>
             </Pressable>
           </Link>
+
+          {/* Divider */}
+          <View className="flex-row items-center my-4">
+            <View className="flex-1 h-px bg-slate-700" />
+            <Text className="mx-4 text-slate-500 text-sm">or continue with</Text>
+            <View className="flex-1 h-px bg-slate-700" />
+          </View>
+
+          {/* OAuth Buttons */}
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              className={`flex-1 flex-row items-center justify-center gap-2 bg-slate-800 border border-slate-700 rounded-xl p-4 ${
+                isAnyLoading ? 'opacity-50' : ''
+              }`}
+              onPress={() => handleOAuthLogin('google')}
+              disabled={isAnyLoading}
+            >
+              <Ionicons name="logo-google" size={20} color="#fff" />
+              <Text className="text-white text-base font-medium">
+                {oauthLoading === 'google' ? 'Loading...' : 'Google'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className={`flex-1 flex-row items-center justify-center gap-2 bg-slate-800 border border-slate-700 rounded-xl p-4 ${
+                isAnyLoading ? 'opacity-50' : ''
+              }`}
+              onPress={() => handleOAuthLogin('github')}
+              disabled={isAnyLoading}
+            >
+              <Ionicons name="logo-github" size={20} color="#fff" />
+              <Text className="text-white text-base font-medium">
+                {oauthLoading === 'github' ? 'Loading...' : 'GitHub'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View className="flex-row justify-center mt-6">

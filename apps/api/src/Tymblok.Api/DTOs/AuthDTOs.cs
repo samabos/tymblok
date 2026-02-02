@@ -47,7 +47,8 @@ public record UserDto(
     string TextSize,
     bool EmailVerified,
     IList<string> Roles,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    IList<string>? LinkedProviders = null
 );
 
 public record AuthResponse(

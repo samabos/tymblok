@@ -1,3 +1,7 @@
+using AspNet.Security.OAuth.GitHub;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -77,7 +81,17 @@ public static class ServiceCollectionExtensions
         var jwtSettings = configuration.GetSection("Jwt");
         var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        // OAuth settings
+        var oauthSettings = configuration.GetSection("OAuth");
+        var googleSettings = oauthSettings.GetSection("Google");
+        var githubSettings = oauthSettings.GetSection("GitHub");
+
+        var authBuilder = services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -90,7 +104,44 @@ public static class ServiceCollectionExtensions
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
                 };
+            })
+            // Cookie scheme for OAuth intermediate state (not used for API auth)
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+            {
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
             });
+
+        // Add Google OAuth if configured
+        var googleClientId = googleSettings["ClientId"];
+        var googleClientSecret = googleSettings["ClientSecret"];
+        if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+        {
+            authBuilder.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+            {
+                options.ClientId = googleClientId;
+                options.ClientSecret = googleClientSecret;
+                options.Scope.Add("email");
+                options.Scope.Add("profile");
+                options.SaveTokens = true;
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            });
+        }
+
+        // Add GitHub OAuth if configured
+        var githubClientId = githubSettings["ClientId"];
+        var githubClientSecret = githubSettings["ClientSecret"];
+        if (!string.IsNullOrEmpty(githubClientId) && !string.IsNullOrEmpty(githubClientSecret))
+        {
+            authBuilder.AddGitHub(GitHubAuthenticationDefaults.AuthenticationScheme, options =>
+            {
+                options.ClientId = githubClientId;
+                options.ClientSecret = githubClientSecret;
+                options.Scope.Add("user:email");
+                options.SaveTokens = true;
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            });
+        }
 
         services.AddAuthorization();
 

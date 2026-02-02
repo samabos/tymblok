@@ -1,3 +1,8 @@
+using System.Security.Claims;
+using AspNet.Security.OAuth.GitHub;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Tymblok.Api.DTOs;
@@ -14,15 +19,18 @@ public class AuthController : ControllerBase
     private readonly IAuthService _authService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<AuthController> _logger;
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         IAuthService authService,
         UserManager<ApplicationUser> userManager,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        IConfiguration configuration)
     {
         _authService = authService;
         _userManager = userManager;
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
@@ -178,6 +186,212 @@ public class AuthController : ControllerBase
         {
             return NotFound(CreateErrorResponse(ex.Code, ex.Message));
         }
+    }
+
+    /// <summary>
+    /// Initiate external OAuth login (redirects to provider)
+    /// </summary>
+    [HttpGet("external/{provider}")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public IActionResult ExternalLogin(
+        string provider,
+        [FromQuery] string? returnUrl = null,
+        [FromQuery] bool mobile = false)
+    {
+        var normalizedProvider = provider.ToLowerInvariant() switch
+        {
+            "google" => GoogleDefaults.AuthenticationScheme,
+            "github" => GitHubAuthenticationDefaults.AuthenticationScheme,
+            _ => null
+        };
+
+        if (normalizedProvider == null)
+        {
+            return BadRequest(CreateErrorResponse("INVALID_PROVIDER",
+                "Invalid OAuth provider. Supported: google, github"));
+        }
+
+        // Build callback URL with state
+        var state = mobile ? "mobile" : "web";
+        var callbackUrl = Url.Action(nameof(ExternalLoginCallback), "Auth",
+            new { returnUrl, state }, Request.Scheme);
+
+        var properties = new AuthenticationProperties
+        {
+            RedirectUri = callbackUrl,
+            Items = { { "returnUrl", returnUrl ?? "/" }, { "mobile", mobile.ToString() } }
+        };
+
+        return Challenge(properties, normalizedProvider);
+    }
+
+    /// <summary>
+    /// OAuth callback endpoint - handles provider redirect
+    /// </summary>
+    [HttpGet("external/callback")]
+    public async Task<IActionResult> ExternalLoginCallback(
+        [FromQuery] string? returnUrl = null,
+        [FromQuery] string? state = null)
+    {
+        var ipAddress = GetIpAddress();
+        var isMobile = state == "mobile";
+
+        try
+        {
+            // Try to authenticate with each provider
+            AuthenticateResult? authenticateResult = null;
+            string? provider = null;
+
+            // Try Google first
+            var googleResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+            if (googleResult.Succeeded)
+            {
+                authenticateResult = googleResult;
+                provider = "google";
+            }
+            else
+            {
+                // Try GitHub
+                var githubResult = await HttpContext.AuthenticateAsync(GitHubAuthenticationDefaults.AuthenticationScheme);
+                if (githubResult.Succeeded)
+                {
+                    authenticateResult = githubResult;
+                    provider = "github";
+                }
+            }
+
+            if (authenticateResult == null || !authenticateResult.Succeeded || provider == null)
+            {
+                _logger.LogWarning("External auth failed | IP: {IpAddress}", ipAddress);
+                return RedirectWithError("AUTH_FAILED", "External authentication failed", isMobile, returnUrl);
+            }
+
+            var claims = authenticateResult.Principal?.Claims.ToList();
+
+            // Extract user info from claims
+            var providerKey = claims?.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(providerKey))
+            {
+                return RedirectWithError("MISSING_PROVIDER_KEY", "Could not get provider user ID", isMobile, returnUrl);
+            }
+
+            var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var name = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            var avatarUrl = claims?.FirstOrDefault(c => c.Type == "urn:github:avatar")?.Value
+                ?? claims?.FirstOrDefault(c => c.Type == "picture")?.Value;
+
+            // Process external login
+            var result = await _authService.ExternalLoginAsync(
+                provider,
+                providerKey,
+                email,
+                name,
+                avatarUrl,
+                ipAddress);
+
+            _logger.LogInformation("External login success | Provider: {Provider} | UserId: {UserId} | IP: {IpAddress}",
+                provider, result.User.Id, ipAddress);
+
+            // Return tokens based on client type
+            if (isMobile)
+            {
+                // Redirect to mobile app with deep link
+                var mobileScheme = _configuration["OAuth:MobileCallbackScheme"] ?? "tymblok";
+                var deepLink = $"{mobileScheme}://auth/callback" +
+                    $"?accessToken={Uri.EscapeDataString(result.AccessToken)}" +
+                    $"&refreshToken={Uri.EscapeDataString(result.RefreshToken)}" +
+                    $"&expiresIn={result.ExpiresIn}";
+                return Redirect(deepLink);
+            }
+            else
+            {
+                // For web: redirect with tokens in URL fragment (more secure)
+                var webCallbackUrl = returnUrl ?? _configuration["OAuth:WebCallbackUrl"] ?? "/";
+                var redirectUrl = $"{webCallbackUrl}#access_token={Uri.EscapeDataString(result.AccessToken)}" +
+                    $"&refresh_token={Uri.EscapeDataString(result.RefreshToken)}" +
+                    $"&expires_in={result.ExpiresIn}";
+                return Redirect(redirectUrl);
+            }
+        }
+        catch (AuthException ex)
+        {
+            _logger.LogWarning("External login failed | Code: {Code} | IP: {IpAddress}", ex.Code, ipAddress);
+            return RedirectWithError(ex.Code, ex.Message, isMobile, returnUrl);
+        }
+    }
+
+    /// <summary>
+    /// Unlink external provider from authenticated user account
+    /// </summary>
+    [HttpDelete("external/link/{provider}")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UnlinkExternalProvider(string provider)
+    {
+        var userId = GetUserId();
+        var ipAddress = GetIpAddress();
+
+        try
+        {
+            await _authService.UnlinkExternalLoginAsync(userId, provider);
+
+            _logger.LogInformation("External provider unlinked | Provider: {Provider} | UserId: {UserId} | IP: {IpAddress}",
+                provider, userId, ipAddress);
+
+            return Ok(WrapResponse(new MessageResponse($"{provider} account has been unlinked")));
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Get linked external providers for authenticated user
+    /// </summary>
+    [HttpGet("external/providers")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<IList<string>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLinkedProviders()
+    {
+        var userId = GetUserId();
+        var providers = await _authService.GetLinkedProvidersAsync(userId);
+        return Ok(WrapResponse(providers));
+    }
+
+    /// <summary>
+    /// Check if authenticated user has a password set
+    /// </summary>
+    [HttpGet("has-password")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> HasPassword()
+    {
+        var userId = GetUserId();
+        var hasPassword = await _authService.HasPasswordAsync(userId);
+        return Ok(WrapResponse(hasPassword));
+    }
+
+    private IActionResult RedirectWithError(string code, string message, bool isMobile, string? returnUrl)
+    {
+        if (isMobile)
+        {
+            var mobileScheme = _configuration["OAuth:MobileCallbackScheme"] ?? "tymblok";
+            return Redirect($"{mobileScheme}://auth/error?code={Uri.EscapeDataString(code)}&message={Uri.EscapeDataString(message)}");
+        }
+        else
+        {
+            var webCallbackUrl = returnUrl ?? _configuration["OAuth:WebCallbackUrl"] ?? "/";
+            return Redirect($"{webCallbackUrl}?error={Uri.EscapeDataString(code)}&message={Uri.EscapeDataString(message)}");
+        }
+    }
+
+    private Guid GetUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
     }
 
     private static AuthResponse CreateAuthResponse(AuthResult result, IList<string> roles)

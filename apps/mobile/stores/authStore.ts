@@ -13,6 +13,7 @@ interface AuthState {
   setAuth: (user: User, tokens: AuthTokens) => void;
   clearAuth: () => void;
   updateTokens: (tokens: AuthTokens) => void;
+  updateUser: (updates: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
 }
 
@@ -55,6 +56,11 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, tokens: null, isAuthenticated: false, isLoading: false }),
 
       updateTokens: (tokens) => set({ tokens }),
+
+      updateUser: (updates) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updates } : null,
+        })),
 
       setLoading: (isLoading) => set({ isLoading }),
     }),

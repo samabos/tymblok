@@ -29,6 +29,19 @@ export default function AuthLayout() {
           animation: 'slide_from_right',
         }}
       />
+      <Stack.Screen
+        name="callback"
+        options={{
+          animation: 'fade',
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
+        name="reset-password"
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
     </Stack>
   );
 }
