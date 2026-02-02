@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
               Check your email
             </Text>
             <Text className="text-base text-slate-400 text-center mt-2">
-              We've sent a password reset link to
+              {"We've sent a password reset link to"}
             </Text>
             <Text className="text-base text-white font-medium text-center mt-1">
               {email}
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
           </TouchableOpacity>
 
           <View className="flex-row justify-center items-center mt-6">
-            <Text className="text-slate-400 text-sm">Didn't receive the email? </Text>
+            <Text className="text-slate-400 text-sm">{"Didn't receive the email? "}</Text>
             <Pressable onPress={handleResend} disabled={isLoading}>
               <Text className="text-indigo-500 text-sm font-semibold">
                 {isLoading ? 'Sending...' : 'Click to resend'}
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
             Forgot password?
           </Text>
           <Text className="text-base text-slate-400 text-center mt-2">
-            No worries, we'll send you reset instructions.
+            {"No worries, we'll send you reset instructions."}
           </Text>
         </View>
 

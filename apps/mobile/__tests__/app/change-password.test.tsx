@@ -1,3 +1,5 @@
+import React from 'react';
+import { TouchableOpacity, Text } from 'react-native';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import ChangePasswordScreen from '../../app/change-password';
@@ -17,16 +19,16 @@ jest.mock('@tymblok/ui', () => ({
       },
     },
   }),
-  BackButton: ({ onPress }: { onPress: () => void }) => {
-    const React = require('react');
-    const { TouchableOpacity, Text } = require('react-native');
-    return React.createElement(
-      TouchableOpacity,
-      { onPress, testID: 'back-button' },
-      React.createElement(Text, null, 'Back')
-    );
-  },
+  BackButton: jest.fn(),
 }));
+
+// Import the mocked module to set up BackButton implementation
+import { BackButton } from '@tymblok/ui';
+(BackButton as jest.Mock).mockImplementation(({ onPress }: { onPress: () => void }) => (
+  <TouchableOpacity onPress={onPress} testID="back-button">
+    <Text>Back</Text>
+  </TouchableOpacity>
+));
 
 // Mock authService
 jest.mock('../../services/authService', () => ({
