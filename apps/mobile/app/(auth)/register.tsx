@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '../../stores/authStore';
-import { authService } from '../../services/authService';
+import { authService, OAuthProvider } from '../../services/authService';
 import { TymblokLogo } from '../../components/icons';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -12,6 +14,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -67,9 +70,30 @@ export default function RegisterScreen() {
     }
   };
 
+  const handleOAuthRegister = async (provider: OAuthProvider) => {
+    setError(null);
+    setOauthLoading(provider);
+
+    try {
+      const url = authService.getExternalLoginUrl(provider);
+      console.log(`[Register] Opening OAuth for ${provider}:`, url);
+
+      // Open the OAuth URL in system browser
+      // The browser will redirect back to our app via deep link
+      await WebBrowser.openAuthSessionAsync(url, 'tymblok://auth/callback');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : `${provider} sign up failed`;
+      setError(message);
+      console.error(`[Register] ${provider} OAuth error:`, err);
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
   const passwordsMatch = !confirmPassword || password === confirmPassword;
   const passwordLongEnough = !password || password.length >= 8;
-  const isDisabled = !name || !email || !password || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
+  const isAnyLoading = isLoading || oauthLoading !== null;
+  const isDisabled = !name || !email || !password || !confirmPassword || !passwordsMatch || !passwordLongEnough || isAnyLoading;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-950">
@@ -85,6 +109,42 @@ export default function RegisterScreen() {
           </Text>
         </View>
 
+        {/* OAuth Buttons at top for quick signup */}
+        <View className="gap-3 mb-6">
+          <TouchableOpacity
+            className={`flex-row items-center justify-center gap-2 bg-slate-800 border border-slate-700 rounded-xl p-4 ${
+              isAnyLoading ? 'opacity-50' : ''
+            }`}
+            onPress={() => handleOAuthRegister('google')}
+            disabled={isAnyLoading}
+          >
+            <Ionicons name="logo-google" size={20} color="#fff" />
+            <Text className="text-white text-base font-medium">
+              {oauthLoading === 'google' ? 'Loading...' : 'Sign up with Google'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className={`flex-row items-center justify-center gap-2 bg-slate-800 border border-slate-700 rounded-xl p-4 ${
+              isAnyLoading ? 'opacity-50' : ''
+            }`}
+            onPress={() => handleOAuthRegister('github')}
+            disabled={isAnyLoading}
+          >
+            <Ionicons name="logo-github" size={20} color="#fff" />
+            <Text className="text-white text-base font-medium">
+              {oauthLoading === 'github' ? 'Loading...' : 'Sign up with GitHub'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Divider */}
+        <View className="flex-row items-center mb-6">
+          <View className="flex-1 h-px bg-slate-700" />
+          <Text className="mx-4 text-slate-500 text-sm">or sign up with email</Text>
+          <View className="flex-1 h-px bg-slate-700" />
+        </View>
+
         <View className="gap-4">
           <View className="gap-2">
             <Text className="text-sm font-medium text-slate-200">Name</Text>
@@ -95,7 +155,7 @@ export default function RegisterScreen() {
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
-              editable={!isLoading}
+              editable={!isAnyLoading}
             />
           </View>
 
@@ -109,7 +169,7 @@ export default function RegisterScreen() {
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
-              editable={!isLoading}
+              editable={!isAnyLoading}
             />
           </View>
 
@@ -124,7 +184,7 @@ export default function RegisterScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              editable={!isLoading}
+              editable={!isAnyLoading}
             />
             <Text className={`text-xs ${!passwordLongEnough ? 'text-red-500' : 'text-slate-500'}`}>
               Must be at least 8 characters
@@ -142,7 +202,7 @@ export default function RegisterScreen() {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
-              editable={!isLoading}
+              editable={!isAnyLoading}
             />
             {!passwordsMatch && (
               <Text className="text-xs text-red-500">Passwords do not match</Text>

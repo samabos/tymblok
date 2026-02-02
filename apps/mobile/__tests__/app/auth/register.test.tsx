@@ -1,13 +1,20 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import RegisterScreen from '../../../app/(auth)/register';
 import { authService } from '../../../services/authService';
 import { useAuthStore } from '../../../stores/authStore';
+
+// Mock expo-web-browser
+jest.mock('expo-web-browser', () => ({
+  openAuthSessionAsync: jest.fn(),
+}));
 
 // Mock authService
 jest.mock('../../../services/authService', () => ({
   authService: {
     register: jest.fn(),
+    getExternalLoginUrl: jest.fn((provider: string) => `https://api.example.com/auth/external/${provider}?mobile=true`),
   },
 }));
 
@@ -301,6 +308,50 @@ describe('RegisterScreen', () => {
       expect(screen.getByPlaceholderText('you@example.com').props.editable).toBe(false);
       expect(screen.getByPlaceholderText('At least 8 characters').props.editable).toBe(false);
       expect(screen.getByPlaceholderText('Re-enter your password').props.editable).toBe(false);
+    });
+  });
+
+  describe('OAuth buttons', () => {
+    it('should render OAuth buttons', () => {
+      render(<RegisterScreen />);
+
+      expect(screen.getByText('Sign up with Google')).toBeTruthy();
+      expect(screen.getByText('Sign up with GitHub')).toBeTruthy();
+      expect(screen.getByText('or sign up with email')).toBeTruthy();
+    });
+
+    it('should open Google OAuth when Google button is pressed', async () => {
+      const mockOpenAuthSession = WebBrowser.openAuthSessionAsync as jest.Mock;
+      mockOpenAuthSession.mockResolvedValueOnce({ type: 'success' });
+
+      render(<RegisterScreen />);
+
+      const googleButton = screen.getByText('Sign up with Google');
+      fireEvent.press(googleButton);
+
+      await waitFor(() => {
+        expect(mockOpenAuthSession).toHaveBeenCalledWith(
+          'https://api.example.com/auth/external/google?mobile=true',
+          'tymblok://auth/callback'
+        );
+      });
+    });
+
+    it('should open GitHub OAuth when GitHub button is pressed', async () => {
+      const mockOpenAuthSession = WebBrowser.openAuthSessionAsync as jest.Mock;
+      mockOpenAuthSession.mockResolvedValueOnce({ type: 'success' });
+
+      render(<RegisterScreen />);
+
+      const githubButton = screen.getByText('Sign up with GitHub');
+      fireEvent.press(githubButton);
+
+      await waitFor(() => {
+        expect(mockOpenAuthSession).toHaveBeenCalledWith(
+          'https://api.example.com/auth/external/github?mobile=true',
+          'tymblok://auth/callback'
+        );
+      });
     });
   });
 });

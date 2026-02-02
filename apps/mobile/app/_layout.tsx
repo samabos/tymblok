@@ -63,6 +63,20 @@ function RootNavigator() {
             gestureEnabled: true,
           }}
         />
+        <Stack.Screen
+          name="change-password"
+          options={{
+            animation: 'slide_from_right',
+            contentStyle: { backgroundColor: bgColor },
+          }}
+        />
+        <Stack.Screen
+          name="linked-accounts"
+          options={{
+            animation: 'slide_from_right',
+            contentStyle: { backgroundColor: bgColor },
+          }}
+        />
       </Stack>
     </GestureHandlerRootView>
   );

@@ -220,6 +220,22 @@ export default function SettingsScreen() {
               onValueChange={handleBiometricToggle}
               disabled={!isAvailable}
             />
+            <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
+              <SettingsRow
+                icon="key-outline"
+                label="Change Password"
+                sublabel="Update your account password"
+                onPress={() => router.push('/change-password' as never)}
+              />
+            </View>
+            <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
+              <SettingsRow
+                icon="link-outline"
+                label="Linked Accounts"
+                sublabel="Google, GitHub sign-in options"
+                onPress={() => router.push('/linked-accounts' as never)}
+              />
+            </View>
           </Card>
         </View>
 

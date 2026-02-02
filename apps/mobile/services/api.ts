@@ -9,7 +9,7 @@ const getDefaultApiUrl = () => {
   return 'http://localhost:5000';
 };
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || getDefaultApiUrl();
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || getDefaultApiUrl();
 
 // Log the API URL at startup for debugging
 console.log('[API] Using API URL:', API_URL);

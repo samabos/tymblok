@@ -17,6 +17,7 @@ import DraggableFlatList, {
 import { useTheme, TaskCard, Avatar, type TaskCardData } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { useAuthStore } from '../../stores/authStore';
+import { EmailVerificationBanner } from '../../components/EmailVerificationBanner';
 
 // Mock data for development
 const mockTasks: TaskCardData[] = [
@@ -434,6 +435,11 @@ export default function TodayScreen() {
               </Animated.View>
             </GestureDetector>
           </Animated.View>
+        </View>
+
+        {/* Email Verification Banner */}
+        <View className="mt-4">
+          <EmailVerificationBanner />
         </View>
 
         {/* Task List */}
