@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import ResetPasswordScreen from '../../../app/(auth)/reset-password';
+import ResetPasswordScreen from '../../../app/reset-password';
 import { authService } from '../../../services/authService';
 
 // Mock @tymblok/ui
@@ -65,7 +65,7 @@ describe('ResetPasswordScreen', () => {
   });
 
   it('should show password form when token is present', () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
 
     render(<ResetPasswordScreen />);
 
@@ -77,7 +77,7 @@ describe('ResetPasswordScreen', () => {
   });
 
   it('should show password mismatch error', () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
 
     render(<ResetPasswordScreen />);
 
@@ -91,7 +91,7 @@ describe('ResetPasswordScreen', () => {
   });
 
   it('should not show password mismatch error when confirm is empty', () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
 
     render(<ResetPasswordScreen />);
 
@@ -103,7 +103,7 @@ describe('ResetPasswordScreen', () => {
   });
 
   it('should call resetPassword when form is valid', async () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
     mockResetPassword.mockResolvedValueOnce(undefined);
 
     render(<ResetPasswordScreen />);
@@ -117,12 +117,12 @@ describe('ResetPasswordScreen', () => {
     fireEvent.press(resetButton);
 
     await waitFor(() => {
-      expect(mockResetPassword).toHaveBeenCalledWith('valid-token', 'newpassword123');
+      expect(mockResetPassword).toHaveBeenCalledWith('test@example.com', 'valid-token', 'newpassword123');
     });
   });
 
   it('should show success screen after password reset', async () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
     mockResetPassword.mockResolvedValueOnce(undefined);
 
     render(<ResetPasswordScreen />);
@@ -143,7 +143,7 @@ describe('ResetPasswordScreen', () => {
   });
 
   it('should navigate to login from success screen', async () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
     mockResetPassword.mockResolvedValueOnce(undefined);
 
     render(<ResetPasswordScreen />);
@@ -167,7 +167,7 @@ describe('ResetPasswordScreen', () => {
   });
 
   it('should show error when reset fails', async () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
     mockResetPassword.mockRejectedValueOnce(new Error('Token expired'));
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -189,7 +189,7 @@ describe('ResetPasswordScreen', () => {
   });
 
   it('should not submit when password is less than 8 characters', () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
 
     render(<ResetPasswordScreen />);
 
@@ -205,7 +205,7 @@ describe('ResetPasswordScreen', () => {
   });
 
   it('should show loading state while resetting', async () => {
-    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token' });
+    mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
     mockResetPassword.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
 
     render(<ResetPasswordScreen />);

@@ -26,8 +26,11 @@ public static class AuditAction
     public const string TokenRefresh = "user.token_refresh";
     public const string TokenRefreshFailed = "user.token_refresh_failed";
     public const string PasswordChange = "user.password_change";
+    public const string PasswordSet = "user.password_set";
     public const string ExternalLoginLinked = "user.external_login_linked";
     public const string ExternalLoginUnlinked = "user.external_login_unlinked";
+    public const string SessionRevoked = "user.session_revoked";
+    public const string AllSessionsRevoked = "user.all_sessions_revoked";
 
     public const string Create = "create";
     public const string Update = "update";

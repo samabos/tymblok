@@ -25,11 +25,13 @@ export function EmailVerificationBanner({ onDismiss }: EmailVerificationBannerPr
   }
 
   const handleResend = async () => {
+    if (!user?.id) return;
+
     setError(null);
     setIsLoading(true);
 
     try {
-      await authService.resendVerificationEmail();
+      await authService.resendVerificationEmail(user.id);
       setSent(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send email';

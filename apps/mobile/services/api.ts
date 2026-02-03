@@ -67,11 +67,13 @@ let refreshPromise: Promise<string | null> | null = null;
 
 async function getAccessToken(): Promise<string | null> {
   const authData = await getStorageItem('tymblok-auth');
-  if (!authData) return null;
+  if (!authData) {
+    return null;
+  }
 
   try {
-    const { state } = JSON.parse(authData);
-    return state?.tokens?.access_token || null;
+    const parsed = JSON.parse(authData);
+    return parsed?.state?.tokens?.access_token || null;
   } catch {
     return null;
   }
@@ -166,8 +168,6 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   const { method = 'GET', body, headers = {}, skipAuth = false } = options;
 
   const url = `${API_URL}/api${endpoint}`;
-  console.log(`[API] ${method} ${url}`);
-  if (body) console.log('[API] Body:', JSON.stringify(body));
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -194,12 +194,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   let response: Response;
   try {
     response = await fetch(url, config);
-  } catch (err) {
+  } catch {
     // Network error - no response from server
-    console.error('[API] Network error:', err);
     throw new FetchError('Unable to connect. Please check your internet connection.', 0);
   }
-  console.log(`[API] Response status: ${response.status}`);
 
   // Handle 401 - try to refresh token
   if (response.status === 401 && !skipAuth) {
@@ -219,8 +217,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
           ...config,
           headers: requestHeaders,
         });
-      } catch (err) {
-        console.error('[API] Network error on retry:', err);
+      } catch {
         throw new FetchError('Unable to connect. Please check your internet connection.', 0);
       }
     } else {
@@ -254,6 +251,76 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   return data;
 }
 
+async function uploadFile<T>(endpoint: string, formData: FormData): Promise<T> {
+  const url = `${API_URL}/api${endpoint}`;
+
+  const token = await getValidAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  // Don't set Content-Type - let fetch set it with boundary for multipart/form-data
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  } catch {
+    throw new FetchError('Unable to connect. Please check your internet connection.', 0);
+  }
+
+  // Handle 401 - try to refresh token
+  if (response.status === 401) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = refreshAccessToken();
+    }
+
+    const newToken = await refreshPromise;
+    isRefreshing = false;
+    refreshPromise = null;
+
+    if (newToken) {
+      headers['Authorization'] = `Bearer ${newToken}`;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      } catch {
+        throw new FetchError('Unable to connect. Please check your internet connection.', 0);
+      }
+    } else {
+      throw new FetchError('Session expired', 401);
+    }
+  }
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    let errorMessage = 'Something went wrong. Please try again.';
+
+    if (data?.error?.message) {
+      errorMessage = data.error.message;
+    } else if (data?.errors) {
+      const firstField = Object.keys(data.errors)[0];
+      if (firstField && data.errors[firstField]?.[0]) {
+        errorMessage = data.errors[firstField][0];
+      }
+    } else if (data?.title) {
+      errorMessage = data.title;
+    }
+
+    throw new FetchError(errorMessage, response.status, data);
+  }
+
+  return data;
+}
+
 export const api = {
   get: <T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request<T>(endpoint, { ...options, method: 'GET' }),
@@ -269,4 +336,7 @@ export const api = {
 
   delete: <T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request<T>(endpoint, { ...options, method: 'DELETE' }),
+
+  uploadFile: <T>(endpoint: string, formData: FormData) =>
+    uploadFile<T>(endpoint, formData),
 };

@@ -43,7 +43,7 @@ public class AuthService : IAuthService
         _settings = settings.Value;
     }
 
-    public async Task<AuthResult> RegisterAsync(string email, string password, string name, string? ipAddress = null)
+    public async Task<AuthResult> RegisterAsync(string email, string password, string name, string? ipAddress = null, string? deviceType = null, string? deviceName = null, string? deviceOs = null)
     {
         // Check if email already exists
         var existingUser = await _userManager.FindByEmailAsync(email);
@@ -95,6 +95,9 @@ public class AuthService : IAuthService
         await _repository.CreateRefreshTokenAsync(refreshToken);
         await _repository.SaveChangesAsync();
 
+        // Create session for this login
+        await CreateSessionAsync(user.Id, refreshToken.Id, deviceType, deviceName, deviceOs, ipAddress);
+
         // Audit log
         await _auditService.LogAuthEventAsync(
             AuditAction.Register,
@@ -118,7 +121,7 @@ public class AuthService : IAuthService
         return new AuthResult(tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresIn, user);
     }
 
-    public async Task<AuthResult> LoginAsync(string email, string password, string? ipAddress = null)
+    public async Task<AuthResult> LoginAsync(string email, string password, string? ipAddress = null, string? deviceType = null, string? deviceName = null, string? deviceOs = null)
     {
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null)
@@ -182,6 +185,9 @@ public class AuthService : IAuthService
         await _repository.CreateRefreshTokenAsync(refreshToken);
         await _repository.SaveChangesAsync();
 
+        // Create session for this login
+        await CreateSessionAsync(user.Id, refreshToken.Id, deviceType, deviceName, deviceOs, ipAddress);
+
         // Audit successful login
         await _auditService.LogAuthEventAsync(
             AuditAction.Login,
@@ -215,7 +221,7 @@ public class AuthService : IAuthService
                 ipAddress,
                 errorMessage: "Refresh token expired or revoked");
 
-            throw new AuthException("AUTH_REFRESH_EXPIRED", "Refresh token has expired or been revoked");
+            throw new AuthException("AUTH_SESSION_EXPIRED", "Session expired, Please log in again.");
         }
 
         var user = refreshToken.User;
@@ -365,15 +371,40 @@ public class AuthService : IAuthService
         string? email,
         string? name,
         string? avatarUrl,
-        string? ipAddress = null)
+        string? ipAddress = null,
+        string? deviceType = null,
+        string? deviceName = null,
+        string? deviceOs = null)
     {
         // 1. Check if this external login already exists
         var existingUser = await _userManager.FindByLoginAsync(provider, providerKey);
 
         if (existingUser != null)
         {
-            // User has logged in with this provider before - just log them in
-            return await CreateAuthResultForExternalLoginAsync(existingUser, ipAddress);
+            // User has logged in with this provider before
+            var needsUpdate = false;
+
+            // Mark email as verified if not already (OAuth provider has verified this email)
+            if (!existingUser.EmailConfirmed)
+            {
+                existingUser.EmailConfirmed = true;
+                needsUpdate = true;
+            }
+
+            // Sync avatar from OAuth provider if user has no avatar yet
+            // User-uploaded avatars (base64 data URLs) take priority
+            if (string.IsNullOrEmpty(existingUser.AvatarUrl) && !string.IsNullOrEmpty(avatarUrl))
+            {
+                existingUser.AvatarUrl = avatarUrl;
+                needsUpdate = true;
+            }
+
+            if (needsUpdate)
+            {
+                await _userManager.UpdateAsync(existingUser);
+            }
+
+            return await CreateAuthResultForExternalLoginAsync(existingUser, ipAddress, deviceType, deviceName, deviceOs);
         }
 
         // 2. Check if a user with this email already exists
@@ -395,6 +426,29 @@ public class AuthService : IAuthService
                 throw new AuthException("EXTERNAL_LOGIN_FAILED", $"Failed to link account: {errors}");
             }
 
+            // Mark email as verified - OAuth provider has verified this email
+            // Also sync avatar from OAuth provider if user has no avatar yet
+            var needsUpdate = false;
+
+            if (!user.EmailConfirmed)
+            {
+                user.EmailConfirmed = true;
+                needsUpdate = true;
+            }
+
+            // Sync avatar from OAuth provider if user has no avatar yet
+            // User-uploaded avatars (base64 data URLs) take priority
+            if (string.IsNullOrEmpty(user.AvatarUrl) && !string.IsNullOrEmpty(avatarUrl))
+            {
+                user.AvatarUrl = avatarUrl;
+                needsUpdate = true;
+            }
+
+            if (needsUpdate)
+            {
+                await _userManager.UpdateAsync(user);
+            }
+
             // Audit: linked external account
             await _auditService.LogAuthEventAsync(
                 AuditAction.ExternalLoginLinked,
@@ -402,7 +456,7 @@ public class AuthService : IAuthService
                 email,
                 ipAddress);
 
-            return await CreateAuthResultForExternalLoginAsync(user, ipAddress);
+            return await CreateAuthResultForExternalLoginAsync(user, ipAddress, deviceType, deviceName, deviceOs);
         }
 
         // 3. Create new user with external login
@@ -440,12 +494,15 @@ public class AuthService : IAuthService
             email,
             ipAddress);
 
-        return await CreateAuthResultForExternalLoginAsync(user, ipAddress);
+        return await CreateAuthResultForExternalLoginAsync(user, ipAddress, deviceType, deviceName, deviceOs);
     }
 
     private async Task<AuthResult> CreateAuthResultForExternalLoginAsync(
         ApplicationUser user,
-        string? ipAddress)
+        string? ipAddress,
+        string? deviceType = null,
+        string? deviceName = null,
+        string? deviceOs = null)
     {
         // Update last login
         user.LastLoginAt = DateTime.UtcNow;
@@ -466,6 +523,9 @@ public class AuthService : IAuthService
 
         await _repository.CreateRefreshTokenAsync(refreshToken);
         await _repository.SaveChangesAsync();
+
+        // Create session for this login
+        await CreateSessionAsync(user.Id, refreshToken.Id, deviceType, deviceName, deviceOs, ipAddress);
 
         return new AuthResult(tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresIn, user);
     }
@@ -564,5 +624,167 @@ public class AuthService : IAuthService
         }
 
         return await _userManager.HasPasswordAsync(user);
+    }
+
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            throw new AuthException("USER_NOT_FOUND", "User not found");
+        }
+
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        if (!hasPassword)
+        {
+            throw new AuthException("NO_PASSWORD", "You don't have a password set. Use 'Set Password' instead.");
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            if (result.Errors.Any(e => e.Code == "PasswordMismatch"))
+            {
+                throw new AuthException("INVALID_CURRENT_PASSWORD", "Current password is incorrect");
+            }
+            throw new AuthException("CHANGE_PASSWORD_FAILED", errors);
+        }
+
+        await _auditService.LogAuthEventAsync(
+            AuditAction.PasswordChange,
+            user.Id,
+            user.Email);
+
+        // Send password changed notification email
+        if (user.Email != null && user.Name != null)
+        {
+            await _emailService.SendPasswordChangedNotificationAsync(user.Email, user.Name);
+        }
+    }
+
+    public async Task SetPasswordAsync(Guid userId, string password)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            throw new AuthException("USER_NOT_FOUND", "User not found");
+        }
+
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        if (hasPassword)
+        {
+            throw new AuthException("ALREADY_HAS_PASSWORD", "You already have a password set. Use 'Change Password' instead.");
+        }
+
+        var result = await _userManager.AddPasswordAsync(user, password);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new AuthException("SET_PASSWORD_FAILED", errors);
+        }
+
+        await _auditService.LogAuthEventAsync(
+            AuditAction.PasswordSet,
+            user.Id,
+            user.Email);
+
+        // Send password set confirmation email
+        if (user.Email != null && user.Name != null)
+        {
+            await _emailService.SendPasswordChangedNotificationAsync(user.Email, user.Name);
+        }
+    }
+
+    // Session management
+
+    public async Task<IList<UserSession>> GetSessionsAsync(Guid userId)
+    {
+        return await _repository.GetActiveSessionsAsync(userId);
+    }
+
+    public async Task RevokeSessionAsync(Guid userId, Guid sessionId)
+    {
+        var session = await _repository.GetSessionByIdAsync(sessionId);
+        if (session == null || session.UserId != userId)
+        {
+            throw new AuthException("SESSION_NOT_FOUND", "Session not found");
+        }
+
+        session.IsActive = false;
+        session.RevokedAt = DateTime.UtcNow;
+
+        // Also revoke the associated refresh token
+        if (session.RefreshToken != null && session.RefreshToken.IsActive)
+        {
+            session.RefreshToken.RevokedAt = DateTime.UtcNow;
+            await _repository.UpdateRefreshTokenAsync(session.RefreshToken);
+        }
+
+        await _repository.UpdateSessionAsync(session);
+        await _repository.SaveChangesAsync();
+
+        await _auditService.LogAuthEventAsync(
+            AuditAction.SessionRevoked,
+            userId,
+            ipAddress: session.IpAddress);
+    }
+
+    public async Task RevokeAllSessionsAsync(Guid userId, Guid? exceptSessionId = null)
+    {
+        var sessions = await _repository.GetActiveSessionsAsync(userId);
+
+        foreach (var session in sessions)
+        {
+            if (exceptSessionId.HasValue && session.Id == exceptSessionId.Value)
+            {
+                continue; // Skip current session
+            }
+
+            session.IsActive = false;
+            session.RevokedAt = DateTime.UtcNow;
+
+            // Also revoke the associated refresh token
+            if (session.RefreshToken != null && session.RefreshToken.IsActive)
+            {
+                session.RefreshToken.RevokedAt = DateTime.UtcNow;
+                await _repository.UpdateRefreshTokenAsync(session.RefreshToken);
+            }
+
+            await _repository.UpdateSessionAsync(session);
+        }
+
+        await _repository.SaveChangesAsync();
+
+        await _auditService.LogAuthEventAsync(
+            AuditAction.AllSessionsRevoked,
+            userId);
+    }
+
+    public async Task<UserSession> CreateSessionAsync(
+        Guid userId,
+        Guid refreshTokenId,
+        string? deviceType,
+        string? deviceName,
+        string? deviceOs,
+        string? ipAddress)
+    {
+        var session = new UserSession
+        {
+            UserId = userId,
+            RefreshTokenId = refreshTokenId,
+            DeviceType = deviceType,
+            DeviceName = deviceName,
+            DeviceOs = deviceOs,
+            IpAddress = ipAddress,
+            IsActive = true,
+            IsCurrent = true,
+            LastActiveAt = DateTime.UtcNow
+        };
+
+        await _repository.CreateSessionAsync(session);
+        await _repository.SaveChangesAsync();
+
+        return session;
     }
 }

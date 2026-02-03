@@ -8,7 +8,7 @@ namespace Tymblok.Infrastructure.Repositories;
 /// <summary>
 /// Repository for auth-related data access.
 /// Note: User management is handled by Identity's UserManager.
-/// This repository handles RefreshToken operations.
+/// This repository handles RefreshToken and UserSession operations.
 /// </summary>
 public class AuthRepository : IAuthRepository
 {
@@ -18,6 +18,8 @@ public class AuthRepository : IAuthRepository
     {
         _context = context;
     }
+
+    // RefreshToken operations
 
     public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
     {
@@ -35,6 +37,36 @@ public class AuthRepository : IAuthRepository
     public Task UpdateRefreshTokenAsync(RefreshToken refreshToken)
     {
         _context.RefreshTokens.Update(refreshToken);
+        return Task.CompletedTask;
+    }
+
+    // Session operations
+
+    public async Task<IList<UserSession>> GetActiveSessionsAsync(Guid userId)
+    {
+        return await _context.UserSessions
+            .Include(s => s.RefreshToken)
+            .Where(s => s.UserId == userId && s.IsActive && s.RevokedAt == null)
+            .OrderByDescending(s => s.LastActiveAt)
+            .ToListAsync();
+    }
+
+    public async Task<UserSession?> GetSessionByIdAsync(Guid sessionId)
+    {
+        return await _context.UserSessions
+            .Include(s => s.RefreshToken)
+            .FirstOrDefaultAsync(s => s.Id == sessionId);
+    }
+
+    public async Task<UserSession> CreateSessionAsync(UserSession session)
+    {
+        _context.UserSessions.Add(session);
+        return session;
+    }
+
+    public Task UpdateSessionAsync(UserSession session)
+    {
+        _context.UserSessions.Update(session);
         return Task.CompletedTask;
     }
 

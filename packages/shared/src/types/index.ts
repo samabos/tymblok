@@ -9,6 +9,7 @@ export interface User {
   name: string;
   avatar_url: string | null;
   email_verified?: boolean;
+  has_password?: boolean;
   timezone: string;
   working_hours_start: string;
   working_hours_end: string;

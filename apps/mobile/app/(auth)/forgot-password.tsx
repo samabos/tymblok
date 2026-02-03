@@ -24,7 +24,6 @@ export default function ForgotPasswordPage() {
 
     try {
       await authService.forgotPassword(email);
-      console.log('[ForgotPassword] Reset email sent to:', email);
       setScreenState('success');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send reset email';

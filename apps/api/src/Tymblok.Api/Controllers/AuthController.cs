@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AspNet.Security.OAuth.GitHub;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -42,12 +43,14 @@ public class AuthController : ControllerBase
         try
         {
             var ipAddress = GetIpAddress();
-            var result = await _authService.RegisterAsync(request.Email, request.Password, request.Name, ipAddress);
+            var (deviceType, deviceName, deviceOs) = GetDeviceInfo();
+            var result = await _authService.RegisterAsync(request.Email, request.Password, request.Name, ipAddress, deviceType, deviceName, deviceOs);
 
             _logger.LogInformation("User registered | UserId: {UserId} | IP: {IpAddress}", result.User.Id, ipAddress);
 
             var roles = await _userManager.GetRolesAsync(result.User);
-            var response = CreateAuthResponse(result, roles);
+            var hasPassword = await _userManager.HasPasswordAsync(result.User);
+            var response = CreateAuthResponse(result, roles, hasPassword);
             return StatusCode(StatusCodes.Status201Created, WrapResponse(response));
         }
         catch (AuthException ex) when (ex.Code == "CONFLICT")
@@ -68,14 +71,16 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var ipAddress = GetIpAddress();
+        var (deviceType, deviceName, deviceOs) = GetDeviceInfo();
         try
         {
-            var result = await _authService.LoginAsync(request.Email, request.Password, ipAddress);
+            var result = await _authService.LoginAsync(request.Email, request.Password, ipAddress, deviceType, deviceName, deviceOs);
 
             _logger.LogInformation("User logged in | UserId: {UserId} | IP: {IpAddress}", result.User.Id, ipAddress);
 
             var roles = await _userManager.GetRolesAsync(result.User);
-            var response = CreateAuthResponse(result, roles);
+            var hasPassword = await _userManager.HasPasswordAsync(result.User);
+            var response = CreateAuthResponse(result, roles, hasPassword);
             return Ok(WrapResponse(response));
         }
         catch (AuthException ex) when (ex.Code == "AUTH_INVALID_CREDENTIALS")
@@ -112,6 +117,25 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("logout")]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        try
+        {
+            await _authService.RevokeTokenAsync(request.RefreshToken, ipAddress);
+            _logger.LogInformation("User logged out | IP: {IpAddress}", ipAddress);
+            return Ok(WrapResponse(new MessageResponse("Logged out successfully")));
+        }
+        catch (Exception)
+        {
+            // Still return success even if token was already revoked or invalid
+            // This prevents information leakage about token validity
+            return Ok(WrapResponse(new MessageResponse("Logged out successfully")));
+        }
+    }
+
     [HttpPost("forgot-password")]
     [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
@@ -145,6 +169,196 @@ public class AuthController : ControllerBase
 
         _logger.LogInformation("Password reset successful | IP: {IpAddress}", ipAddress);
         return Ok(WrapResponse(new MessageResponse("Your password has been reset successfully.")));
+    }
+
+    [HttpPost("change-password")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        var userId = GetUserId();
+
+        try
+        {
+            await _authService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+            _logger.LogInformation("Password changed | UserId: {UserId} | IP: {IpAddress}", userId, ipAddress);
+            return Ok(WrapResponse(new MessageResponse("Your password has been changed successfully.")));
+        }
+        catch (AuthException ex)
+        {
+            _logger.LogWarning("Password change failed | UserId: {UserId} | Code: {Code} | IP: {IpAddress}",
+                userId, ex.Code, ipAddress);
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    [HttpPost("set-password")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        var userId = GetUserId();
+
+        try
+        {
+            await _authService.SetPasswordAsync(userId, request.Password);
+            _logger.LogInformation("Password set | UserId: {UserId} | IP: {IpAddress}", userId, ipAddress);
+            return Ok(WrapResponse(new MessageResponse("Your password has been set successfully.")));
+        }
+        catch (AuthException ex)
+        {
+            _logger.LogWarning("Set password failed | UserId: {UserId} | Code: {Code} | IP: {IpAddress}",
+                userId, ex.Code, ipAddress);
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Update user profile (name only)
+    /// </summary>
+    [HttpPatch("profile")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        var userId = GetUserId();
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return NotFound(CreateErrorResponse("USER_NOT_FOUND", "User not found"));
+        }
+
+        user.Name = request.Name.Trim();
+        var result = await _userManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            _logger.LogWarning("Profile update failed | UserId: {UserId} | Errors: {Errors} | IP: {IpAddress}",
+                userId, errors, ipAddress);
+            return BadRequest(CreateErrorResponse("UPDATE_FAILED", errors));
+        }
+
+        _logger.LogInformation("Profile updated | UserId: {UserId} | IP: {IpAddress}", userId, ipAddress);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        var userDto = MapToUserDto(user, roles, hasPassword);
+
+        return Ok(WrapResponse(userDto));
+    }
+
+    /// <summary>
+    /// Upload user avatar image (stored as base64 data URL in database)
+    /// </summary>
+    [HttpPost("avatar")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<AvatarResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    [RequestSizeLimit(2 * 1024 * 1024)] // 2MB limit for base64 storage
+    public async Task<IActionResult> UploadAvatar(IFormFile file)
+    {
+        var ipAddress = GetIpAddress();
+        var userId = GetUserId();
+
+        // Validate file
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(CreateErrorResponse("INVALID_FILE", "No file provided"));
+        }
+
+        // Validate file type
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+        var contentType = file.ContentType.ToLowerInvariant();
+        if (!allowedTypes.Contains(contentType))
+        {
+            return BadRequest(CreateErrorResponse("INVALID_FILE_TYPE", "Only JPEG, PNG, GIF, and WebP images are allowed"));
+        }
+
+        // Validate file size (2MB max for base64 storage)
+        if (file.Length > 2 * 1024 * 1024)
+        {
+            return BadRequest(CreateErrorResponse("FILE_TOO_LARGE", "File size must be less than 2MB"));
+        }
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return NotFound(CreateErrorResponse("USER_NOT_FOUND", "User not found"));
+        }
+
+        try
+        {
+            // Read file bytes and convert to base64 data URL
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            var base64 = Convert.ToBase64String(memoryStream.ToArray());
+            var avatarUrl = $"data:{contentType};base64,{base64}";
+
+            user.AvatarUrl = avatarUrl;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogWarning("Avatar update failed | UserId: {UserId} | Errors: {Errors} | IP: {IpAddress}",
+                    userId, errors, ipAddress);
+                return BadRequest(CreateErrorResponse("UPDATE_FAILED", errors));
+            }
+
+            _logger.LogInformation("Avatar uploaded | UserId: {UserId} | Size: {Size} bytes | IP: {IpAddress}",
+                userId, file.Length, ipAddress);
+
+            return Ok(WrapResponse(new AvatarResponse(avatarUrl)));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Avatar upload failed | UserId: {UserId} | IP: {IpAddress}", userId, ipAddress);
+            return BadRequest(CreateErrorResponse("UPLOAD_FAILED", "Failed to upload avatar"));
+        }
+    }
+
+    /// <summary>
+    /// Delete user avatar
+    /// </summary>
+    [HttpDelete("avatar")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteAvatar()
+    {
+        var ipAddress = GetIpAddress();
+        var userId = GetUserId();
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return NotFound(CreateErrorResponse("USER_NOT_FOUND", "User not found"));
+        }
+
+        user.AvatarUrl = null;
+        var result = await _userManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            _logger.LogWarning("Avatar delete failed | UserId: {UserId} | Errors: {Errors} | IP: {IpAddress}",
+                userId, errors, ipAddress);
+            return BadRequest(CreateErrorResponse("UPDATE_FAILED", errors));
+        }
+
+        _logger.LogInformation("Avatar deleted | UserId: {UserId} | IP: {IpAddress}", userId, ipAddress);
+
+        return Ok(WrapResponse(new MessageResponse("Avatar has been deleted")));
     }
 
     [HttpPost("verify-email")]
@@ -197,7 +411,8 @@ public class AuthController : ControllerBase
     public IActionResult ExternalLogin(
         string provider,
         [FromQuery] string? returnUrl = null,
-        [FromQuery] bool mobile = false)
+        [FromQuery] bool mobile = false,
+        [FromQuery] string? redirectUrl = null)
     {
         var normalizedProvider = provider.ToLowerInvariant() switch
         {
@@ -215,12 +430,12 @@ public class AuthController : ControllerBase
         // Build callback URL with state
         var state = mobile ? "mobile" : "web";
         var callbackUrl = Url.Action(nameof(ExternalLoginCallback), "Auth",
-            new { returnUrl, state }, Request.Scheme);
+            new { returnUrl, state, redirectUrl }, Request.Scheme);
 
         var properties = new AuthenticationProperties
         {
             RedirectUri = callbackUrl,
-            Items = { { "returnUrl", returnUrl ?? "/" }, { "mobile", mobile.ToString() } }
+            Items = { { "returnUrl", returnUrl ?? "/" }, { "mobile", mobile.ToString() }, { "redirectUrl", redirectUrl ?? "" } }
         };
 
         return Challenge(properties, normalizedProvider);
@@ -232,9 +447,11 @@ public class AuthController : ControllerBase
     [HttpGet("external/callback")]
     public async Task<IActionResult> ExternalLoginCallback(
         [FromQuery] string? returnUrl = null,
-        [FromQuery] string? state = null)
+        [FromQuery] string? state = null,
+        [FromQuery] string? redirectUrl = null)
     {
         var ipAddress = GetIpAddress();
+        var (deviceType, deviceName, deviceOs) = GetDeviceInfo();
         var isMobile = state == "mobile";
 
         try
@@ -288,30 +505,61 @@ public class AuthController : ControllerBase
                 email,
                 name,
                 avatarUrl,
-                ipAddress);
+                ipAddress,
+                deviceType,
+                deviceName,
+                deviceOs);
 
             _logger.LogInformation("External login success | Provider: {Provider} | UserId: {UserId} | IP: {IpAddress}",
                 provider, result.User.Id, ipAddress);
 
+            // Check if user has a password set
+            var hasPassword = await _userManager.HasPasswordAsync(result.User);
+
             // Return tokens based on client type
             if (isMobile)
             {
-                // Redirect to mobile app with deep link
-                var mobileScheme = _configuration["OAuth:MobileCallbackScheme"] ?? "tymblok";
-                var deepLink = $"{mobileScheme}://auth/callback" +
-                    $"?accessToken={Uri.EscapeDataString(result.AccessToken)}" +
-                    $"&refreshToken={Uri.EscapeDataString(result.RefreshToken)}" +
-                    $"&expiresIn={result.ExpiresIn}";
+                // Use the provided redirect URL (from Expo) or fall back to the configured scheme
+                string deepLink;
+                if (!string.IsNullOrEmpty(redirectUrl))
+                {
+                    // Use the redirect URL provided by the mobile app (e.g., exp://... for Expo Go)
+                    var separator = redirectUrl.Contains('?') ? '&' : '?';
+                    deepLink = $"{redirectUrl}{separator}accessToken={Uri.EscapeDataString(result.AccessToken)}" +
+                        $"&refreshToken={Uri.EscapeDataString(result.RefreshToken)}" +
+                        $"&expiresIn={result.ExpiresIn}" +
+                        $"&userId={Uri.EscapeDataString(result.User.Id.ToString())}" +
+                        $"&email={Uri.EscapeDataString(result.User.Email ?? "")}" +
+                        $"&name={Uri.EscapeDataString(result.User.Name ?? "")}" +
+                        $"&avatarUrl={Uri.EscapeDataString(result.User.AvatarUrl ?? "")}" +
+                        $"&emailVerified={result.User.EmailConfirmed.ToString().ToLower()}" +
+                        $"&hasPassword={hasPassword.ToString().ToLower()}";
+                }
+                else
+                {
+                    // Fall back to configured scheme
+                    var mobileScheme = _configuration["OAuth:MobileCallbackScheme"] ?? "tymblok";
+                    deepLink = $"{mobileScheme}://auth/callback" +
+                        $"?accessToken={Uri.EscapeDataString(result.AccessToken)}" +
+                        $"&refreshToken={Uri.EscapeDataString(result.RefreshToken)}" +
+                        $"&expiresIn={result.ExpiresIn}" +
+                        $"&userId={Uri.EscapeDataString(result.User.Id.ToString())}" +
+                        $"&email={Uri.EscapeDataString(result.User.Email ?? "")}" +
+                        $"&name={Uri.EscapeDataString(result.User.Name ?? "")}" +
+                        $"&avatarUrl={Uri.EscapeDataString(result.User.AvatarUrl ?? "")}" +
+                        $"&emailVerified={result.User.EmailConfirmed.ToString().ToLower()}" +
+                        $"&hasPassword={hasPassword.ToString().ToLower()}";
+                }
                 return Redirect(deepLink);
             }
             else
             {
                 // For web: redirect with tokens in URL fragment (more secure)
                 var webCallbackUrl = returnUrl ?? _configuration["OAuth:WebCallbackUrl"] ?? "/";
-                var redirectUrl = $"{webCallbackUrl}#access_token={Uri.EscapeDataString(result.AccessToken)}" +
+                var webRedirectUrl = $"{webCallbackUrl}#access_token={Uri.EscapeDataString(result.AccessToken)}" +
                     $"&refresh_token={Uri.EscapeDataString(result.RefreshToken)}" +
                     $"&expires_in={result.ExpiresIn}";
-                return Redirect(redirectUrl);
+                return Redirect(webRedirectUrl);
             }
         }
         catch (AuthException ex)
@@ -325,7 +573,7 @@ public class AuthController : ControllerBase
     /// Unlink external provider from authenticated user account
     /// </summary>
     [HttpDelete("external/link/{provider}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UnlinkExternalProvider(string provider)
@@ -352,7 +600,7 @@ public class AuthController : ControllerBase
     /// Get linked external providers for authenticated user
     /// </summary>
     [HttpGet("external/providers")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(ApiResponse<IList<string>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLinkedProviders()
     {
@@ -365,13 +613,101 @@ public class AuthController : ControllerBase
     /// Check if authenticated user has a password set
     /// </summary>
     [HttpGet("has-password")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> HasPassword()
     {
         var userId = GetUserId();
         var hasPassword = await _authService.HasPasswordAsync(userId);
         return Ok(WrapResponse(hasPassword));
+    }
+
+    /// <summary>
+    /// Get all active sessions for authenticated user
+    /// </summary>
+    [HttpGet("sessions")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<SessionsResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSessions()
+    {
+        var userId = GetUserId();
+        var sessions = await _authService.GetSessionsAsync(userId);
+
+        var sessionDtos = sessions.Select(s => new SessionDto(
+            s.Id,
+            s.DeviceType,
+            s.DeviceName,
+            s.DeviceOs,
+            MaskIpAddress(s.IpAddress),
+            s.IsCurrent,
+            s.LastActiveAt,
+            s.CreatedAt
+        )).ToList();
+
+        return Ok(WrapResponse(new SessionsResponse(sessionDtos)));
+    }
+
+    /// <summary>
+    /// Revoke a specific session
+    /// </summary>
+    [HttpDelete("sessions/{sessionId:guid}")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RevokeSession(Guid sessionId)
+    {
+        var userId = GetUserId();
+        var ipAddress = GetIpAddress();
+
+        try
+        {
+            await _authService.RevokeSessionAsync(userId, sessionId);
+            _logger.LogInformation("Session revoked | SessionId: {SessionId} | UserId: {UserId} | IP: {IpAddress}",
+                sessionId, userId, ipAddress);
+            return Ok(WrapResponse(new MessageResponse("Session has been revoked")));
+        }
+        catch (AuthException ex) when (ex.Code == "SESSION_NOT_FOUND")
+        {
+            return NotFound(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Revoke all sessions except the current one (logout all devices)
+    /// </summary>
+    [HttpDelete("sessions")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RevokeAllSessions([FromQuery] Guid? exceptSessionId = null)
+    {
+        var userId = GetUserId();
+        var ipAddress = GetIpAddress();
+
+        await _authService.RevokeAllSessionsAsync(userId, exceptSessionId);
+        _logger.LogInformation("All sessions revoked | UserId: {UserId} | ExceptSession: {ExceptSession} | IP: {IpAddress}",
+            userId, exceptSessionId, ipAddress);
+
+        return Ok(WrapResponse(new MessageResponse("All other sessions have been revoked")));
+    }
+
+    private static string? MaskIpAddress(string? ipAddress)
+    {
+        if (string.IsNullOrEmpty(ipAddress)) return null;
+
+        // Mask last octet for privacy: 192.168.1.100 -> 192.168.1.xxx
+        var parts = ipAddress.Split('.');
+        if (parts.Length == 4)
+        {
+            return $"{parts[0]}.{parts[1]}.{parts[2]}.xxx";
+        }
+
+        // For IPv6 or other formats, just show first part
+        if (ipAddress.Length > 10)
+        {
+            return ipAddress.Substring(0, 10) + "...";
+        }
+
+        return ipAddress;
     }
 
     private IActionResult RedirectWithError(string code, string message, bool isMobile, string? returnUrl)
@@ -394,13 +730,13 @@ public class AuthController : ControllerBase
         return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
     }
 
-    private static AuthResponse CreateAuthResponse(AuthResult result, IList<string> roles)
+    private static AuthResponse CreateAuthResponse(AuthResult result, IList<string> roles, bool hasPassword)
     {
-        var userDto = MapToUserDto(result.User, roles);
+        var userDto = MapToUserDto(result.User, roles, hasPassword);
         return new AuthResponse(result.AccessToken, result.RefreshToken, result.ExpiresIn, userDto);
     }
 
-    private static UserDto MapToUserDto(ApplicationUser user, IList<string> roles)
+    private static UserDto MapToUserDto(ApplicationUser user, IList<string> roles, bool hasPassword)
     {
         return new UserDto(
             user.Id,
@@ -412,6 +748,7 @@ public class AuthController : ControllerBase
             user.ReduceMotion,
             user.TextSize.ToString().ToLowerInvariant(),
             user.EmailConfirmed,
+            hasPassword,
             roles,
             user.CreatedAt
         );
@@ -441,5 +778,58 @@ public class AuthController : ControllerBase
         }
 
         return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private (string? deviceType, string? deviceName, string? deviceOs) GetDeviceInfo()
+    {
+        var userAgent = Request.Headers.UserAgent.FirstOrDefault() ?? "";
+
+        // Determine device type
+        string? deviceType = "desktop";
+        if (userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase) ||
+            userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
+            userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+            userAgent.Contains("iPad", StringComparison.OrdinalIgnoreCase))
+        {
+            deviceType = "mobile";
+        }
+        else if (userAgent.Contains("Tablet", StringComparison.OrdinalIgnoreCase))
+        {
+            deviceType = "tablet";
+        }
+
+        // Determine device OS
+        string? deviceOs = null;
+        if (userAgent.Contains("Windows", StringComparison.OrdinalIgnoreCase))
+            deviceOs = "Windows";
+        else if (userAgent.Contains("Mac OS", StringComparison.OrdinalIgnoreCase) || userAgent.Contains("Macintosh", StringComparison.OrdinalIgnoreCase))
+            deviceOs = "macOS";
+        else if (userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) || userAgent.Contains("iPad", StringComparison.OrdinalIgnoreCase))
+            deviceOs = "iOS";
+        else if (userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase))
+            deviceOs = "Android";
+        else if (userAgent.Contains("Linux", StringComparison.OrdinalIgnoreCase))
+            deviceOs = "Linux";
+
+        // Determine device name (browser or app)
+        string? deviceName = null;
+        if (userAgent.Contains("Expo", StringComparison.OrdinalIgnoreCase) || userAgent.Contains("okhttp", StringComparison.OrdinalIgnoreCase))
+            deviceName = "Tymblok Mobile App";
+        else if (userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("Edg", StringComparison.OrdinalIgnoreCase))
+            deviceName = "Chrome";
+        else if (userAgent.Contains("Firefox", StringComparison.OrdinalIgnoreCase))
+            deviceName = "Firefox";
+        else if (userAgent.Contains("Safari", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase))
+            deviceName = "Safari";
+        else if (userAgent.Contains("Edg", StringComparison.OrdinalIgnoreCase))
+            deviceName = "Edge";
+
+        // Combine device name with OS if available
+        if (deviceName != null && deviceOs != null)
+        {
+            deviceName = $"{deviceName} on {deviceOs}";
+        }
+
+        return (deviceType, deviceName, deviceOs);
     }
 }

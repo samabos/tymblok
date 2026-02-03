@@ -55,7 +55,7 @@ describe('EmailVerificationBanner', () => {
 
   it('should render when user email is not verified', () => {
     (useAuthStore as unknown as jest.Mock).mockImplementation((selector) =>
-      selector({ user: { email: 'test@example.com', email_verified: false } })
+      selector({ user: { id: 'user-123', email: 'test@example.com', email_verified: false } })
     );
 
     render(<EmailVerificationBanner />);
@@ -67,7 +67,7 @@ describe('EmailVerificationBanner', () => {
 
   it('should call resendVerificationEmail when button is pressed', async () => {
     (useAuthStore as unknown as jest.Mock).mockImplementation((selector) =>
-      selector({ user: { email: 'test@example.com', email_verified: false } })
+      selector({ user: { id: 'user-123', email: 'test@example.com', email_verified: false } })
     );
     mockResendVerificationEmail.mockResolvedValueOnce(undefined);
 
@@ -77,13 +77,13 @@ describe('EmailVerificationBanner', () => {
     fireEvent.press(resendButton);
 
     await waitFor(() => {
-      expect(mockResendVerificationEmail).toHaveBeenCalled();
+      expect(mockResendVerificationEmail).toHaveBeenCalledWith('user-123');
     });
   });
 
   it('should show success message after email is sent', async () => {
     (useAuthStore as unknown as jest.Mock).mockImplementation((selector) =>
-      selector({ user: { email: 'test@example.com', email_verified: false } })
+      selector({ user: { id: 'user-123', email: 'test@example.com', email_verified: false } })
     );
     mockResendVerificationEmail.mockResolvedValueOnce(undefined);
 
@@ -99,7 +99,7 @@ describe('EmailVerificationBanner', () => {
 
   it('should show error message when resend fails', async () => {
     (useAuthStore as unknown as jest.Mock).mockImplementation((selector) =>
-      selector({ user: { email: 'test@example.com', email_verified: false } })
+      selector({ user: { id: 'user-123', email: 'test@example.com', email_verified: false } })
     );
     mockResendVerificationEmail.mockRejectedValueOnce(new Error('Failed to send'));
 
@@ -115,7 +115,7 @@ describe('EmailVerificationBanner', () => {
 
   it('should call onDismiss when dismiss button is pressed', () => {
     (useAuthStore as unknown as jest.Mock).mockImplementation((selector) =>
-      selector({ user: { email: 'test@example.com', email_verified: false } })
+      selector({ user: { id: 'user-123', email: 'test@example.com', email_verified: false } })
     );
     const mockOnDismiss = jest.fn();
 

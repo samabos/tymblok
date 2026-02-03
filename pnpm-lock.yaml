@@ -138,6 +138,12 @@ importers:
       expo-haptics:
         specifier: ~14.0.0
         version: 14.0.1(expo@52.0.48)
+      expo-image-manipulator:
+        specifier: ^14.0.8
+        version: 14.0.8(expo@52.0.48)
+      expo-image-picker:
+        specifier: ^17.0.10
+        version: 17.0.10(expo@52.0.48)
       expo-linear-gradient:
         specifier: ~14.0.0
         version: 14.0.2(expo@52.0.48)(react-native@0.76.0)(react@18.3.1)
@@ -6303,6 +6309,32 @@ packages:
       expo: '*'
     dependencies:
       expo: 52.0.48(@babel/core@7.28.6)(@babel/preset-env@7.28.6)(@expo/metro-runtime@4.0.1)(react-native@0.76.0)(react@18.3.1)
+    dev: false
+
+  /expo-image-loader@6.0.0(expo@52.0.48):
+    resolution: {integrity: sha512-nKs/xnOGw6ACb4g26xceBD57FKLFkSwEUTDXEDF3Gtcu3MqF3ZIYd3YM+sSb1/z9AKV1dYT7rMSGVNgsveXLIQ==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 52.0.48(@babel/core@7.28.6)(@babel/preset-env@7.28.6)(@expo/metro-runtime@4.0.1)(react-native@0.76.0)(react@18.3.1)
+    dev: false
+
+  /expo-image-manipulator@14.0.8(expo@52.0.48):
+    resolution: {integrity: sha512-sXsXjm7rIxLWZe0j2A41J/Ph53PpFJRdyzJ3EQ/qetxLUvS2m3K1sP5xy37px43qCf0l79N/i6XgFgenFV36/Q==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 52.0.48(@babel/core@7.28.6)(@babel/preset-env@7.28.6)(@expo/metro-runtime@4.0.1)(react-native@0.76.0)(react@18.3.1)
+      expo-image-loader: 6.0.0(expo@52.0.48)
+    dev: false
+
+  /expo-image-picker@17.0.10(expo@52.0.48):
+    resolution: {integrity: sha512-a2xrowp2trmvXyUWgX3O6Q2rZaa2C59AqivKI7+bm+wLvMfTEbZgldLX4rEJJhM8xtmEDTNU+lzjtObwzBRGaw==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 52.0.48(@babel/core@7.28.6)(@babel/preset-env@7.28.6)(@expo/metro-runtime@4.0.1)(react-native@0.76.0)(react@18.3.1)
+      expo-image-loader: 6.0.0(expo@52.0.48)
     dev: false
 
   /expo-keep-awake@14.0.3(expo@52.0.48)(react@18.3.1):

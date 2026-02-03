@@ -1,42 +1,75 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { useTheme, BackButton } from '@tymblok/ui';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useTheme } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { authService } from '../services/authService';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function ChangePasswordScreen() {
+export default function ResetPasswordScreen() {
+  const params = useLocalSearchParams<{ token?: string; email?: string }>();
   const { theme } = useTheme();
   const themeColors = theme.colors;
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const passwordsMatch = !confirmPassword || newPassword === confirmPassword;
-  const passwordLongEnough = !newPassword || newPassword.length >= 8;
-  const isDisabled = !currentPassword || !newPassword || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
+  const passwordsMatch = !confirmPassword || password === confirmPassword;
+  const passwordLongEnough = !password || password.length >= 8;
+  const isDisabled = !password || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
 
-  const handleChangePassword = async () => {
+  const handleReset = async () => {
+    if (!params.token || !params.email) {
+      setError('Invalid reset link. Please request a new password reset.');
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
     try {
-      await authService.changePassword(currentPassword, newPassword);
+      await authService.resetPassword(params.email, params.token, password.trim());
       setSuccess(true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to change password';
+      const message = err instanceof Error ? err.message : 'Failed to reset password';
       setError(message);
-      console.error('[ChangePassword]', err);
+      console.error('[ResetPassword]', err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleBackToLogin = () => {
+    router.replace('/(auth)/login');
+  };
+
+  if (!params.token || !params.email) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
+        <View className="flex-1 items-center justify-center p-6">
+          <View className="w-20 h-20 rounded-3xl items-center justify-center mb-6" style={{ backgroundColor: colors.status.urgent + '20' }}>
+            <Ionicons name="alert-circle" size={40} color={colors.status.urgent} />
+          </View>
+          <Text className="text-2xl font-bold text-center mb-2" style={{ color: themeColors.text }}>
+            Invalid Reset Link
+          </Text>
+          <Text className="text-base text-center mb-6" style={{ color: themeColors.textMuted }}>
+            This password reset link is invalid or has expired. Please request a new one.
+          </Text>
+          <TouchableOpacity
+            className="bg-indigo-500 rounded-xl px-8 py-4"
+            onPress={handleBackToLogin}
+          >
+            <Text className="text-white text-base font-semibold">Back to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (success) {
     return (
@@ -46,16 +79,16 @@ export default function ChangePasswordScreen() {
             <Ionicons name="checkmark-circle" size={40} color={colors.status.done} />
           </View>
           <Text className="text-2xl font-bold text-center mb-2" style={{ color: themeColors.text }}>
-            Password Changed!
+            Password Reset!
           </Text>
           <Text className="text-base text-center mb-6" style={{ color: themeColors.textMuted }}>
-            Your password has been successfully updated.
+            Your password has been successfully reset. You can now sign in with your new password.
           </Text>
           <TouchableOpacity
             className="bg-indigo-500 rounded-xl px-8 py-4"
-            onPress={() => router.back()}
+            onPress={handleBackToLogin}
           >
-            <Text className="text-white text-base font-semibold">Done</Text>
+            <Text className="text-white text-base font-semibold">Sign In</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -68,42 +101,21 @@ export default function ChangePasswordScreen() {
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Header */}
-        <View className="flex-row items-center px-4 py-2">
-          <BackButton onPress={() => router.back()} />
-          <Text className="text-xl font-bold ml-3" style={{ color: themeColors.text }}>
-            Change Password
-          </Text>
-        </View>
-
-        <ScrollView
-          className="flex-1 px-6"
-          contentContainerStyle={{ paddingBottom: 40 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View className="gap-4 mt-4">
-            <View className="gap-2">
-              <Text className="text-sm font-medium" style={{ color: themeColors.text }}>
-                Current Password
-              </Text>
-              <TextInput
-                className="rounded-xl p-4 text-base border"
-                style={{
-                  backgroundColor: themeColors.input,
-                  borderColor: themeColors.border,
-                  color: themeColors.text,
-                }}
-                placeholder="Enter your current password"
-                placeholderTextColor={themeColors.textFaint}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry
-                editable={!isLoading}
-              />
+        <View className="flex-1 justify-center p-6">
+          {/* Icon */}
+          <View className="items-center mb-6">
+            <View className="w-20 h-20 rounded-3xl items-center justify-center mb-4" style={{ backgroundColor: colors.indigo[600] }}>
+              <Ionicons name="key" size={36} color="#fff" />
             </View>
+            <Text className="text-2xl font-bold text-center" style={{ color: themeColors.text }}>
+              Set New Password
+            </Text>
+            <Text className="text-base text-center mt-2" style={{ color: themeColors.textMuted }}>
+              Enter your new password below
+            </Text>
+          </View>
 
-            <View className="h-px my-2" style={{ backgroundColor: themeColors.border }} />
-
+          <View className="gap-4">
             <View className="gap-2">
               <Text className="text-sm font-medium" style={{ color: themeColors.text }}>
                 New Password
@@ -119,19 +131,19 @@ export default function ChangePasswordScreen() {
                 }}
                 placeholder="At least 8 characters"
                 placeholderTextColor={themeColors.textFaint}
-                value={newPassword}
-                onChangeText={setNewPassword}
+                value={password}
+                onChangeText={setPassword}
                 secureTextEntry
                 editable={!isLoading}
               />
-              <Text className={`text-xs`} style={{ color: !passwordLongEnough ? colors.status.urgent : themeColors.textFaint }}>
+              <Text className={`text-xs ${!passwordLongEnough ? 'text-red-500' : ''}`} style={{ color: !passwordLongEnough ? colors.status.urgent : themeColors.textFaint }}>
                 Must be at least 8 characters
               </Text>
             </View>
 
             <View className="gap-2">
               <Text className="text-sm font-medium" style={{ color: themeColors.text }}>
-                Confirm New Password
+                Confirm Password
               </Text>
               <TextInput
                 className={`rounded-xl p-4 text-base border ${
@@ -142,7 +154,7 @@ export default function ChangePasswordScreen() {
                   borderColor: !passwordsMatch ? colors.status.urgent : themeColors.border,
                   color: themeColors.text,
                 }}
-                placeholder="Re-enter your new password"
+                placeholder="Re-enter your password"
                 placeholderTextColor={themeColors.textFaint}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -165,18 +177,28 @@ export default function ChangePasswordScreen() {
             )}
 
             <TouchableOpacity
-              className={`bg-indigo-500 rounded-xl p-4 items-center mt-4 ${
+              className={`bg-indigo-500 rounded-xl p-4 items-center mt-2 ${
                 isDisabled ? 'opacity-50' : ''
               }`}
-              onPress={handleChangePassword}
+              onPress={handleReset}
               disabled={isDisabled}
             >
               <Text className="text-white text-base font-semibold">
-                {isLoading ? 'Updating...' : 'Update Password'}
+                {isLoading ? 'Resetting...' : 'Reset Password'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="items-center mt-4"
+              onPress={handleBackToLogin}
+              disabled={isLoading}
+            >
+              <Text className="text-sm" style={{ color: colors.indigo[500] }}>
+                Back to Login
               </Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

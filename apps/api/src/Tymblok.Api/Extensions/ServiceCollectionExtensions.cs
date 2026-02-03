@@ -104,6 +104,18 @@ public static class ServiceCollectionExtensions
                     ValidAudience = jwtSettings["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
                 };
+
+                // Log JWT authentication failures for debugging
+                options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("JwtAuthentication");
+                        logger.LogWarning("JWT authentication failed: {Error}", context.Exception.Message);
+                        return Task.CompletedTask;
+                    }
+                };
             })
             // Cookie scheme for OAuth intermediate state (not used for API auth)
             .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>

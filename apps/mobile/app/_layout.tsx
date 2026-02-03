@@ -36,13 +36,6 @@ function RootNavigator() {
           }}
         />
         <Stack.Screen
-          name="profile"
-          options={{
-            animation: 'slide_from_right',
-            contentStyle: { backgroundColor: bgColor },
-          }}
-        />
-        <Stack.Screen
           name="integrations"
           options={{
             animation: 'slide_from_right',
@@ -64,17 +57,15 @@ function RootNavigator() {
           }}
         />
         <Stack.Screen
-          name="change-password"
+          name="reset-password"
           options={{
-            animation: 'slide_from_right',
-            contentStyle: { backgroundColor: bgColor },
+            headerShown: false,
           }}
         />
         <Stack.Screen
-          name="linked-accounts"
+          name="verify-email"
           options={{
-            animation: 'slide_from_right',
-            contentStyle: { backgroundColor: bgColor },
+            headerShown: false,
           }}
         />
       </Stack>

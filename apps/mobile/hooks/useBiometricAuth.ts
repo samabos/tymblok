@@ -89,11 +89,33 @@ export function useBiometricAuth() {
     return result.success;
   }, [isAvailable]);
 
+  /**
+   * Authenticate for sensitive actions (only if biometric is enabled by user).
+   * Returns true if auth passed or biometric is not enabled.
+   * @param actionName - Description of the action requiring authentication
+   */
+  const authenticateForSensitiveAction = useCallback(async (actionName: string): Promise<boolean> => {
+    // Skip if biometric is not enabled or not available
+    if (!isEnabled || !isAvailable || Platform.OS === 'web') {
+      return true;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: `Authenticate to ${actionName}`,
+      fallbackLabel: 'Use Passcode',
+      cancelLabel: 'Cancel',
+      disableDeviceFallback: false,
+    });
+
+    return result.success;
+  }, [isAvailable, isEnabled]);
+
   return {
     isAvailable,
     isEnabled,
     biometricType,
     authenticate,
+    authenticateForSensitiveAction,
     enableBiometric,
     disableBiometric,
   };

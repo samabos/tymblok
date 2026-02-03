@@ -1,25 +1,19 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 
 namespace Tymblok.Api.Tests;
 
+/// <summary>
+/// Custom WebApplicationFactory for integration tests.
+/// Uses in-memory database and Testing environment.
+/// JWT authentication is handled by Microsoft Identity - we don't override it.
+/// </summary>
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureAppConfiguration((context, config) =>
-        {
-            config.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Jwt:Secret"] = "ThisIsAVeryLongSecretKeyForTestingPurposes123!",
-                ["Jwt:Issuer"] = "TymblokTest",
-                ["Jwt:Audience"] = "TymblokTestAudience",
-                ["Jwt:ExpiryMinutes"] = "15",
-                ["Jwt:RefreshTokenExpiryDays"] = "7"
-            });
-        });
-
+        // Use Testing environment which enables in-memory database
+        // See: Program.cs useInMemoryDatabase: isTestEnvironment
         builder.UseEnvironment("Testing");
     }
 }

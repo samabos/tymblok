@@ -7,14 +7,23 @@ import { useAuthStore } from '../../../stores/authStore';
 
 // Mock expo-web-browser
 jest.mock('expo-web-browser', () => ({
+  maybeCompleteAuthSession: jest.fn(),
   openAuthSessionAsync: jest.fn(),
+}));
+
+// Mock expo-linking
+jest.mock('expo-linking', () => ({
+  createURL: jest.fn((path: string) => `tymblok://${path}`),
+  parse: jest.fn(),
 }));
 
 // Mock authService
 jest.mock('../../../services/authService', () => ({
   authService: {
     login: jest.fn(),
-    getExternalLoginUrl: jest.fn((provider: string) => `https://api.example.com/auth/external/${provider}?mobile=true`),
+    getExternalLoginUrl: jest.fn((provider: string, redirectUrl: string) =>
+      `https://api.example.com/auth/external/${provider}?mobile=true&redirect_uri=${encodeURIComponent(redirectUrl)}`
+    ),
   },
 }));
 
@@ -111,6 +120,8 @@ describe('LoginScreen', () => {
         email: 'test@example.com',
         name: 'Test User',
         avatarUrl: null,
+        emailVerified: true,
+        hasPassword: true,
         createdAt: '2024-01-01T00:00:00Z',
       },
     };
@@ -168,7 +179,6 @@ describe('LoginScreen', () => {
   });
 
   it('should handle login error gracefully', async () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     mockLogin.mockRejectedValueOnce(new Error('Invalid credentials'));
 
     render(<LoginScreen />);
@@ -181,16 +191,15 @@ describe('LoginScreen', () => {
     fireEvent.changeText(passwordInput, 'wrongpassword');
     fireEvent.press(signInButton);
 
+    // Error message should be displayed
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[Login]', 'Invalid credentials');
+      expect(screen.getByText('Invalid credentials')).toBeTruthy();
     });
 
     // Button should be back to normal state after error
     await waitFor(() => {
       expect(screen.getByText('Sign in')).toBeTruthy();
     });
-
-    consoleErrorSpy.mockRestore();
   });
 
   it('should not submit when email is only whitespace', () => {
@@ -227,8 +236,8 @@ describe('LoginScreen', () => {
 
       await waitFor(() => {
         expect(mockOpenAuthSession).toHaveBeenCalledWith(
-          'https://api.example.com/auth/external/google?mobile=true',
-          'tymblok://auth/callback'
+          expect.stringContaining('/auth/external/google'),
+          'tymblok://callback'
         );
       });
     });
@@ -244,8 +253,8 @@ describe('LoginScreen', () => {
 
       await waitFor(() => {
         expect(mockOpenAuthSession).toHaveBeenCalledWith(
-          'https://api.example.com/auth/external/github?mobile=true',
-          'tymblok://auth/callback'
+          expect.stringContaining('/auth/external/github'),
+          'tymblok://callback'
         );
       });
     });

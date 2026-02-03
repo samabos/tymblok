@@ -6,6 +6,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { borderRadius, springConfig } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -49,7 +50,7 @@ export function BackButton({
 
   // Default back arrow icon
   const defaultIcon = (
-    <BackArrowIcon color={themeColors.text} />
+    <Ionicons name="arrow-back" size={24} color={themeColors.text} />
   );
 
   return (
@@ -65,29 +66,6 @@ export function BackButton({
   );
 }
 
-// Simple back arrow icon component
-function BackArrowIcon({ color }: { color: string }) {
-  return (
-    <Animated.View style={styles.iconContainer}>
-      {/* Using a simple arrow made with Views since we don't have SVG */}
-      <Animated.View
-        style={[
-          styles.arrowLine,
-          styles.arrowLineTop,
-          { backgroundColor: color },
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.arrowLine,
-          styles.arrowLineBottom,
-          { backgroundColor: color },
-        ]}
-      />
-    </Animated.View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     width: 40,
@@ -95,23 +73,5 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconContainer: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  arrowLine: {
-    position: 'absolute',
-    width: 12,
-    height: 2,
-    borderRadius: 1,
-  },
-  arrowLineTop: {
-    transform: [{ rotate: '-45deg' }, { translateX: -2 }, { translateY: -4 }],
-  },
-  arrowLineBottom: {
-    transform: [{ rotate: '45deg' }, { translateX: -2 }, { translateY: 4 }],
   },
 });
