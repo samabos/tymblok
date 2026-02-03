@@ -87,6 +87,9 @@ export default function SettingsScreen() {
   const { user, clearAuth } = useAuthStore();
   const { isAvailable, isEnabled, biometricType, enableBiometric, disableBiometric } = useBiometricAuth();
 
+  // Use stored has_password from user object (set during login/OAuth)
+  const hasPassword = user?.has_password ?? true;
+
   const handleLogout = () => {
     Alert.alert(
       'Sign Out',
@@ -132,7 +135,7 @@ export default function SettingsScreen() {
       >
         {/* Profile Section */}
         <View className="pt-4">
-          <Card variant="default" padding="md" pressable onPress={() => router.push('/profile')}>
+          <Card variant="default" padding="md" pressable onPress={() => router.push('/(auth)/profile')}>
             <View className="flex-row items-center">
               <Avatar name={user?.name || 'User'} size="md" color={colors.indigo[500]} />
               <View className="ml-3 flex-1">
@@ -223,9 +226,9 @@ export default function SettingsScreen() {
             <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
               <SettingsRow
                 icon="key-outline"
-                label="Change Password"
-                sublabel="Update your account password"
-                onPress={() => router.push('/change-password' as never)}
+                label={hasPassword ? "Change Password" : "Set Password"}
+                sublabel={hasPassword ? "Update your account password" : "Add a password to your account"}
+                onPress={() => router.push(hasPassword ? '/(auth)/change-password' : '/(auth)/set-password')}
               />
             </View>
             <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
@@ -233,7 +236,7 @@ export default function SettingsScreen() {
                 icon="link-outline"
                 label="Linked Accounts"
                 sublabel="Google, GitHub sign-in options"
-                onPress={() => router.push('/linked-accounts' as never)}
+                onPress={() => router.push('/(auth)/linked-accounts')}
               />
             </View>
           </Card>

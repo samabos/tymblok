@@ -358,7 +358,7 @@ export default function TodayScreen() {
                       <TouchableOpacity
                         accessibilityLabel="Open profile"
                         accessibilityRole="button"
-                        onPress={() => router.push('/profile')}
+                        onPress={() => router.push('/(auth)/profile')}
                       >
                         <View className="relative">
                           <Avatar name={user?.name || 'User'} size="sm" color={colors.indigo[500]} />

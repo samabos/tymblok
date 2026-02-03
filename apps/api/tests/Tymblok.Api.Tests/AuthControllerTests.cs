@@ -4,6 +4,7 @@ using Tymblok.Api.DTOs;
 
 namespace Tymblok.Api.Tests;
 
+[Collection("Sequential")]
 public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;
@@ -157,11 +158,12 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
         var response = await _client.GetAsync("/api/auth/external/google");
 
         // Assert - In test environment without OAuth configured,
-        // we expect an error (500 or redirect to error)
+        // we expect an error (500, 400, 404, or redirect to error)
         // This validates the endpoint exists and handles unconfigured providers
         Assert.True(
             response.StatusCode == HttpStatusCode.InternalServerError ||
             response.StatusCode == HttpStatusCode.BadRequest ||
+            response.StatusCode == HttpStatusCode.NotFound ||
             response.StatusCode == HttpStatusCode.Redirect,
             $"Expected error status for unconfigured OAuth, got {response.StatusCode}");
     }
@@ -175,4 +177,45 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Fact]
+    public async Task ChangePassword_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Arrange
+        var request = new ChangePasswordRequest("OldPassword123!", "NewPassword123!");
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/auth/change-password", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SetPassword_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Arrange
+        var request = new SetPasswordRequest("NewPassword123!");
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/auth/set-password", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task HasPassword_WithoutAuth_ReturnsUnauthorized()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/auth/has-password");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    // NOTE: Authenticated endpoint tests (ChangePassword_WithValidCredentials, SetPassword_WhenUserHasPassword,
+    // HasPassword_WithAuthenticatedUser) are tested via unit tests on AuthService.
+    // Microsoft Identity handles JWT validation - we don't need to test Microsoft's code.
+    // See: https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity
 }

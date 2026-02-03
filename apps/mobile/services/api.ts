@@ -67,12 +67,18 @@ let refreshPromise: Promise<string | null> | null = null;
 
 async function getAccessToken(): Promise<string | null> {
   const authData = await getStorageItem('tymblok-auth');
-  if (!authData) return null;
+  if (!authData) {
+    console.log('[API] getAccessToken: No auth data in storage');
+    return null;
+  }
 
   try {
-    const { state } = JSON.parse(authData);
-    return state?.tokens?.access_token || null;
-  } catch {
+    const parsed = JSON.parse(authData);
+    const token = parsed?.state?.tokens?.access_token || null;
+    console.log('[API] getAccessToken: Found auth data, token exists:', !!token);
+    return token;
+  } catch (err) {
+    console.error('[API] getAccessToken: Failed to parse auth data:', err);
     return null;
   }
 }
@@ -177,8 +183,11 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   // Add auth token if not skipped
   if (!skipAuth) {
     const token = await getValidAccessToken();
+    console.log(`[API] Token retrieved: ${token ? `${token.substring(0, 20)}...` : 'null'}`);
     if (token) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.warn('[API] No token available for authenticated request');
     }
   }
 

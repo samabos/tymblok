@@ -92,4 +92,14 @@ public interface IAuthService
     /// Check if a user has a password set
     /// </summary>
     Task<bool> HasPasswordAsync(Guid userId);
+
+    /// <summary>
+    /// Change password for a user who already has a password
+    /// </summary>
+    Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
+
+    /// <summary>
+    /// Set password for an OAuth-only user who doesn't have a password
+    /// </summary>
+    Task SetPasswordAsync(Guid userId, string password);
 }

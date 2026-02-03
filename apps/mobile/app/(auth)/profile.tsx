@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTheme, Avatar, Card, Input } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../../stores/authStore';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
@@ -15,6 +15,9 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || 'User');
   const [email, setEmail] = useState(user?.email || '');
+
+  // Use stored has_password from user object (set during login/OAuth)
+  const hasPassword = user?.has_password ?? true;
 
   const handleBack = () => {
     router.back();
@@ -244,7 +247,7 @@ export default function ProfileScreen() {
           <Card variant="default" padding="none">
             <TouchableOpacity
               className="p-4 flex-row items-center justify-between"
-              onPress={() => console.log('[Profile] Change password')}
+              onPress={() => router.push(hasPassword ? '/(auth)/change-password' : '/(auth)/set-password')}
             >
               <View className="flex-row items-center gap-3">
                 <View
@@ -253,9 +256,16 @@ export default function ProfileScreen() {
                 >
                   <Ionicons name="lock-closed-outline" size={18} color={themeColors.textMuted} />
                 </View>
-                <Text className="font-medium" style={{ color: themeColors.text }}>
-                  Change Password
-                </Text>
+                <View>
+                  <Text className="font-medium" style={{ color: themeColors.text }}>
+                    {hasPassword ? 'Change Password' : 'Set Password'}
+                  </Text>
+                  {hasPassword === false && (
+                    <Text className="text-xs" style={{ color: themeColors.textMuted }}>
+                      Add a password to your account
+                    </Text>
+                  )}
+                </View>
               </View>
               <Ionicons name="chevron-forward" size={18} color={themeColors.textFaint} />
             </TouchableOpacity>

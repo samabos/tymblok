@@ -37,7 +37,25 @@ export default function AuthLayout() {
         }}
       />
       <Stack.Screen
-        name="reset-password"
+        name="profile"
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="change-password"
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="set-password"
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="linked-accounts"
         options={{
           animation: 'slide_from_right',
         }}

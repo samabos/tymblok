@@ -36,6 +36,15 @@ public record ResendVerificationRequest(
     [Required] Guid UserId
 );
 
+public record ChangePasswordRequest(
+    [Required] string CurrentPassword,
+    [Required][MinLength(8)] string NewPassword
+);
+
+public record SetPasswordRequest(
+    [Required][MinLength(8)] string Password
+);
+
 public record UserDto(
     Guid Id,
     string Email,
@@ -46,6 +55,7 @@ public record UserDto(
     bool ReduceMotion,
     string TextSize,
     bool EmailVerified,
+    bool HasPassword,
     IList<string> Roles,
     DateTime CreatedAt,
     IList<string>? LinkedProviders = null

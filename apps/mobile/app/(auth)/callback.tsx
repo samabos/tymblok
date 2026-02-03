@@ -53,6 +53,7 @@ export default function OAuthCallbackScreen() {
             email: params.email || '',
             name: params.name || '',
             avatar_url: params.avatarUrl || null,
+            email_verified: params.emailVerified === 'true',
             timezone: 'UTC',
             working_hours_start: '09:00',
             working_hours_end: '17:00',

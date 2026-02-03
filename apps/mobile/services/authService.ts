@@ -10,6 +10,7 @@ export interface UserDto {
   reduceMotion: boolean;
   textSize: string;
   emailVerified: boolean;
+  hasPassword: boolean;
   createdAt: string;
   linkedProviders?: string[];
 }
@@ -47,8 +48,18 @@ export interface ForgotPasswordRequest {
 }
 
 export interface ResetPasswordRequest {
+  email: string;
   token: string;
   newPassword: string;
+}
+
+export interface ResendVerificationRequest {
+  userId: string;
+}
+
+export interface VerifyEmailRequest {
+  userId: string;
+  token: string;
 }
 
 export interface ChangePasswordRequest {
@@ -78,16 +89,24 @@ export const authService = {
     await api.post<ApiResponse<void>>('/auth/forgot-password', { email } as ForgotPasswordRequest, { skipAuth: true });
   },
 
-  async resetPassword(token: string, newPassword: string): Promise<void> {
-    await api.post<ApiResponse<void>>('/auth/reset-password', { token, newPassword } as ResetPasswordRequest, { skipAuth: true });
+  async resetPassword(email: string, token: string, newPassword: string): Promise<void> {
+    await api.post<ApiResponse<void>>('/auth/reset-password', { email, token, newPassword } as ResetPasswordRequest, { skipAuth: true });
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
     await api.post<ApiResponse<void>>('/auth/change-password', { currentPassword, newPassword } as ChangePasswordRequest);
   },
 
-  async resendVerificationEmail(): Promise<void> {
-    await api.post<ApiResponse<void>>('/auth/resend-verification');
+  async setPassword(password: string): Promise<void> {
+    await api.post<ApiResponse<void>>('/auth/set-password', { password });
+  },
+
+  async resendVerificationEmail(userId: string): Promise<void> {
+    await api.post<ApiResponse<void>>('/auth/resend-verification', { userId } as ResendVerificationRequest);
+  },
+
+  async verifyEmail(userId: string, token: string): Promise<void> {
+    await api.post<ApiResponse<void>>('/auth/verify-email', { userId, token } as VerifyEmailRequest, { skipAuth: true });
   },
 
   async getLinkedProviders(): Promise<string[]> {
@@ -96,15 +115,19 @@ export const authService = {
   },
 
   async hasPassword(): Promise<boolean> {
-    const response = await api.get<ApiResponse<{ hasPassword: boolean }>>('/auth/has-password');
-    return response.data.hasPassword;
+    const response = await api.get<ApiResponse<boolean>>('/auth/has-password');
+    return response.data;
   },
 
   async unlinkProvider(provider: OAuthProvider): Promise<void> {
     await api.delete<ApiResponse<void>>(`/auth/external/link/${provider}`);
   },
 
-  getExternalLoginUrl(provider: OAuthProvider): string {
-    return `${API_URL}/api/auth/external/${provider}?mobile=true`;
+  getExternalLoginUrl(provider: OAuthProvider, redirectUrl?: string): string {
+    let url = `${API_URL}/api/auth/external/${provider}?mobile=true`;
+    if (redirectUrl) {
+      url += `&redirectUrl=${encodeURIComponent(redirectUrl)}`;
+    }
+    return url;
   },
 };

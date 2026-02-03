@@ -372,7 +372,13 @@ public class AuthService : IAuthService
 
         if (existingUser != null)
         {
-            // User has logged in with this provider before - just log them in
+            // User has logged in with this provider before
+            // Mark email as verified if not already (OAuth provider has verified this email)
+            if (!existingUser.EmailConfirmed)
+            {
+                existingUser.EmailConfirmed = true;
+                await _userManager.UpdateAsync(existingUser);
+            }
             return await CreateAuthResultForExternalLoginAsync(existingUser, ipAddress);
         }
 
@@ -393,6 +399,13 @@ public class AuthService : IAuthService
             {
                 var errors = string.Join(", ", addLoginResult.Errors.Select(e => e.Description));
                 throw new AuthException("EXTERNAL_LOGIN_FAILED", $"Failed to link account: {errors}");
+            }
+
+            // Mark email as verified - OAuth provider has verified this email
+            if (!user.EmailConfirmed)
+            {
+                user.EmailConfirmed = true;
+                await _userManager.UpdateAsync(user);
             }
 
             // Audit: linked external account
@@ -564,5 +577,75 @@ public class AuthService : IAuthService
         }
 
         return await _userManager.HasPasswordAsync(user);
+    }
+
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            throw new AuthException("USER_NOT_FOUND", "User not found");
+        }
+
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        if (!hasPassword)
+        {
+            throw new AuthException("NO_PASSWORD", "You don't have a password set. Use 'Set Password' instead.");
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            if (result.Errors.Any(e => e.Code == "PasswordMismatch"))
+            {
+                throw new AuthException("INVALID_CURRENT_PASSWORD", "Current password is incorrect");
+            }
+            throw new AuthException("CHANGE_PASSWORD_FAILED", errors);
+        }
+
+        await _auditService.LogAuthEventAsync(
+            AuditAction.PasswordChange,
+            user.Id,
+            user.Email);
+
+        // Send password changed notification email
+        if (user.Email != null && user.Name != null)
+        {
+            await _emailService.SendPasswordChangedNotificationAsync(user.Email, user.Name);
+        }
+    }
+
+    public async Task SetPasswordAsync(Guid userId, string password)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            throw new AuthException("USER_NOT_FOUND", "User not found");
+        }
+
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        if (hasPassword)
+        {
+            throw new AuthException("ALREADY_HAS_PASSWORD", "You already have a password set. Use 'Change Password' instead.");
+        }
+
+        var result = await _userManager.AddPasswordAsync(user, password);
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new AuthException("SET_PASSWORD_FAILED", errors);
+        }
+
+        await _auditService.LogAuthEventAsync(
+            AuditAction.PasswordSet,
+            user.Id,
+            user.Email);
+
+        // Send password set confirmation email
+        if (user.Email != null && user.Name != null)
+        {
+            await _emailService.SendPasswordChangedNotificationAsync(user.Email, user.Name);
+        }
     }
 }

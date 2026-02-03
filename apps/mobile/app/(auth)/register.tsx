@@ -3,16 +3,22 @@ import { View, Text, TextInput, TouchableOpacity, Pressable, ScrollView } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { useAuthStore } from '../../stores/authStore';
 import { authService, OAuthProvider } from '../../services/authService';
 import { TymblokLogo } from '../../components/icons';
 import { Ionicons } from '@expo/vector-icons';
+
+// Needed for web browser to properly close on Android
+WebBrowser.maybeCompleteAuthSession();
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +42,7 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     try {
-      const response = await authService.register({ email, password, name });
+      const response = await authService.register({ email: email.trim(), password: password.trim(), name: name.trim() });
 
       setAuth(
         {
@@ -44,6 +50,7 @@ export default function RegisterScreen() {
           email: response.user.email,
           name: response.user.name,
           avatar_url: response.user.avatarUrl,
+          has_password: response.user.hasPassword,
           timezone: 'UTC',
           working_hours_start: '09:00',
           working_hours_end: '17:00',
@@ -75,12 +82,47 @@ export default function RegisterScreen() {
     setOauthLoading(provider);
 
     try {
-      const url = authService.getExternalLoginUrl(provider);
+      // Create the redirect URL using expo-linking (works with Expo Go and standalone)
+      const redirectUrl = Linking.createURL('callback');
+      const url = authService.getExternalLoginUrl(provider, redirectUrl);
       console.log(`[Register] Opening OAuth for ${provider}:`, url);
+      console.log(`[Register] Redirect URL:`, redirectUrl);
 
       // Open the OAuth URL in system browser
-      // The browser will redirect back to our app via deep link
-      await WebBrowser.openAuthSessionAsync(url, 'tymblok://auth/callback');
+      const result = await WebBrowser.openAuthSessionAsync(url, redirectUrl);
+      console.log(`[Register] OAuth result:`, result);
+
+      if (result.type === 'success' && result.url) {
+        // Parse the URL and extract tokens
+        const { queryParams } = Linking.parse(result.url);
+        if (queryParams?.accessToken && queryParams?.refreshToken) {
+          // Store auth data
+          setAuth(
+            {
+              id: (queryParams.userId as string) || '',
+              email: (queryParams.email as string) || '',
+              name: (queryParams.name as string) || '',
+              avatar_url: (queryParams.avatarUrl as string) || null,
+              email_verified: queryParams.emailVerified === 'true',
+              has_password: queryParams.hasPassword === 'true',
+              timezone: 'UTC',
+              working_hours_start: '09:00',
+              working_hours_end: '17:00',
+              lunch_start: '12:00',
+              lunch_duration_minutes: 60,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            {
+              access_token: queryParams.accessToken as string,
+              refresh_token: queryParams.refreshToken as string,
+              expires_in: queryParams.expiresIn ? parseInt(queryParams.expiresIn as string, 10) : 900,
+              token_type: 'Bearer',
+            }
+          );
+          router.replace('/(tabs)/today');
+        }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : `${provider} sign up failed`;
       setError(message);
@@ -90,8 +132,8 @@ export default function RegisterScreen() {
     }
   };
 
-  const passwordsMatch = !confirmPassword || password === confirmPassword;
-  const passwordLongEnough = !password || password.length >= 8;
+  const passwordsMatch = !confirmPassword || password.trim() === confirmPassword.trim();
+  const passwordLongEnough = !password || password.trim().length >= 8;
   const isAnyLoading = isLoading || oauthLoading !== null;
   const isDisabled = !name || !email || !password || !confirmPassword || !passwordsMatch || !passwordLongEnough || isAnyLoading;
 
@@ -175,17 +217,30 @@ export default function RegisterScreen() {
 
           <View className="gap-2">
             <Text className="text-sm font-medium text-slate-200">Password</Text>
-            <TextInput
-              className={`bg-slate-800 rounded-xl p-4 text-white text-base border ${
-                !passwordLongEnough ? 'border-red-500' : 'border-slate-700'
-              }`}
-              placeholder="At least 8 characters"
-              placeholderTextColor="#64748b"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              editable={!isAnyLoading}
-            />
+            <View className="relative">
+              <TextInput
+                className={`bg-slate-800 rounded-xl p-4 pr-12 text-white text-base border ${
+                  !passwordLongEnough ? 'border-red-500' : 'border-slate-700'
+                }`}
+                placeholder="At least 8 characters"
+                placeholderTextColor="#64748b"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                editable={!isAnyLoading}
+              />
+              <TouchableOpacity
+                className="absolute right-4 top-4"
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color="#64748b"
+                />
+              </TouchableOpacity>
+            </View>
             <Text className={`text-xs ${!passwordLongEnough ? 'text-red-500' : 'text-slate-500'}`}>
               Must be at least 8 characters
             </Text>
@@ -193,17 +248,30 @@ export default function RegisterScreen() {
 
           <View className="gap-2">
             <Text className="text-sm font-medium text-slate-200">Confirm Password</Text>
-            <TextInput
-              className={`bg-slate-800 rounded-xl p-4 text-white text-base border ${
-                !passwordsMatch ? 'border-red-500' : 'border-slate-700'
-              }`}
-              placeholder="Re-enter your password"
-              placeholderTextColor="#64748b"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              editable={!isAnyLoading}
-            />
+            <View className="relative">
+              <TextInput
+                className={`bg-slate-800 rounded-xl p-4 pr-12 text-white text-base border ${
+                  !passwordsMatch ? 'border-red-500' : 'border-slate-700'
+                }`}
+                placeholder="Re-enter your password"
+                placeholderTextColor="#64748b"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                editable={!isAnyLoading}
+              />
+              <TouchableOpacity
+                className="absolute right-4 top-4"
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color="#64748b"
+                />
+              </TouchableOpacity>
+            </View>
             {!passwordsMatch && (
               <Text className="text-xs text-red-500">Passwords do not match</Text>
             )}

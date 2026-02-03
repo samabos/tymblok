@@ -1,12 +1,27 @@
+import { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function TabLayout() {
   const { theme, isDark } = useTheme();
   const themeColors = theme.colors;
+  const { isAuthenticated, isLoading } = useAuthStore();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/(auth)/login');
+    }
+  }, [isAuthenticated, isLoading]);
+
+  // Don't render tabs while checking auth or if not authenticated
+  if (isLoading || !isAuthenticated) {
+    return null;
+  }
 
   return (
     <Tabs

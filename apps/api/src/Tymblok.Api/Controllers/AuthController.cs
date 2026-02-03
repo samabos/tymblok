@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AspNet.Security.OAuth.GitHub;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -47,7 +48,8 @@ public class AuthController : ControllerBase
             _logger.LogInformation("User registered | UserId: {UserId} | IP: {IpAddress}", result.User.Id, ipAddress);
 
             var roles = await _userManager.GetRolesAsync(result.User);
-            var response = CreateAuthResponse(result, roles);
+            var hasPassword = await _userManager.HasPasswordAsync(result.User);
+            var response = CreateAuthResponse(result, roles, hasPassword);
             return StatusCode(StatusCodes.Status201Created, WrapResponse(response));
         }
         catch (AuthException ex) when (ex.Code == "CONFLICT")
@@ -75,7 +77,8 @@ public class AuthController : ControllerBase
             _logger.LogInformation("User logged in | UserId: {UserId} | IP: {IpAddress}", result.User.Id, ipAddress);
 
             var roles = await _userManager.GetRolesAsync(result.User);
-            var response = CreateAuthResponse(result, roles);
+            var hasPassword = await _userManager.HasPasswordAsync(result.User);
+            var response = CreateAuthResponse(result, roles, hasPassword);
             return Ok(WrapResponse(response));
         }
         catch (AuthException ex) when (ex.Code == "AUTH_INVALID_CREDENTIALS")
@@ -147,6 +150,52 @@ public class AuthController : ControllerBase
         return Ok(WrapResponse(new MessageResponse("Your password has been reset successfully.")));
     }
 
+    [HttpPost("change-password")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        var userId = GetUserId();
+
+        try
+        {
+            await _authService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+            _logger.LogInformation("Password changed | UserId: {UserId} | IP: {IpAddress}", userId, ipAddress);
+            return Ok(WrapResponse(new MessageResponse("Your password has been changed successfully.")));
+        }
+        catch (AuthException ex)
+        {
+            _logger.LogWarning("Password change failed | UserId: {UserId} | Code: {Code} | IP: {IpAddress}",
+                userId, ex.Code, ipAddress);
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    [HttpPost("set-password")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        var userId = GetUserId();
+
+        try
+        {
+            await _authService.SetPasswordAsync(userId, request.Password);
+            _logger.LogInformation("Password set | UserId: {UserId} | IP: {IpAddress}", userId, ipAddress);
+            return Ok(WrapResponse(new MessageResponse("Your password has been set successfully.")));
+        }
+        catch (AuthException ex)
+        {
+            _logger.LogWarning("Set password failed | UserId: {UserId} | Code: {Code} | IP: {IpAddress}",
+                userId, ex.Code, ipAddress);
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
     [HttpPost("verify-email")]
     [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
@@ -197,7 +246,8 @@ public class AuthController : ControllerBase
     public IActionResult ExternalLogin(
         string provider,
         [FromQuery] string? returnUrl = null,
-        [FromQuery] bool mobile = false)
+        [FromQuery] bool mobile = false,
+        [FromQuery] string? redirectUrl = null)
     {
         var normalizedProvider = provider.ToLowerInvariant() switch
         {
@@ -215,12 +265,12 @@ public class AuthController : ControllerBase
         // Build callback URL with state
         var state = mobile ? "mobile" : "web";
         var callbackUrl = Url.Action(nameof(ExternalLoginCallback), "Auth",
-            new { returnUrl, state }, Request.Scheme);
+            new { returnUrl, state, redirectUrl }, Request.Scheme);
 
         var properties = new AuthenticationProperties
         {
             RedirectUri = callbackUrl,
-            Items = { { "returnUrl", returnUrl ?? "/" }, { "mobile", mobile.ToString() } }
+            Items = { { "returnUrl", returnUrl ?? "/" }, { "mobile", mobile.ToString() }, { "redirectUrl", redirectUrl ?? "" } }
         };
 
         return Challenge(properties, normalizedProvider);
@@ -232,7 +282,8 @@ public class AuthController : ControllerBase
     [HttpGet("external/callback")]
     public async Task<IActionResult> ExternalLoginCallback(
         [FromQuery] string? returnUrl = null,
-        [FromQuery] string? state = null)
+        [FromQuery] string? state = null,
+        [FromQuery] string? redirectUrl = null)
     {
         var ipAddress = GetIpAddress();
         var isMobile = state == "mobile";
@@ -293,25 +344,51 @@ public class AuthController : ControllerBase
             _logger.LogInformation("External login success | Provider: {Provider} | UserId: {UserId} | IP: {IpAddress}",
                 provider, result.User.Id, ipAddress);
 
+            // Check if user has a password set
+            var hasPassword = await _userManager.HasPasswordAsync(result.User);
+
             // Return tokens based on client type
             if (isMobile)
             {
-                // Redirect to mobile app with deep link
-                var mobileScheme = _configuration["OAuth:MobileCallbackScheme"] ?? "tymblok";
-                var deepLink = $"{mobileScheme}://auth/callback" +
-                    $"?accessToken={Uri.EscapeDataString(result.AccessToken)}" +
-                    $"&refreshToken={Uri.EscapeDataString(result.RefreshToken)}" +
-                    $"&expiresIn={result.ExpiresIn}";
+                // Use the provided redirect URL (from Expo) or fall back to the configured scheme
+                string deepLink;
+                if (!string.IsNullOrEmpty(redirectUrl))
+                {
+                    // Use the redirect URL provided by the mobile app (e.g., exp://... for Expo Go)
+                    var separator = redirectUrl.Contains('?') ? '&' : '?';
+                    deepLink = $"{redirectUrl}{separator}accessToken={Uri.EscapeDataString(result.AccessToken)}" +
+                        $"&refreshToken={Uri.EscapeDataString(result.RefreshToken)}" +
+                        $"&expiresIn={result.ExpiresIn}" +
+                        $"&userId={Uri.EscapeDataString(result.User.Id.ToString())}" +
+                        $"&email={Uri.EscapeDataString(result.User.Email ?? "")}" +
+                        $"&name={Uri.EscapeDataString(result.User.Name ?? "")}" +
+                        $"&emailVerified={result.User.EmailConfirmed.ToString().ToLower()}" +
+                        $"&hasPassword={hasPassword.ToString().ToLower()}";
+                }
+                else
+                {
+                    // Fall back to configured scheme
+                    var mobileScheme = _configuration["OAuth:MobileCallbackScheme"] ?? "tymblok";
+                    deepLink = $"{mobileScheme}://auth/callback" +
+                        $"?accessToken={Uri.EscapeDataString(result.AccessToken)}" +
+                        $"&refreshToken={Uri.EscapeDataString(result.RefreshToken)}" +
+                        $"&expiresIn={result.ExpiresIn}" +
+                        $"&userId={Uri.EscapeDataString(result.User.Id.ToString())}" +
+                        $"&email={Uri.EscapeDataString(result.User.Email ?? "")}" +
+                        $"&name={Uri.EscapeDataString(result.User.Name ?? "")}" +
+                        $"&emailVerified={result.User.EmailConfirmed.ToString().ToLower()}" +
+                        $"&hasPassword={hasPassword.ToString().ToLower()}";
+                }
                 return Redirect(deepLink);
             }
             else
             {
                 // For web: redirect with tokens in URL fragment (more secure)
                 var webCallbackUrl = returnUrl ?? _configuration["OAuth:WebCallbackUrl"] ?? "/";
-                var redirectUrl = $"{webCallbackUrl}#access_token={Uri.EscapeDataString(result.AccessToken)}" +
+                var webRedirectUrl = $"{webCallbackUrl}#access_token={Uri.EscapeDataString(result.AccessToken)}" +
                     $"&refresh_token={Uri.EscapeDataString(result.RefreshToken)}" +
                     $"&expires_in={result.ExpiresIn}";
-                return Redirect(redirectUrl);
+                return Redirect(webRedirectUrl);
             }
         }
         catch (AuthException ex)
@@ -325,7 +402,7 @@ public class AuthController : ControllerBase
     /// Unlink external provider from authenticated user account
     /// </summary>
     [HttpDelete("external/link/{provider}")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UnlinkExternalProvider(string provider)
@@ -352,7 +429,7 @@ public class AuthController : ControllerBase
     /// Get linked external providers for authenticated user
     /// </summary>
     [HttpGet("external/providers")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(ApiResponse<IList<string>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLinkedProviders()
     {
@@ -365,7 +442,7 @@ public class AuthController : ControllerBase
     /// Check if authenticated user has a password set
     /// </summary>
     [HttpGet("has-password")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> HasPassword()
     {
@@ -394,13 +471,13 @@ public class AuthController : ControllerBase
         return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
     }
 
-    private static AuthResponse CreateAuthResponse(AuthResult result, IList<string> roles)
+    private static AuthResponse CreateAuthResponse(AuthResult result, IList<string> roles, bool hasPassword)
     {
-        var userDto = MapToUserDto(result.User, roles);
+        var userDto = MapToUserDto(result.User, roles, hasPassword);
         return new AuthResponse(result.AccessToken, result.RefreshToken, result.ExpiresIn, userDto);
     }
 
-    private static UserDto MapToUserDto(ApplicationUser user, IList<string> roles)
+    private static UserDto MapToUserDto(ApplicationUser user, IList<string> roles, bool hasPassword)
     {
         return new UserDto(
             user.Id,
@@ -412,6 +489,7 @@ public class AuthController : ControllerBase
             user.ReduceMotion,
             user.TextSize.ToString().ToLowerInvariant(),
             user.EmailConfirmed,
+            hasPassword,
             roles,
             user.CreatedAt
         );

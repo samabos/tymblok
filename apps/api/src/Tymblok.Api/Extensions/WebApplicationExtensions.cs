@@ -1,5 +1,6 @@
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Tymblok.Api.Middleware;
 
@@ -9,6 +10,19 @@ public static class WebApplicationExtensions
 {
     public static WebApplication ConfigurePipeline(this WebApplication app)
     {
+        // Handle forwarded headers from reverse proxies (ngrok, load balancers, etc.)
+        // This must be early in the pipeline to set the correct scheme/host
+        var forwardedHeadersOptions = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+                               ForwardedHeaders.XForwardedProto |
+                               ForwardedHeaders.XForwardedHost
+        };
+        // Clear the default restrictions to trust all proxies (for development with ngrok)
+        forwardedHeadersOptions.KnownIPNetworks.Clear();
+        forwardedHeadersOptions.KnownProxies.Clear();
+        app.UseForwardedHeaders(forwardedHeadersOptions);
+
         // Global exception handling (must be first)
         app.UseGlobalExceptionHandler();
 

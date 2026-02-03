@@ -7,14 +7,23 @@ import { useAuthStore } from '../../../stores/authStore';
 
 // Mock expo-web-browser
 jest.mock('expo-web-browser', () => ({
+  maybeCompleteAuthSession: jest.fn(),
   openAuthSessionAsync: jest.fn(),
+}));
+
+// Mock expo-linking
+jest.mock('expo-linking', () => ({
+  createURL: jest.fn((path: string) => `tymblok://${path}`),
+  parse: jest.fn(),
 }));
 
 // Mock authService
 jest.mock('../../../services/authService', () => ({
   authService: {
     login: jest.fn(),
-    getExternalLoginUrl: jest.fn((provider: string) => `https://api.example.com/auth/external/${provider}?mobile=true`),
+    getExternalLoginUrl: jest.fn((provider: string, redirectUrl: string) =>
+      `https://api.example.com/auth/external/${provider}?mobile=true&redirect_uri=${encodeURIComponent(redirectUrl)}`
+    ),
   },
 }));
 
@@ -227,8 +236,8 @@ describe('LoginScreen', () => {
 
       await waitFor(() => {
         expect(mockOpenAuthSession).toHaveBeenCalledWith(
-          'https://api.example.com/auth/external/google?mobile=true',
-          'tymblok://auth/callback'
+          expect.stringContaining('/auth/external/google'),
+          'tymblok://callback'
         );
       });
     });
@@ -244,8 +253,8 @@ describe('LoginScreen', () => {
 
       await waitFor(() => {
         expect(mockOpenAuthSession).toHaveBeenCalledWith(
-          'https://api.example.com/auth/external/github?mobile=true',
-          'tymblok://auth/callback'
+          expect.stringContaining('/auth/external/github'),
+          'tymblok://callback'
         );
       });
     });
