@@ -1,5 +1,4 @@
 import React from 'react';
-import { TouchableOpacity, Text } from 'react-native';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import ChangePasswordScreen from '../../app/(auth)/change-password';
@@ -28,6 +27,20 @@ jest.mock('../../services/authService', () => ({
   authService: {
     changePassword: jest.fn(),
   },
+}));
+
+// Mock authStore - required for AuthGuard to render content
+jest.mock('../../stores/authStore', () => ({
+  useAuthStore: jest.fn(() => ({
+    isAuthenticated: true,
+    isLoading: false,
+    user: {
+      id: 'user-1',
+      email: 'test@example.com',
+      name: 'Test User',
+      email_verified: true,
+    },
+  })),
 }));
 
 describe('ChangePasswordScreen', () => {

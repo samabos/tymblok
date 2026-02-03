@@ -1,5 +1,4 @@
 import React from 'react';
-import { TouchableOpacity, Text } from 'react-native';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import SetPasswordScreen from '../../app/(auth)/set-password';
@@ -30,9 +29,27 @@ jest.mock('../../services/authService', () => ({
   },
 }));
 
-// Mock authStore
+// Mock authStore - required for AuthGuard to render content
+const mockUpdateUser = jest.fn();
 jest.mock('../../stores/authStore', () => ({
-  useAuthStore: jest.fn(() => jest.fn()),
+  useAuthStore: jest.fn((selector) => {
+    const state = {
+      isAuthenticated: true,
+      isLoading: false,
+      user: {
+        id: 'user-1',
+        email: 'test@example.com',
+        name: 'Test User',
+        email_verified: true,
+        has_password: false,
+      },
+      updateUser: mockUpdateUser,
+    };
+    if (typeof selector === 'function') {
+      return selector(state);
+    }
+    return state;
+  }),
 }));
 
 describe('SetPasswordScreen', () => {
