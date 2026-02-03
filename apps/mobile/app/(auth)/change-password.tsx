@@ -5,11 +5,22 @@ import { router } from 'expo-router';
 import { useTheme, Card } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { authService } from '../../services/authService';
+import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthGuard } from '../../components/AuthGuard';
 
 export default function ChangePasswordScreen() {
+  return (
+    <AuthGuard>
+      <ChangePasswordContent />
+    </AuthGuard>
+  );
+}
+
+function ChangePasswordContent() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
+  const { authenticateForSensitiveAction } = useBiometricAuth();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -27,6 +38,14 @@ export default function ChangePasswordScreen() {
 
   const handleChangePassword = async () => {
     setError(null);
+
+    // Require biometric authentication if enabled
+    const authenticated = await authenticateForSensitiveAction('change password');
+    if (!authenticated) {
+      setError('Biometric authentication required');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -35,7 +54,6 @@ export default function ChangePasswordScreen() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to change password';
       setError(message);
-      console.error('[ChangePassword]', err);
     } finally {
       setIsLoading(false);
     }

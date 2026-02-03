@@ -18,6 +18,7 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserStats> UserStats => Set<UserStats>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +36,7 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
         ConfigureRefreshToken(modelBuilder);
         ConfigureUserStats(modelBuilder);
         ConfigureAuditLog(modelBuilder);
+        ConfigureUserSession(modelBuilder);
 
         // Global query filter for soft deletes
         modelBuilder.Entity<ApplicationUser>()
@@ -66,7 +68,7 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
                 .HasMaxLength(100);
 
             entity.Property(e => e.AvatarUrl)
-                .HasMaxLength(500);
+                .HasColumnType("text"); // No length limit for base64 data URLs
 
             entity.Property(e => e.Theme)
                 .HasConversion<string>()
@@ -106,6 +108,11 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasMany(u => u.Stats)
+                .WithOne(s => s.User)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(u => u.Sessions)
                 .WithOne(s => s.User)
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -372,6 +379,41 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => new { e.UserId, e.CreatedAt });
             entity.HasIndex(e => new { e.Action, e.CreatedAt });
+        });
+    }
+
+    private static void ConfigureUserSession(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserSession>(entity =>
+        {
+            entity.ToTable("user_sessions");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.DeviceType)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.DeviceName)
+                .HasMaxLength(200);
+
+            entity.Property(e => e.DeviceOs)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.IpAddress)
+                .HasMaxLength(50);
+
+            // Indexes
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.UserId, e.IsActive });
+            entity.HasIndex(e => e.RefreshTokenId);
+
+            // Relationship to RefreshToken
+            entity.HasOne(s => s.RefreshToken)
+                .WithMany()
+                .HasForeignKey(s => s.RefreshTokenId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Ignore computed properties
+            entity.Ignore(e => e.IsSessionActive);
         });
     }
 

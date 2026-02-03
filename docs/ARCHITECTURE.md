@@ -567,7 +567,7 @@ public class AuditLog
 | AUTH_INVALID_CREDENTIALS | 401 | Wrong email/password |
 | AUTH_TOKEN_EXPIRED | 401 | JWT expired |
 | AUTH_TOKEN_INVALID | 401 | JWT malformed |
-| AUTH_REFRESH_EXPIRED | 401 | Refresh token expired |
+| AUTH_SESSION_EXPIRED | 401 | Session expired |
 | AUTH_UNAUTHORIZED | 403 | No permission |
 | VALIDATION_ERROR | 400 | Input validation failed |
 | NOT_FOUND | 404 | Resource not found |

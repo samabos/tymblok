@@ -20,12 +20,12 @@ public interface IAuthService
     /// <summary>
     /// Register a new user and assign default role
     /// </summary>
-    Task<AuthResult> RegisterAsync(string email, string password, string name, string? ipAddress = null);
+    Task<AuthResult> RegisterAsync(string email, string password, string name, string? ipAddress = null, string? deviceType = null, string? deviceName = null, string? deviceOs = null);
 
     /// <summary>
     /// Login with email and password
     /// </summary>
-    Task<AuthResult> LoginAsync(string email, string password, string? ipAddress = null);
+    Task<AuthResult> LoginAsync(string email, string password, string? ipAddress = null, string? deviceType = null, string? deviceName = null, string? deviceOs = null);
 
     /// <summary>
     /// Refresh access token using refresh token
@@ -67,7 +67,10 @@ public interface IAuthService
         string? email,
         string? name,
         string? avatarUrl,
-        string? ipAddress = null);
+        string? ipAddress = null,
+        string? deviceType = null,
+        string? deviceName = null,
+        string? deviceOs = null);
 
     /// <summary>
     /// Link an external provider to an existing user account
@@ -102,4 +105,26 @@ public interface IAuthService
     /// Set password for an OAuth-only user who doesn't have a password
     /// </summary>
     Task SetPasswordAsync(Guid userId, string password);
+
+    // Session management
+
+    /// <summary>
+    /// Get all active sessions for a user
+    /// </summary>
+    Task<IList<UserSession>> GetSessionsAsync(Guid userId);
+
+    /// <summary>
+    /// Revoke a specific session by ID
+    /// </summary>
+    Task RevokeSessionAsync(Guid userId, Guid sessionId);
+
+    /// <summary>
+    /// Revoke all sessions for a user except the current one
+    /// </summary>
+    Task RevokeAllSessionsAsync(Guid userId, Guid? exceptSessionId = null);
+
+    /// <summary>
+    /// Create or update a session for a login
+    /// </summary>
+    Task<UserSession> CreateSessionAsync(Guid userId, Guid refreshTokenId, string? deviceType, string? deviceName, string? deviceOs, string? ipAddress);
 }

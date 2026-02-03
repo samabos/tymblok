@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, router } from 'expo-router';
 import Animated, {
@@ -361,7 +361,14 @@ export default function TodayScreen() {
                         onPress={() => router.push('/(auth)/profile')}
                       >
                         <View className="relative">
-                          <Avatar name={user?.name || 'User'} size="sm" color={colors.indigo[500]} />
+                          {user?.avatar_url ? (
+                            <Image
+                              source={{ uri: user.avatar_url }}
+                              style={{ width: 32, height: 32, borderRadius: 16 }}
+                            />
+                          ) : (
+                            <Avatar name={user?.name || 'User'} size="sm" color={colors.indigo[500]} />
+                          )}
                           <View
                             className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
                             style={{

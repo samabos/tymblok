@@ -120,6 +120,8 @@ describe('LoginScreen', () => {
         email: 'test@example.com',
         name: 'Test User',
         avatarUrl: null,
+        emailVerified: true,
+        hasPassword: true,
         createdAt: '2024-01-01T00:00:00Z',
       },
     };
@@ -177,7 +179,6 @@ describe('LoginScreen', () => {
   });
 
   it('should handle login error gracefully', async () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     mockLogin.mockRejectedValueOnce(new Error('Invalid credentials'));
 
     render(<LoginScreen />);
@@ -190,16 +191,15 @@ describe('LoginScreen', () => {
     fireEvent.changeText(passwordInput, 'wrongpassword');
     fireEvent.press(signInButton);
 
+    // Error message should be displayed
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[Login]', 'Invalid credentials');
+      expect(screen.getByText('Invalid credentials')).toBeTruthy();
     });
 
     // Button should be back to normal state after error
     await waitFor(() => {
       expect(screen.getByText('Sign in')).toBeTruthy();
     });
-
-    consoleErrorSpy.mockRestore();
   });
 
   it('should not submit when email is only whitespace', () => {

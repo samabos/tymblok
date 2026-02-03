@@ -39,7 +39,6 @@ export default function VerifyEmailScreen() {
         const message = err instanceof Error ? err.message : 'Verification failed';
         setError(message);
         setScreenState('error');
-        console.error('[VerifyEmail]', err);
       }
     };
 

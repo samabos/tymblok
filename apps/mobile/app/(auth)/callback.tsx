@@ -72,8 +72,7 @@ export default function OAuthCallbackScreen() {
 
         // Navigate to main app
         router.replace('/(tabs)/today');
-      } catch (err) {
-        console.error('[OAuthCallback] Error storing auth:', err);
+      } catch {
         setError('Failed to complete authentication');
         setTimeout(() => {
           router.replace('/(auth)/login');

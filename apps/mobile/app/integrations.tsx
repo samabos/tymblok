@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useTheme, Card } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthGuard } from '../components/AuthGuard';
 
 interface Integration {
   id: string;
@@ -74,6 +75,14 @@ const initialIntegrations: Integration[] = [
 ];
 
 export default function IntegrationsScreen() {
+  return (
+    <AuthGuard>
+      <IntegrationsContent />
+    </AuthGuard>
+  );
+}
+
+function IntegrationsContent() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
 

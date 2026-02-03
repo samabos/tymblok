@@ -7,8 +7,17 @@ import { colors } from '@tymblok/theme';
 import { authService } from '../../services/authService';
 import { useAuthStore } from '../../stores/authStore';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthGuard } from '../../components/AuthGuard';
 
 export default function SetPasswordScreen() {
+  return (
+    <AuthGuard>
+      <SetPasswordContent />
+    </AuthGuard>
+  );
+}
+
+function SetPasswordContent() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
   const updateUser = useAuthStore((state) => state.updateUser);

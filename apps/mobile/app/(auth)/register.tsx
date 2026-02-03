@@ -50,6 +50,7 @@ export default function RegisterScreen() {
           email: response.user.email,
           name: response.user.name,
           avatar_url: response.user.avatarUrl,
+          email_verified: response.user.emailVerified,
           has_password: response.user.hasPassword,
           timezone: 'UTC',
           working_hours_start: '09:00',
@@ -66,6 +67,12 @@ export default function RegisterScreen() {
           token_type: 'Bearer',
         }
       );
+
+      // New users need to verify their email before accessing the app
+      if (!response.user.emailVerified) {
+        router.replace('/(auth)/email-verification-pending');
+        return;
+      }
 
       router.replace('/(tabs)/today');
     } catch (err: unknown) {
@@ -85,12 +92,9 @@ export default function RegisterScreen() {
       // Create the redirect URL using expo-linking (works with Expo Go and standalone)
       const redirectUrl = Linking.createURL('callback');
       const url = authService.getExternalLoginUrl(provider, redirectUrl);
-      console.log(`[Register] Opening OAuth for ${provider}:`, url);
-      console.log(`[Register] Redirect URL:`, redirectUrl);
 
       // Open the OAuth URL in system browser
       const result = await WebBrowser.openAuthSessionAsync(url, redirectUrl);
-      console.log(`[Register] OAuth result:`, result);
 
       if (result.type === 'success' && result.url) {
         // Parse the URL and extract tokens
@@ -126,7 +130,7 @@ export default function RegisterScreen() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : `${provider} sign up failed`;
       setError(message);
-      console.error(`[Register] ${provider} OAuth error:`, err);
+      console.error(`[Register] ${provider} OAuth failed`);
     } finally {
       setOauthLoading(null);
     }

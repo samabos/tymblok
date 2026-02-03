@@ -488,7 +488,7 @@ Refresh access token.
 ```
 
 **Errors:**
-- `401 AUTH_REFRESH_EXPIRED` - Refresh token expired
+- `401 AUTH_SESSION_EXPIRED` - Session expired
 - `401 AUTH_TOKEN_INVALID` - Invalid token
 
 ---
@@ -1158,7 +1158,7 @@ Get focus score.
 | AUTH_INVALID_CREDENTIALS | 401 | Wrong email/password |
 | AUTH_TOKEN_EXPIRED | 401 | JWT has expired |
 | AUTH_TOKEN_INVALID | 401 | JWT is malformed |
-| AUTH_REFRESH_EXPIRED | 401 | Refresh token expired |
+| AUTH_SESSION_EXPIRED | 401 | Session expired |
 | UNAUTHORIZED | 403 | No permission for action |
 | NOT_FOUND | 404 | Resource not found |
 | CONFLICT | 409 | Resource conflict (duplicate) |

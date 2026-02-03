@@ -7,7 +7,9 @@ import * as Linking from 'expo-linking';
 import { useTheme, Card } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { authService, OAuthProvider } from '../../services/authService';
+import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthGuard } from '../../components/AuthGuard';
 
 // Needed for web browser to properly close
 WebBrowser.maybeCompleteAuthSession();
@@ -38,8 +40,17 @@ const PROVIDERS: ProviderInfo[] = [
 ];
 
 export default function LinkedAccountsScreen() {
+  return (
+    <AuthGuard>
+      <LinkedAccountsContent />
+    </AuthGuard>
+  );
+}
+
+function LinkedAccountsContent() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
+  const { authenticateForSensitiveAction } = useBiometricAuth();
 
   const [linkedProviders, setLinkedProviders] = useState<string[]>([]);
   const [hasPassword, setHasPassword] = useState(false);
@@ -54,8 +65,8 @@ export default function LinkedAccountsScreen() {
       ]);
       setLinkedProviders(providers.map(p => p.toLowerCase()));
       setHasPassword(passwordStatus);
-    } catch (err) {
-      console.error('[LinkedAccounts] Failed to load data:', err);
+    } catch {
+      console.error('[LinkedAccounts] Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -71,11 +82,8 @@ export default function LinkedAccountsScreen() {
       // Create the redirect URL using expo-linking (works with Expo Go and standalone)
       const redirectUrl = Linking.createURL('callback');
       const url = authService.getExternalLoginUrl(provider, redirectUrl);
-      console.log(`[LinkedAccounts] Opening OAuth for ${provider}:`, url);
-      console.log(`[LinkedAccounts] Redirect URL:`, redirectUrl);
 
       const result = await WebBrowser.openAuthSessionAsync(url, redirectUrl);
-      console.log(`[LinkedAccounts] OAuth result:`, result);
 
       if (result.type === 'success' && result.url) {
         // Parse the URL - if successful, the provider is now linked
@@ -87,8 +95,8 @@ export default function LinkedAccountsScreen() {
           Alert.alert('Error', (queryParams.message as string) || `Failed to link ${provider}.`);
         }
       }
-    } catch (err) {
-      console.error(`[LinkedAccounts] Failed to link ${provider}:`, err);
+    } catch {
+      console.error(`[LinkedAccounts] Failed to link ${provider}`);
       Alert.alert('Error', `Failed to link ${provider}. Please try again.`);
     } finally {
       setActionLoading(null);
@@ -108,6 +116,13 @@ export default function LinkedAccountsScreen() {
       return;
     }
 
+    // Require biometric authentication if enabled
+    const authenticated = await authenticateForSensitiveAction('unlink account');
+    if (!authenticated) {
+      Alert.alert('Authentication Required', 'Biometric authentication is required to unlink an account.');
+      return;
+    }
+
     Alert.alert(
       `Unlink ${provider.charAt(0).toUpperCase() + provider.slice(1)}?`,
       `You won't be able to sign in with ${provider} after unlinking.`,
@@ -121,8 +136,8 @@ export default function LinkedAccountsScreen() {
             try {
               await authService.unlinkProvider(provider);
               await loadData();
-            } catch (err) {
-              console.error(`[LinkedAccounts] Failed to unlink ${provider}:`, err);
+            } catch {
+              console.error(`[LinkedAccounts] Failed to unlink ${provider}`);
               Alert.alert('Error', `Failed to unlink ${provider}. Please try again.`);
             } finally {
               setActionLoading(null);

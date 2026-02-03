@@ -1,20 +1,39 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useTheme, Avatar, Card, Input } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { useAuthStore } from '../../stores/authStore';
+import { authService } from '../../services/authService';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthGuard } from '../../components/AuthGuard';
+
+const AVATAR_SIZE = 256; // Resize avatars to 256x256 for storage efficiency
 
 export default function ProfileScreen() {
+  return (
+    <AuthGuard>
+      <ProfileContent />
+    </AuthGuard>
+  );
+}
+
+function ProfileContent() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
-  const { user, clearAuth } = useAuthStore();
+  const { user, tokens, clearAuth, updateUser } = useAuthStore();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [name, setName] = useState(user?.name || 'User');
-  const [email, setEmail] = useState(user?.email || '');
+
+  // Email is read-only
+  const email = user?.email || '';
+  const avatarUrl = user?.avatar_url;
 
   // Use stored has_password from user object (set during login/OAuth)
   const hasPassword = user?.has_password ?? true;
@@ -32,8 +51,18 @@ export default function ProfileScreen() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
+            // Revoke refresh token on server before clearing local state
+            try {
+              if (tokens?.refresh_token) {
+                await authService.logout(tokens.refresh_token);
+              }
+            } catch (error) {
+              // Log but don't block logout if API fails
+              console.warn('[Logout] Failed to revoke token:', error);
+            }
             clearAuth();
+            // Navigate to login - AuthGuard on protected screens handles back navigation
             router.replace('/(auth)/login');
           },
         },
@@ -59,10 +88,129 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleSave = () => {
-    // TODO: Call API to update profile
-    console.log('[Profile] Saving profile:', { name, email });
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Name cannot be empty');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Call API to update profile
+      const updatedUser = await authService.updateProfile(name.trim());
+
+      // Update local state with response from server
+      updateUser({
+        name: updatedUser.name,
+      });
+      setIsEditing(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      Alert.alert('Error', message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangeAvatar = async () => {
+    // Show action sheet with options
+    Alert.alert(
+      'Change Avatar',
+      'Choose an option',
+      [
+        {
+          text: 'Take Photo',
+          onPress: () => pickImage('camera'),
+        },
+        {
+          text: 'Choose from Library',
+          onPress: () => pickImage('library'),
+        },
+        ...(avatarUrl ? [{
+          text: 'Remove Photo',
+          style: 'destructive' as const,
+          onPress: handleDeleteAvatar,
+        }] : []),
+        {
+          text: 'Cancel',
+          style: 'cancel' as const,
+        },
+      ]
+    );
+  };
+
+  const pickImage = async (source: 'camera' | 'library') => {
+    try {
+      // Request permissions
+      if (source === 'camera') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Camera permission is required to take photos.');
+          return;
+        }
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Photo library permission is required to choose photos.');
+          return;
+        }
+      }
+
+      // Launch picker
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to pick image';
+      Alert.alert('Error', message);
+    }
+  };
+
+  const uploadAvatar = async (imageUri: string) => {
+    setIsUploadingAvatar(true);
+    try {
+      // Resize image to 256x256 for storage efficiency
+      const manipulated = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [{ resize: { width: AVATAR_SIZE, height: AVATAR_SIZE } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      const response = await authService.uploadAvatar(manipulated.uri);
+      updateUser({ avatar_url: response.avatarUrl });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to upload avatar';
+      Alert.alert('Error', message);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    setIsUploadingAvatar(true);
+    try {
+      await authService.deleteAvatar();
+      updateUser({ avatar_url: null });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete avatar';
+      Alert.alert('Error', message);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
   };
 
   return (
@@ -92,15 +240,28 @@ export default function ProfileScreen() {
         {/* Avatar Section */}
         <View className="items-center py-6">
           <View className="relative">
-            <Avatar name={name} size="lg" color={colors.indigo[500]} />
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={{ width: 96, height: 96, borderRadius: 48 }}
+              />
+            ) : (
+              <Avatar name={name} size="lg" color={colors.indigo[500]} />
+            )}
             <TouchableOpacity
               className="absolute bottom-0 right-0 w-8 h-8 rounded-full items-center justify-center border-2"
               style={{
                 backgroundColor: themeColors.card,
                 borderColor: themeColors.border,
               }}
+              onPress={handleChangeAvatar}
+              disabled={isUploadingAvatar}
             >
-              <Ionicons name="camera" size={16} color={colors.indigo[500]} />
+              {isUploadingAvatar ? (
+                <ActivityIndicator size="small" color={colors.indigo[500]} />
+              ) : (
+                <Ionicons name="camera" size={16} color={colors.indigo[500]} />
+              )}
             </TouchableOpacity>
           </View>
           <Text
@@ -126,20 +287,44 @@ export default function ProfileScreen() {
             >
               Personal Info
             </Text>
-            <TouchableOpacity onPress={isEditing ? handleSave : () => setIsEditing(true)}>
-              <Text className="text-xs font-medium" style={{ color: colors.indigo[500] }}>
-                {isEditing ? 'Done' : 'Edit'}
+            <TouchableOpacity
+              onPress={isEditing ? handleSave : () => setIsEditing(true)}
+              disabled={isSaving}
+            >
+              <Text
+                className="text-xs font-medium"
+                style={{ color: isSaving ? themeColors.textMuted : colors.indigo[500] }}
+              >
+                {isSaving ? 'Saving...' : isEditing ? 'Done' : 'Edit'}
               </Text>
             </TouchableOpacity>
           </View>
           <Card variant="default" padding="none">
             <View className="p-4">
               {isEditing ? (
-                <Input
-                  label="Full Name"
-                  value={name}
-                  onChangeText={setName}
-                />
+                <View>
+                  <Input
+                    label="Full Name"
+                    value={name}
+                    onChangeText={setName}
+                    editable={!isSaving}
+                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      setName(user?.name || 'User');
+                      setIsEditing(false);
+                    }}
+                    disabled={isSaving}
+                    className="mt-2"
+                  >
+                    <Text
+                      className="text-sm"
+                      style={{ color: isSaving ? themeColors.textMuted : themeColors.textFaint }}
+                    >
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <>
                   <Text
@@ -158,26 +343,16 @@ export default function ProfileScreen() {
               className="p-4 border-t"
               style={{ borderColor: themeColors.border }}
             >
-              {isEditing ? (
-                <Input
-                  label="Email"
-                  type="email"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              ) : (
-                <>
-                  <Text
-                    className="text-sm mb-1"
-                    style={{ color: themeColors.textMuted }}
-                  >
-                    Email
-                  </Text>
-                  <Text className="font-medium" style={{ color: themeColors.text }}>
-                    {email}
-                  </Text>
-                </>
-              )}
+              {/* Email is not editable */}
+              <Text
+                className="text-sm mb-1"
+                style={{ color: themeColors.textMuted }}
+              >
+                Email
+              </Text>
+              <Text className="font-medium" style={{ color: themeColors.text }}>
+                {email}
+              </Text>
             </View>
           </Card>
         </View>

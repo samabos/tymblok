@@ -9,7 +9,7 @@ import { useAuthStore } from '../../stores/authStore';
 export default function TabLayout() {
   const { theme, isDark } = useTheme();
   const themeColors = theme.colors;
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, user } = useAuthStore();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -18,8 +18,15 @@ export default function TabLayout() {
     }
   }, [isAuthenticated, isLoading]);
 
-  // Don't render tabs while checking auth or if not authenticated
-  if (isLoading || !isAuthenticated) {
+  // Redirect to email verification if email not verified
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user && !user.email_verified) {
+      router.replace('/(auth)/email-verification-pending');
+    }
+  }, [isAuthenticated, isLoading, user]);
+
+  // Don't render tabs while checking auth, if not authenticated, or email not verified
+  if (isLoading || !isAuthenticated || (user && !user.email_verified)) {
     return null;
   }
 

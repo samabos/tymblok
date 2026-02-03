@@ -1,8 +1,10 @@
-import { View, Text, TouchableOpacity, Alert, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView, Switch, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { useBiometricAuth } from '../../hooks/useBiometricAuth';
+import { useBiometricSignIn } from '../../hooks/useBiometricSignIn';
+import { authService } from '../../services/authService';
 import { useTheme, Avatar, Card } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -85,10 +87,16 @@ export default function SettingsScreen() {
   const { theme, toggleTheme, isDark } = useTheme();
   const themeColors = theme.colors;
   const { user, clearAuth } = useAuthStore();
-  const { isAvailable, isEnabled, biometricType, enableBiometric, disableBiometric } = useBiometricAuth();
+  const { isAvailable, isEnabled: isProtectionEnabled, enableBiometric, disableBiometric } = useBiometricAuth();
+  const { isEnabled: isSignInEnabled, enableBiometricSignIn, disableBiometricSignIn } = useBiometricSignIn();
+
+  // Combined biometric state - enabled if either is enabled
+  const isBiometricEnabled = isProtectionEnabled || isSignInEnabled;
 
   // Use stored has_password from user object (set during login/OAuth)
   const hasPassword = user?.has_password ?? true;
+
+  const { tokens } = useAuthStore();
 
   const handleLogout = () => {
     Alert.alert(
@@ -99,8 +107,18 @@ export default function SettingsScreen() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
+            // Revoke refresh token on server before clearing local state
+            try {
+              if (tokens?.refresh_token) {
+                await authService.logout(tokens.refresh_token);
+              }
+            } catch (error) {
+              // Log but don't block logout if API fails
+              console.warn('[Logout] Failed to revoke token:', error);
+            }
             clearAuth();
+            // Navigate to login - AuthGuard on protected screens handles back navigation
             router.replace('/(auth)/login');
           },
         },
@@ -110,9 +128,15 @@ export default function SettingsScreen() {
 
   const handleBiometricToggle = async (value: boolean) => {
     if (value) {
-      await enableBiometric();
+      // Enable both features
+      const signInEnabled = await enableBiometricSignIn();
+      if (signInEnabled) {
+        await enableBiometric();
+      }
     } else {
+      // Disable both features
       await disableBiometric();
+      await disableBiometricSignIn();
     }
   };
 
@@ -137,7 +161,14 @@ export default function SettingsScreen() {
         <View className="pt-4">
           <Card variant="default" padding="md" pressable onPress={() => router.push('/(auth)/profile')}>
             <View className="flex-row items-center">
-              <Avatar name={user?.name || 'User'} size="md" color={colors.indigo[500]} />
+              {user?.avatar_url ? (
+                <Image
+                  source={{ uri: user.avatar_url }}
+                  style={{ width: 48, height: 48, borderRadius: 24 }}
+                />
+              ) : (
+                <Avatar name={user?.name || 'User'} size="md" color={colors.indigo[500]} />
+              )}
               <View className="ml-3 flex-1">
                 <Text className="font-medium" style={{ color: themeColors.text }}>
                   {user?.name || 'User'}
@@ -216,10 +247,10 @@ export default function SettingsScreen() {
           <Card variant="default" padding="none">
             <SettingsRow
               icon="finger-print-outline"
-              label={biometricType || 'Biometric Lock'}
-              sublabel={isAvailable ? 'Require biometrics to open app' : 'Not available on this device'}
+              label="Biometric Sign-in"
+              sublabel={isAvailable ? 'Sign in faster & protect sensitive actions' : 'Not available on this device'}
               showSwitch
-              value={isEnabled}
+              value={isBiometricEnabled}
               onValueChange={handleBiometricToggle}
               disabled={!isAvailable}
             />
@@ -237,6 +268,14 @@ export default function SettingsScreen() {
                 label="Linked Accounts"
                 sublabel="Google, GitHub sign-in options"
                 onPress={() => router.push('/(auth)/linked-accounts')}
+              />
+            </View>
+            <View style={{ borderTopWidth: 1, borderColor: themeColors.border }}>
+              <SettingsRow
+                icon="phone-portrait-outline"
+                label="Active Sessions"
+                sublabel="Manage devices signed in"
+                onPress={() => router.push('/(auth)/sessions')}
               />
             </View>
           </Card>

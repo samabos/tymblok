@@ -60,6 +60,12 @@ export default function AuthLayout() {
           animation: 'slide_from_right',
         }}
       />
+      <Stack.Screen
+        name="sessions"
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
     </Stack>
   );
 }

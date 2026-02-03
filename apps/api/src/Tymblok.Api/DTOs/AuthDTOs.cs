@@ -45,6 +45,18 @@ public record SetPasswordRequest(
     [Required][MinLength(8)] string Password
 );
 
+public record LogoutRequest(
+    [Required] string RefreshToken
+);
+
+public record UpdateProfileRequest(
+    [Required][MinLength(1)][MaxLength(100)] string Name
+);
+
+public record AvatarResponse(
+    string AvatarUrl
+);
+
 public record UserDto(
     Guid Id,
     string Email,
@@ -102,4 +114,19 @@ public record ErrorDetails(
 public record FieldError(
     string Field,
     string Message
+);
+
+public record SessionDto(
+    Guid Id,
+    string? DeviceType,
+    string? DeviceName,
+    string? DeviceOs,
+    string? IpAddress,
+    bool IsCurrent,
+    DateTime LastActiveAt,
+    DateTime CreatedAt
+);
+
+public record SessionsResponse(
+    IList<SessionDto> Sessions
 );

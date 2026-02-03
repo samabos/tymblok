@@ -122,6 +122,8 @@ describe('RegisterScreen', () => {
         email: 'test@example.com',
         name: 'Test User',
         avatarUrl: null,
+        emailVerified: true,
+        hasPassword: true,
         createdAt: '2024-01-01T00:00:00Z',
       },
     };
@@ -162,6 +164,8 @@ describe('RegisterScreen', () => {
         email: 'test@example.com',
         name: 'Test User',
         avatarUrl: null,
+        emailVerified: true,
+        hasPassword: true,
         createdAt: '2024-01-01T00:00:00Z',
       },
     };

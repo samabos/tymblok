@@ -5,10 +5,19 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, Button, Input, Badge } from '@tymblok/ui';
 import { spacing, borderRadius, typography, colors } from '@tymblok/theme';
+import { AuthGuard } from '../components/AuthGuard';
 
 type TaskCategory = 'jira' | 'github' | 'meeting' | 'focus';
 
 export default function AddTaskScreen() {
+  return (
+    <AuthGuard>
+      <AddTaskContent />
+    </AuthGuard>
+  );
+}
+
+function AddTaskContent() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
 

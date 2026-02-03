@@ -46,6 +46,9 @@ public static class WebApplicationExtensions
         app.UseHttpsRedirection();
         app.UseCors("AllowAll");
 
+        // Static files (for avatar images, etc.)
+        app.UseStaticFiles();
+
         // Authentication & Authorization
         app.UseAuthentication();
         app.UseAuthorization();
