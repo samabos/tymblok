@@ -20,6 +20,11 @@ public interface ICategoryRepository
     Task<IList<Category>> GetByUserIdAsync(Guid userId);
 
     /// <summary>
+    /// Get all system categories
+    /// </summary>
+    Task<IList<Category>> GetSystemCategoriesAsync();
+
+    /// <summary>
     /// Check if a category is being used by any time blocks
     /// </summary>
     Task<bool> IsInUseAsync(Guid categoryId);

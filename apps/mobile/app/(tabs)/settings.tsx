@@ -150,6 +150,12 @@ export default function SettingsScreen() {
         >
           Settings
         </Text>
+        <Text
+          className="text-sm mt-1"
+          style={{ color: themeColors.textMuted }}
+        >
+          Manage your account and preferences
+        </Text>
       </View>
 
       <ScrollView

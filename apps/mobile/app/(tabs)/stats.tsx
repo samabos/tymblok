@@ -29,7 +29,7 @@ const categoryData = [
 ];
 
 export default function StatsScreen() {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const themeColors = theme.colors;
 
   const maxHours = Math.max(...weekData.map(d => d.hours));

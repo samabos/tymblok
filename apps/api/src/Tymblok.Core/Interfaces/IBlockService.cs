@@ -11,11 +11,18 @@ public record CreateBlockData(
     int DurationMinutes,
     bool IsUrgent,
     string? ExternalId,
-    string? ExternalUrl
+    string? ExternalUrl,
+    // Recurrence
+    bool IsRecurring = false,
+    Entities.RecurrenceType? RecurrenceType = null,
+    int RecurrenceInterval = 1,
+    string? RecurrenceDaysOfWeek = null,
+    DateOnly? RecurrenceEndDate = null,
+    int? RecurrenceMaxOccurrences = null
 );
 
 public record UpdateBlockData(
-    string Title,
+    string? Title,
     string? Subtitle,
     Guid? CategoryId,
     DateOnly? Date,
@@ -23,7 +30,8 @@ public record UpdateBlockData(
     int? DurationMinutes,
     bool? IsUrgent,
     bool? IsCompleted,
-    int? Progress
+    int? Progress,
+    int? SortOrder
 );
 
 public record CategoryData(Guid Id, string Name, string Color, string Icon, bool IsSystem, DateTime CreatedAt);
@@ -63,7 +71,22 @@ public interface IBlockService
     Task<BlockWithCategory> CompleteAsync(Guid blockId, Guid userId, CancellationToken ct = default);
 
     /// <summary>
+    /// Start the timer for a time block
+    /// </summary>
+    Task<BlockWithCategory> StartAsync(Guid blockId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Pause the timer for a time block
+    /// </summary>
+    Task<BlockWithCategory> PauseAsync(Guid blockId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
     /// Delete a time block (must be owned by user)
     /// </summary>
     Task DeleteAsync(Guid blockId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Restore a deleted time block
+    /// </summary>
+    Task<BlockWithCategory> RestoreAsync(Guid blockId, Guid userId, CancellationToken ct = default);
 }

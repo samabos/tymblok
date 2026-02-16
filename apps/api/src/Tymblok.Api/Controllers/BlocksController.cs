@@ -48,7 +48,13 @@ public class BlocksController : ControllerBase
                 request.DurationMinutes,
                 request.IsUrgent,
                 request.ExternalId,
-                request.ExternalUrl
+                request.ExternalUrl,
+                request.IsRecurring,
+                request.RecurrenceType,
+                request.RecurrenceInterval,
+                request.RecurrenceDaysOfWeek,
+                request.RecurrenceEndDate,
+                request.RecurrenceMaxOccurrences
             );
             var result = await _blockService.CreateAsync(data, userId, ct);
 
@@ -145,7 +151,8 @@ public class BlocksController : ControllerBase
                 request.DurationMinutes,
                 request.IsUrgent,
                 request.IsCompleted,
-                request.Progress
+                request.Progress,
+                request.SortOrder
             );
             var result = await _blockService.UpdateAsync(id, data, userId, ct);
 
@@ -196,6 +203,115 @@ public class BlocksController : ControllerBase
     }
 
     /// <summary>
+    /// Start the timer for a time block
+    /// </summary>
+    [HttpPost("{id:guid}/start")]
+    [ProducesResponseType(typeof(ApiResponse<BlockDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Start(Guid id, CancellationToken ct)
+    {
+        var userId = GetUserId();
+
+        try
+        {
+            var result = await _blockService.StartAsync(id, userId, ct);
+
+            _logger.LogInformation("Time block started | BlockId: {BlockId} | UserId: {UserId}",
+                result.Block.Id, userId);
+
+            return Ok(WrapResponse(MapToDto(result.Block, result.Category)));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (ForbiddenException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Pause the timer for a time block
+    /// </summary>
+    [HttpPost("{id:guid}/pause")]
+    [ProducesResponseType(typeof(ApiResponse<BlockDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Pause(Guid id, CancellationToken ct)
+    {
+        var userId = GetUserId();
+
+        try
+        {
+            var result = await _blockService.PauseAsync(id, userId, ct);
+
+            _logger.LogInformation("Time block paused | BlockId: {BlockId} | UserId: {UserId}",
+                result.Block.Id, userId);
+
+            return Ok(WrapResponse(MapToDto(result.Block, result.Category)));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (ForbiddenException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Resume the timer for a time block (same as start)
+    /// </summary>
+    [HttpPost("{id:guid}/resume")]
+    [ProducesResponseType(typeof(ApiResponse<BlockDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Resume(Guid id, CancellationToken ct)
+    {
+        var userId = GetUserId();
+
+        try
+        {
+            // Resume is the same as start (start handles both first start and resume)
+            var result = await _blockService.StartAsync(id, userId, ct);
+
+            _logger.LogInformation("Time block resumed | BlockId: {BlockId} | UserId: {UserId}",
+                result.Block.Id, userId);
+
+            return Ok(WrapResponse(MapToDto(result.Block, result.Category)));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (ForbiddenException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    /// <summary>
     /// Delete a time block
     /// </summary>
     [HttpDelete("{id:guid}")]
@@ -223,6 +339,42 @@ public class BlocksController : ControllerBase
         catch (ForbiddenException ex)
         {
             return StatusCode(StatusCodes.Status403Forbidden, CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Restore a deleted time block
+    /// </summary>
+    [HttpPost("{id:guid}/restore")]
+    [ProducesResponseType(typeof(ApiResponse<BlockDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Restore(Guid id, CancellationToken ct)
+    {
+        var userId = GetUserId();
+
+        try
+        {
+            var result = await _blockService.RestoreAsync(id, userId, ct);
+
+            _logger.LogInformation("Time block restored | BlockId: {BlockId} | UserId: {UserId}",
+                result.Block.Id, userId);
+
+            return Ok(WrapResponse(MapToDto(result.Block, result.Category)));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (ForbiddenException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, CreateErrorResponse(ex.Code, ex.Message));
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(CreateErrorResponse(ex.Code, ex.Message));
         }
     }
 
@@ -274,6 +426,22 @@ public class BlocksController : ControllerBase
             cat.CreatedAt
         );
 
+        // Map recurrence rule if exists
+        RecurrenceRuleDto? recurrenceRuleDto = null;
+        if (block.RecurrenceRule != null)
+        {
+            recurrenceRuleDto = new RecurrenceRuleDto(
+                block.RecurrenceRule.Id,
+                block.RecurrenceRule.Type,
+                block.RecurrenceRule.Interval,
+                block.RecurrenceRule.DaysOfWeek,
+                block.RecurrenceRule.EndDate,
+                block.RecurrenceRule.MaxOccurrences,
+                block.RecurrenceRule.CreatedAt,
+                block.RecurrenceRule.UpdatedAt
+            );
+        }
+
         return new BlockDto(
             block.Id,
             block.Title,
@@ -292,7 +460,15 @@ public class BlocksController : ControllerBase
             block.ExternalId,
             block.ExternalUrl,
             block.CreatedAt,
-            block.CompletedAt
+            block.CompletedAt,
+            block.TimerState,
+            block.StartedAt,
+            block.PausedAt,
+            block.ResumedAt,
+            block.IsRecurring,
+            block.RecurrenceRuleId,
+            recurrenceRuleDto,
+            block.RecurrenceParentId
         );
     }
 }

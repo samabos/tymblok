@@ -26,6 +26,12 @@ public class TimeBlock : BaseEntity
     public int Progress { get; set; } = 0; // 0-100
     public int ElapsedSeconds { get; set; } = 0;
 
+    // Timer
+    public TimerState TimerState { get; set; } = TimerState.NotStarted;
+    public DateTime? StartedAt { get; set; }
+    public DateTime? PausedAt { get; set; }
+    public DateTime? ResumedAt { get; set; }
+
     // Ordering
     public int SortOrder { get; set; }
 
@@ -33,4 +39,17 @@ public class TimeBlock : BaseEntity
     public string? ExternalId { get; set; }
     public string? ExternalUrl { get; set; }
     public IntegrationProvider? ExternalSource { get; set; }
+
+    // Recurrence
+    public bool IsRecurring { get; set; } = false;
+    public Guid? RecurrenceRuleId { get; set; }
+    public RecurrenceRule? RecurrenceRule { get; set; }
+
+    // For recurring blocks: ID of the "master" instance (first occurrence)
+    // All instances share the same RecurrenceRuleId but have different dates
+    public Guid? RecurrenceParentId { get; set; }
+
+    // Soft delete
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAt { get; set; }
 }

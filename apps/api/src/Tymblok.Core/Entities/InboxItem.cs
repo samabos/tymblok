@@ -13,7 +13,7 @@ public class InboxItem : BaseEntity
 
     public InboxSource Source { get; set; }
     public InboxItemType Type { get; set; }
-    public InboxPriority Priority { get; set; } = InboxPriority.Normal;
+    public InboxPriority Priority { get; set; } = InboxPriority.Medium;
 
     // External reference
     public string? ExternalId { get; set; }
@@ -24,4 +24,9 @@ public class InboxItem : BaseEntity
     public DateTime? DismissedAt { get; set; }
     public bool IsScheduled { get; set; } = false;
     public Guid? ScheduledBlockId { get; set; }
+
+    // Recurrence
+    public bool IsRecurring { get; set; } = false;
+    public Guid? RecurrenceRuleId { get; set; }
+    public RecurrenceRule? RecurrenceRule { get; set; }
 }

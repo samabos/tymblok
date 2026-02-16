@@ -39,6 +39,14 @@ public class CategoryRepository : ICategoryRepository
             .ToListAsync();
     }
 
+    public async Task<IList<Category>> GetSystemCategoriesAsync()
+    {
+        return await _context.Categories
+            .Where(c => c.IsSystem)
+            .OrderBy(c => c.Name)
+            .ToListAsync();
+    }
+
     public async Task<bool> IsInUseAsync(Guid categoryId)
     {
         return await _context.TimeBlocks

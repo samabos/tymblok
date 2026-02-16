@@ -8,7 +8,13 @@ public record CreateInboxItemData(
     InboxPriority Priority,
     Guid? IntegrationId,
     string? ExternalId,
-    string? ExternalUrl
+    string? ExternalUrl,
+    bool IsRecurring = false,
+    RecurrenceType? RecurrenceType = null,
+    int RecurrenceInterval = 1,
+    string? RecurrenceDaysOfWeek = null,
+    DateOnly? RecurrenceEndDate = null,
+    int? RecurrenceMaxOccurrences = null
 );
 
 public record UpdateInboxItemData(

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Tymblok.Core.Entities;
 
 namespace Tymblok.Api.DTOs;
 
@@ -11,19 +12,27 @@ public record CreateBlockRequest(
     [Required][Range(1, 1440)] int DurationMinutes, // Max 24 hours
     bool IsUrgent = false,
     string? ExternalId = null,
-    string? ExternalUrl = null
+    string? ExternalUrl = null,
+    // Recurrence
+    bool IsRecurring = false,
+    RecurrenceType? RecurrenceType = null,
+    int RecurrenceInterval = 1,
+    string? RecurrenceDaysOfWeek = null,
+    DateOnly? RecurrenceEndDate = null,
+    int? RecurrenceMaxOccurrences = null
 );
 
 public record UpdateBlockRequest(
-    [Required][MinLength(1)][MaxLength(200)] string Title,
-    [MaxLength(500)] string? Subtitle,
+    [MinLength(1)][MaxLength(200)] string? Title = null,
+    [MaxLength(500)] string? Subtitle = null,
     Guid? CategoryId = null,
     DateOnly? Date = null,
     TimeOnly? StartTime = null,
     [Range(1, 1440)] int? DurationMinutes = null,
     bool? IsUrgent = null,
     bool? IsCompleted = null,
-    [Range(0, 100)] int? Progress = null
+    [Range(0, 100)] int? Progress = null,
+    int? SortOrder = null
 );
 
 public record BlockDto(
@@ -44,7 +53,17 @@ public record BlockDto(
     string? ExternalId,
     string? ExternalUrl,
     DateTime CreatedAt,
-    DateTime? CompletedAt
+    DateTime? CompletedAt,
+    // Timer
+    TimerState TimerState,
+    DateTime? StartedAt,
+    DateTime? PausedAt,
+    DateTime? ResumedAt,
+    // Recurrence
+    bool IsRecurring,
+    Guid? RecurrenceRuleId,
+    RecurrenceRuleDto? RecurrenceRule,
+    Guid? RecurrenceParentId
 );
 
 public record BlocksResponse(

@@ -6,10 +6,16 @@ namespace Tymblok.Api.DTOs;
 public record CreateInboxItemRequest(
     [Required][MinLength(1)][MaxLength(200)] string Title,
     [MaxLength(2000)] string? Description,
-    InboxPriority Priority = InboxPriority.Normal,
+    InboxPriority Priority = InboxPriority.Medium,
     Guid? IntegrationId = null,
     string? ExternalId = null,
-    string? ExternalUrl = null
+    string? ExternalUrl = null,
+    bool IsRecurring = false,
+    RecurrenceType? RecurrenceType = null,
+    int RecurrenceInterval = 1,
+    string? RecurrenceDaysOfWeek = null,
+    DateOnly? RecurrenceEndDate = null,
+    int? RecurrenceMaxOccurrences = null
 );
 
 public record UpdateInboxItemRequest(
@@ -32,7 +38,10 @@ public record InboxItemDto(
     bool IsScheduled,
     Guid? ScheduledBlockId,
     DateTime CreatedAt,
-    DateTime? DismissedAt
+    DateTime? DismissedAt,
+    bool IsRecurring,
+    Guid? RecurrenceRuleId,
+    RecurrenceRuleDto? RecurrenceRule
 );
 
 public record InboxItemsResponse(

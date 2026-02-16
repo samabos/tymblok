@@ -25,6 +25,17 @@ public interface IBlockRepository
     Task<IList<TimeBlock>> GetByDateAsync(Guid userId, DateOnly date);
 
     /// <summary>
+    /// Get all parent recurring blocks for a user (blocks with IsRecurring = true and RecurrenceParentId = null)
+    /// Includes RecurrenceRule navigation property
+    /// </summary>
+    Task<IList<TimeBlock>> GetRecurringParentBlocksAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Get all blocks for a user by recurrence rule ID
+    /// </summary>
+    Task<IList<TimeBlock>> GetByRecurrenceRuleAsync(Guid recurrenceRuleId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
     /// Create a new time block
     /// </summary>
     Task<TimeBlock> CreateAsync(TimeBlock block);

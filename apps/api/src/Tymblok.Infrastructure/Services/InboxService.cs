@@ -7,18 +7,40 @@ namespace Tymblok.Infrastructure.Services;
 public class InboxService : IInboxService
 {
     private readonly IInboxRepository _repository;
+    private readonly IRecurrenceRuleRepository _recurrenceRepository;
+    private readonly IBlockRepository _blockRepository;
     private readonly IAuditService _auditService;
 
     public InboxService(
         IInboxRepository repository,
+        IRecurrenceRuleRepository recurrenceRepository,
+        IBlockRepository blockRepository,
         IAuditService auditService)
     {
         _repository = repository;
+        _recurrenceRepository = recurrenceRepository;
+        _blockRepository = blockRepository;
         _auditService = auditService;
     }
 
     public async Task<InboxItem> CreateAsync(CreateInboxItemData data, Guid userId, CancellationToken ct = default)
     {
+        // Create recurrence rule if recurring
+        RecurrenceRule? recurrenceRule = null;
+        if (data.IsRecurring && data.RecurrenceType.HasValue)
+        {
+            recurrenceRule = new RecurrenceRule
+            {
+                Type = data.RecurrenceType.Value,
+                Interval = data.RecurrenceInterval,
+                DaysOfWeek = data.RecurrenceDaysOfWeek,
+                EndDate = data.RecurrenceEndDate,
+                MaxOccurrences = data.RecurrenceMaxOccurrences
+            };
+
+            await _recurrenceRepository.CreateAsync(recurrenceRule);
+        }
+
         // Create entity
         var item = new InboxItem
         {
@@ -32,7 +54,9 @@ public class InboxService : IInboxService
             Source = InboxSource.Manual, // Default to Manual for user-created items
             Type = InboxItemType.Task,   // Default to Task
             IsDismissed = false,
-            IsScheduled = false
+            IsScheduled = false,
+            IsRecurring = data.IsRecurring,
+            RecurrenceRuleId = recurrenceRule?.Id
         };
 
         // Save via repository
@@ -175,6 +199,40 @@ public class InboxService : IInboxService
             throw new ForbiddenException("NOT_OWNER", "You do not have permission to delete this inbox item");
         }
 
+        // If recurring, delete all future blocks associated with this recurrence rule
+        if (item.IsRecurring && item.RecurrenceRuleId.HasValue)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var futureBlocks = await _blockRepository.GetByRecurrenceRuleAsync(
+                item.RecurrenceRuleId.Value,
+                userId,
+                ct);
+
+            // Only delete future blocks (not past or completed ones)
+            var blocksToDelete = futureBlocks
+                .Where(b => b.Date >= today && !b.IsCompleted)
+                .ToList();
+
+            foreach (var block in blocksToDelete)
+            {
+                // Soft delete
+                block.IsDeleted = true;
+                block.DeletedAt = DateTime.UtcNow;
+                block.UpdatedAt = DateTime.UtcNow;
+            }
+
+            // Audit log for deleted blocks
+            if (blocksToDelete.Any())
+            {
+                await _auditService.LogAsync(
+                    action: "DeleteFutureBlocks",
+                    entityType: "TimeBlock",
+                    entityId: item.RecurrenceRuleId.Value.ToString(),
+                    userId: userId,
+                    oldValues: new { DeletedCount = blocksToDelete.Count, InboxItemId = itemId });
+            }
+        }
+
         // Store values for audit
         var deletedValues = new
         {
@@ -182,10 +240,12 @@ public class InboxService : IInboxService
             item.Title,
             item.Description,
             item.Source,
-            item.Priority
+            item.Priority,
+            item.IsRecurring,
+            item.RecurrenceRuleId
         };
 
-        // Delete
+        // Delete inbox item
         _repository.Delete(item);
         await _repository.SaveChangesAsync(ct);
 

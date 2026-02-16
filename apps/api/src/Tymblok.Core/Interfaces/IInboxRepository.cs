@@ -24,6 +24,11 @@ public interface IInboxRepository
         InboxPriority? priority = null);
 
     /// <summary>
+    /// Get all recurring inbox items for a user (includes RecurrenceRule navigation property)
+    /// </summary>
+    Task<IList<InboxItem>> GetRecurringInboxItemsAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
     /// Create a new inbox item
     /// </summary>
     Task<InboxItem> CreateAsync(InboxItem item);

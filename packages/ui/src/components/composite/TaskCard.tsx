@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,11 +12,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, layout, springConfig, getLabelColor } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Badge } from '../primitives/Badge';
-import { Button } from '../primitives/Button';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export type TaskType = 'github' | 'jira' | 'meeting' | 'focus' | 'manual';
+export type TimerStatus = 'NotStarted' | 'Running' | 'Paused' | 'Completed';
 
 export interface TaskCardData {
   id: string;
@@ -29,7 +29,9 @@ export interface TaskCardData {
   completed?: boolean;
   urgent?: boolean;
   isNow?: boolean;
-  progress?: number;
+  timerState?: TimerStatus;
+  elapsedSeconds?: number;
+  isRecurring?: boolean;
 }
 
 export interface TaskCardProps {
@@ -41,6 +43,7 @@ export interface TaskCardProps {
   onComplete?: () => void;
   onUndoComplete?: () => void;
   onStart?: () => void;
+  onPause?: () => void;
   dragging?: boolean;
   style?: ViewStyle;
 }
@@ -54,6 +57,7 @@ export function TaskCard({
   onComplete,
   onUndoComplete,
   onStart,
+  onPause,
   dragging = false,
   style,
 }: TaskCardProps) {
@@ -66,13 +70,14 @@ export function TaskCard({
   // Use external expanded state if provided, otherwise use internal state
   const expanded = externalExpanded !== undefined ? externalExpanded : internalExpanded;
 
-  // Mute the accent color for non-active tasks
+  const timerState: TimerStatus = task.timerState || 'NotStarted';
+
+  // Accent bar: blue when live, muted when completed, task color otherwise
   const typeColor = task.completed
     ? themeColors.textFaint
     : task.isNow
-      ? getTypeColor(task.type)
+      ? colors.indigo[500]
       : `${getTypeColor(task.type)}80`; // 50% opacity for scheduled
-  const durationText = formatDuration(task.durationMinutes);
 
   const handlePress = () => {
     if (externalExpanded === undefined) {
@@ -95,9 +100,15 @@ export function TaskCard({
     opacity: dragging ? 0.7 : opacity.value,
   }));
 
-  const cardBorderStyle = task.isNow
-    ? { borderColor: colors.indigo[500], borderWidth: 2 }
-    : { borderColor: themeColors.border, borderWidth: 1 };
+  const cardBorderStyle = { borderWidth: 0 };
+
+  const cardShadowStyle = isDark ? {} : {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: task.isNow ? 0.12 : 0.08,
+    shadowRadius: task.isNow ? 16 : 12,
+    elevation: task.isNow ? 6 : 3,
+  };
 
   const taskStatusLabel = task.completed
     ? 'Completed'
@@ -126,20 +137,13 @@ export function TaskCard({
       style={[
         styles.container,
         {
-          backgroundColor: task.completed
-            ? isDark
-              ? 'rgba(15, 23, 42, 0.4)'
-              : 'rgba(248, 250, 252, 0.4)'
-            : task.isNow
-              ? isDark
-                ? 'rgba(99, 102, 241, 0.15)'
-                : 'rgba(99, 102, 241, 0.08)'
-              : isDark
-                ? 'rgba(15, 23, 42, 0.5)'
-                : 'rgba(248, 250, 252, 0.6)',
-          opacity: task.isNow ? 1 : task.completed ? 0.5 : 0.6,
+          backgroundColor: task.isNow && isDark
+            ? 'rgba(99, 102, 241, 0.12)'
+            : themeColors.card,
+          opacity: task.isNow ? 1 : task.completed ? 0.6 : 1,
         },
         cardBorderStyle,
+        cardShadowStyle,
         task.completed && styles.completed,
         animatedStyle,
         style,
@@ -147,108 +151,113 @@ export function TaskCard({
       entering={FadeIn.duration(300)}
       layout={Layout.springify()}
     >
-      {/* Left accent bar */}
-      <View
-        style={[styles.accentBar, { backgroundColor: typeColor }]}
-        accessibilityElementsHidden
-      />
 
       <View style={styles.content}>
         {/* Header row */}
         <View style={styles.headerRow}>
-          <View style={styles.timeContainer} accessibilityLabel={`${durationText ? `Duration: ${durationText}` : ''}${task.time ? `, Time: ${task.time}` : ''}`}>
-            {durationText && (
-              <Text
-                style={[
-                  styles.time,
-                  {
-                    color: task.completed
-                      ? themeColors.textFaint
-                      : task.isNow
-                        ? themeColors.text
-                        : themeColors.textMuted,
-                  },
-                  task.completed && styles.completedText,
-                ]}
-                accessibilityElementsHidden
-              >
-                {durationText}
-              </Text>
-            )}
-            {task.time && (
-              <Text
-                style={[
-                  styles.duration,
-                  { color: themeColors.textFaint },
-                  task.completed && styles.completedText,
-                ]}
-                accessibilityElementsHidden
-              >
-                {task.time}
-              </Text>
-            )}
-          </View>
+          <Text
+            style={[
+              styles.time,
+              {
+                color: task.completed
+                  ? themeColors.textFaint
+                  : themeColors.textMuted,
+              },
+              task.completed && styles.completedText,
+            ]}
+            accessibilityLabel={`Time: ${task.time}`}
+          >
+            {task.time}
+          </Text>
 
-          <View style={styles.badges} accessibilityRole="text">
-            <View accessibilityLabel={`Type: ${getTypeLabel(task.type)}`}>
-              <Badge
-                variant={task.completed || !task.isNow ? 'default' : (task.type as 'github' | 'jira' | 'meeting' | 'focus')}
-                size="sm"
-                label={getTypeLabel(task.type)}
-              />
-            </View>
-            {task.completed && (
-              <View accessibilityLabel="Status: Done">
-                <Badge
-                  variant="default"
-                  size="sm"
-                  label="Done"
-                  style={{ marginLeft: spacing[1] }}
-                />
-              </View>
-            )}
+          <View style={styles.headerRight}>
             {!task.completed && task.urgent && (
-              <View accessibilityLabel="Priority: Urgent">
-                <Badge
-                  variant="urgent"
-                  size="sm"
-                  label="Urgent"
-                  style={{ marginLeft: spacing[1] }}
-                />
-              </View>
+              <Badge
+                variant="urgent"
+                size="sm"
+                label="Urgent"
+              />
             )}
-            {!task.completed && task.isNow && (
-              <View accessibilityLabel="Status: In progress">
-                <Badge
-                  variant="live"
-                  size="sm"
-                  label="Live"
-                  pulse
-                  style={{ marginLeft: spacing[1] }}
-                />
+
+            {/* Start/Pause button */}
+            {!task.completed && timerState !== 'Running' && onStart && (
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  onStart();
+                }}
+                activeOpacity={0.7}
+                style={[styles.timerButton, { backgroundColor: colors.indigo[500] }]}
+                accessibilityLabel="Start task"
+                accessibilityRole="button"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="play" size={14} color={colors.white} />
+              </TouchableOpacity>
+            )}
+            {!task.completed && timerState === 'Running' && (
+              <View style={styles.runningTimerRow}>
+                <Text
+                  style={[
+                    styles.inlineTimer,
+                    { color: colors.indigo[500], fontFamily: typography.fonts.mono },
+                  ]}
+                >
+                  {formatElapsed(task.elapsedSeconds || 0)}
+                </Text>
+                {onPause && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      onPause();
+                    }}
+                    activeOpacity={0.7}
+                    style={[styles.timerButton, { backgroundColor: colors.label.focus }]}
+                    accessibilityLabel="Pause task"
+                    accessibilityRole="button"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="pause" size={14} color={colors.white} />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
         </View>
 
         {/* Title */}
-        <Text
-          style={[
-            styles.title,
-            {
-              color: task.completed
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          {task.isRecurring && (
+            <Ionicons
+              name="repeat-outline"
+              size={14}
+              color={task.completed
                 ? themeColors.textFaint
                 : task.isNow
-                  ? themeColors.text
-                  : themeColors.textMuted,
-            },
-            task.completed && styles.completedText,
-          ]}
-          numberOfLines={2}
-          accessibilityRole="header"
-        >
-          {task.title}
-        </Text>
+                  ? themeColors.textMuted
+                  : themeColors.textMuted}
+              accessibilityLabel="Recurring task"
+            />
+          )}
+          <Text
+            style={[
+              styles.title,
+              {
+                color: task.completed
+                  ? themeColors.textMuted
+                  : task.isNow
+                    ? themeColors.text
+                    : themeColors.text,
+                flex: 1,
+              },
+              task.completed && styles.completedText,
+            ]}
+            numberOfLines={2}
+            accessibilityRole="header"
+          >
+            {task.title}
+          </Text>
+        </View>
 
         {/* Subtitle */}
         {task.subtitle && (
@@ -260,7 +269,7 @@ export function TaskCard({
                   ? themeColors.textFaint
                   : task.isNow
                     ? themeColors.textMuted
-                    : themeColors.textFaint,
+                    : themeColors.textMuted,
               },
               task.completed && styles.completedText,
             ]}
@@ -277,126 +286,57 @@ export function TaskCard({
             entering={FadeIn.duration(200)}
             style={styles.expandedContent}
           >
-            {/* Progress bar as divider */}
-            <View
-              style={styles.progressDivider}
-              accessibilityLabel={
-                !task.completed && task.isNow && task.progress !== undefined
-                  ? `Progress: ${task.progress} percent${task.progress > 100 ? ', over time' : ''}`
-                  : undefined
-              }
-              accessibilityRole={!task.completed && task.isNow ? 'progressbar' : undefined}
-              accessibilityValue={
-                !task.completed && task.isNow && task.progress !== undefined
-                  ? { min: 0, max: 100, now: Math.min(task.progress, 100) }
-                  : undefined
-              }
-            >
-              <View
-                style={[styles.progressBar, { backgroundColor: themeColors.input }]}
-              >
-                {!task.completed && task.isNow && task.progress !== undefined && (
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${Math.min(task.progress, 100)}%`,
-                        backgroundColor: task.progress > 100
-                          ? colors.status.urgent
-                          : task.progress > 80
-                            ? colors.label.focus
-                            : colors.indigo[500],
-                      },
-                    ]}
-                  />
-                )}
-              </View>
-              {!task.completed && task.isNow && task.progress !== undefined && (
-                <Text
-                  style={[
-                    styles.progressText,
-                    {
-                      color: task.progress > 100
-                        ? colors.status.urgent
-                        : themeColors.textMuted,
-                    },
-                  ]}
-                >
-                  {task.progress}%
-                </Text>
-              )}
-            </View>
-
             <View style={styles.actions}>
               {/* Left side - expand/more button */}
               <View style={styles.actionsLeft}>
                 {!task.completed && onExpand && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
+                  <TouchableOpacity
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       onExpand();
                     }}
+                    activeOpacity={0.7}
+                    style={[styles.circleButton, { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle }]}
                     accessibilityLabel="Open task details"
                     accessibilityRole="button"
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
-                    <Ionicons
-                      name="expand-outline"
-                      size={16}
-                      color={themeColors.text}
-                    />
-                  </Button>
+                    <Ionicons name="expand-outline" size={16} color={themeColors.text} />
+                  </TouchableOpacity>
                 )}
               </View>
 
-              {/* Right side - start/complete/undo buttons */}
+              {/* Right side - complete/undo buttons */}
               <View style={styles.actionsRight}>
-                {!task.completed && !task.isNow && onStart && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onPress={onStart}
-                    accessibilityLabel="Start task"
-                    accessibilityRole="button"
-                  >
-                    <Ionicons
-                      name="play"
-                      size={16}
-                      color={themeColors.text}
-                    />
-                  </Button>
-                )}
                 {!task.completed && onComplete && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onPress={onComplete}
-                    style={{ marginLeft: spacing[2] }}
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      onComplete();
+                    }}
+                    activeOpacity={0.7}
+                    style={[styles.circleButton, { backgroundColor: colors.indigo[500] }]}
                     accessibilityLabel="Mark task as complete"
                     accessibilityRole="button"
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
-                    <Ionicons
-                      name="checkmark"
-                      size={16}
-                      color={colors.white}
-                    />
-                  </Button>
+                    <Ionicons name="checkmark" size={16} color={colors.white} />
+                  </TouchableOpacity>
                 )}
                 {task.completed && onUndoComplete && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onPress={onUndoComplete}
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      onUndoComplete();
+                    }}
+                    activeOpacity={0.7}
+                    style={[styles.circleButton, { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle }]}
                     accessibilityLabel="Undo completion"
                     accessibilityRole="button"
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
-                    <Ionicons
-                      name="arrow-undo"
-                      size={16}
-                      color={themeColors.text}
-                    />
-                  </Button>
+                    <Ionicons name="arrow-undo" size={16} color={themeColors.text} />
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
@@ -414,23 +354,13 @@ function getTypeColor(type: TaskType): string {
   return getLabelColor(type);
 }
 
-function getTypeLabel(type: TaskType): string {
-  const labels: Record<TaskType, string> = {
-    github: 'GitHub',
-    jira: 'Jira',
-    meeting: 'Meeting',
-    focus: 'Focus',
-    manual: 'Task',
-  };
-  return labels[type] || 'Task';
-}
-
-function formatDuration(minutes?: number): string | null {
-  if (!minutes) return null;
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+function formatElapsed(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  if (hours > 0) return `${hours}:${pad(minutes)}:${pad(seconds)}`;
+  return `${pad(minutes)}:${pad(seconds)}`;
 }
 
 const styles = StyleSheet.create({
@@ -453,22 +383,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing[2],
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
   time: {
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.semibold,
     fontFamily: typography.fonts.mono,
   },
-  duration: {
-    fontSize: typography.sizes.xs,
-    marginLeft: spacing[2],
-  },
-  badges: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing[2],
+  },
+  timerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  runningTimerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  inlineTimer: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
   },
   title: {
     fontSize: typography.sizes.base,
@@ -480,35 +426,13 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
   },
   completed: {
-    opacity: 0.5,
+    // opacity handled at container level
   },
   completedText: {
     textDecorationLine: 'line-through',
-    opacity: 0.7,
   },
   expandedContent: {
     marginTop: spacing[4],
-  },
-  progressDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  progressBar: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    marginRight: spacing[2],
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: typography.sizes.sm,
-    width: 40,
-    textAlign: 'right',
   },
   actions: {
     flexDirection: 'row',

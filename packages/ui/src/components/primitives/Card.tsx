@@ -92,13 +92,32 @@ function getVariantStyles(
   isDark: boolean,
   themeColors: any
 ): ViewStyle {
-  const variants = {
+  const cardShadow = isDark ? {} : {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  };
+
+  const variants: Record<CardVariant, ViewStyle> = {
     default: {
       backgroundColor: themeColors.card,
+      borderWidth: isDark ? 1 : 0,
+      borderColor: themeColors.border,
+      ...cardShadow,
     },
     elevated: {
       backgroundColor: themeColors.card,
-      ...shadows.lg,
+      borderWidth: isDark ? 1 : 0,
+      borderColor: themeColors.border,
+      ...(isDark ? shadows.lg : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 6,
+      }),
     },
     outlined: {
       backgroundColor: 'transparent',

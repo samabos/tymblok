@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Tymblok.Api.Extensions;
 
@@ -17,7 +18,12 @@ public static class ServiceCollectionExtensions
         bool skipDatabaseHealthCheck = false)
     {
         // Controllers & Swagger
-        services.AddControllers();
+        services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                // Convert enums to strings for JSON serialization
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {

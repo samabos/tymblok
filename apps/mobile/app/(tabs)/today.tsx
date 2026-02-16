@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, router } from 'expo-router';
 import Animated, {
@@ -18,69 +18,9 @@ import { useTheme, TaskCard, Avatar, type TaskCardData } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { useAuthStore } from '../../stores/authStore';
 import { EmailVerificationBanner } from '../../components/EmailVerificationBanner';
-
-// Mock data for development
-const mockTasks: TaskCardData[] = [
-  {
-    id: '1',
-    title: 'Morning standup',
-    subtitle: 'Engineering Team - Daily sync',
-    time: '09:00',
-    endTime: '09:15',
-    durationMinutes: 15,
-    type: 'meeting',
-    completed: true,
-  },
-  {
-    id: '2',
-    title: 'Review authentication PR',
-    subtitle: 'auth-module #234 - +180 -42',
-    time: '09:30',
-    endTime: '10:15',
-    durationMinutes: 45,
-    type: 'github',
-    completed: true,
-  },
-  {
-    id: '3',
-    title: 'Sprint Planning',
-    subtitle: 'Engineering Team - 5 attendees',
-    time: '10:30',
-    endTime: '11:30',
-    durationMinutes: 60,
-    type: 'meeting',
-    isNow: true,
-    progress: 54,
-  },
-  {
-    id: '4',
-    title: 'User settings implementation',
-    subtitle: 'JIRA-892 - 5 story points',
-    time: '13:00',
-    endTime: '15:00',
-    durationMinutes: 120,
-    type: 'jira',
-  },
-  {
-    id: '5',
-    title: 'Code review session',
-    subtitle: 'Review PRs from team',
-    time: '15:30',
-    endTime: '16:30',
-    durationMinutes: 60,
-    type: 'github',
-    urgent: true,
-  },
-  {
-    id: '6',
-    title: 'API documentation update',
-    subtitle: 'JIRA-901 - 2 story points',
-    time: '17:00',
-    endTime: '18:00',
-    durationMinutes: 60,
-    type: 'jira',
-  },
-];
+import { useBlocks, useUpdateBlock, useCompleteBlock, useStartBlock, usePauseBlock, useUpdateBlocksSortOrder } from '../../services/apiHooks';
+import { mapBlockToTaskCard } from '../../utils/mappers';
+import { Ionicons } from '@expo/vector-icons';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -90,14 +30,92 @@ export default function TodayScreen() {
   const { user } = useAuthStore();
   const { reset } = useLocalSearchParams<{ reset?: string }>();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [tasks, setTasks] = useState(mockTasks);
   const [headerExpanded, setHeaderExpanded] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [localElapsed, setLocalElapsed] = useState<Record<string, number>>({});
+  const [completedCollapsed, setCompletedCollapsed] = useState(true);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const flatListRef = useRef<any>(null);
 
   const expandAnimation = useSharedValue(0);
+
+  // Convert date to ISO string for API
+  const currentDateStr = useMemo(() =>
+    currentDate.toISOString().split('T')[0], // "2024-01-31"
+    [currentDate]
+  );
+
+  // Fetch blocks from API
+  const { data: blocks, isLoading, error, refetch } = useBlocks({ date: currentDateStr });
+  const updateBlockMutation = useUpdateBlock();
+  const completeBlockMutation = useCompleteBlock();
+  const startBlockMutation = useStartBlock();
+  const pauseBlockMutation = usePauseBlock();
+  const updateSortOrderMutation = useUpdateBlocksSortOrder();
+
+  // Frontend timer: tick elapsed seconds for running tasks
+  useEffect(() => {
+    const runningIds = blocks
+      ?.filter(b => b.timerState === 'Running')
+      .map(b => b.id) || [];
+
+    if (runningIds.length === 0) return;
+
+    // Seed local elapsed from backend values for newly running tasks
+    setLocalElapsed(prev => {
+      const next = { ...prev };
+      for (const b of blocks || []) {
+        if (b.timerState === 'Running' && !(b.id in next)) {
+          next[b.id] = b.elapsedSeconds || 0;
+        }
+      }
+      return next;
+    });
+
+    const interval = setInterval(() => {
+      setLocalElapsed(prev => {
+        const next = { ...prev };
+        for (const id of runningIds) {
+          next[id] = (next[id] || 0) + 1;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [blocks]);
+
+  // Clean up local elapsed for tasks that are no longer running
+  useEffect(() => {
+    if (!blocks) return;
+    setLocalElapsed(prev => {
+      const runningIds = new Set(
+        blocks.filter(b => b.timerState === 'Running').map(b => b.id)
+      );
+      const next: Record<string, number> = {};
+      for (const [id, val] of Object.entries(prev)) {
+        if (runningIds.has(id)) next[id] = val;
+      }
+      return next;
+    });
+  }, [blocks]);
+
+  // Map API data to UI format, merging local elapsed for running tasks
+  const allTasks = useMemo(() => {
+    if (!blocks) return [];
+    return blocks.map(block => {
+      const card = mapBlockToTaskCard(block);
+      if (block.timerState === 'Running' && localElapsed[block.id] !== undefined) {
+        card.elapsedSeconds = localElapsed[block.id];
+      }
+      return card;
+    });
+  }, [blocks, localElapsed]);
+
+  // Split into active and completed
+  const activeTasks = useMemo(() => allTasks.filter(t => !t.completed), [allTasks]);
+  const completedTasks = useMemo(() => allTasks.filter(t => t.completed), [allTasks]);
 
   // Reset to today whenever the tab is pressed (reset param changes)
   useEffect(() => {
@@ -167,10 +185,10 @@ export default function TodayScreen() {
   }, [currentDate]);
 
   const taskStats = useMemo(() => {
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.completed).length;
+    const total = allTasks.length;
+    const completed = completedTasks.length;
     return { total, completed };
-  }, [tasks]);
+  }, [allTasks, completedTasks]);
 
   const getDaysCenteredOnToday = useMemo(() => {
     const days = [];
@@ -216,54 +234,56 @@ export default function TodayScreen() {
     });
 
   const handleTaskComplete = (taskId: string) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId ? { ...task, completed: true, isNow: false } : task
-      )
-    );
+    completeBlockMutation.mutate(taskId);
     setExpandedTaskId(null);
   };
 
   const handleTaskUndoComplete = (taskId: string) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId ? { ...task, completed: false } : task
-      )
-    );
+    updateBlockMutation.mutate({
+      id: taskId,
+      data: { isCompleted: false },
+    });
     setExpandedTaskId(null);
   };
 
   const handleTaskStart = (taskId: string) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId
-          ? { ...task, isNow: true, progress: 0 }
-          : { ...task, isNow: false } // Stop other tasks when starting a new one
-      )
-    );
+    startBlockMutation.mutate(taskId);
+  };
+
+  const handleTaskPause = (taskId: string) => {
+    pauseBlockMutation.mutate(taskId);
   };
 
   const handleTaskPress = (taskId: string) => {
     const isExpanding = expandedTaskId !== taskId;
     setExpandedTaskId(isExpanding ? taskId : null);
 
-    // Scroll to show the expanded card
+    // Scroll to show the expanded card (only for active tasks in the draggable list)
     if (isExpanding) {
-      const taskIndex = tasks.findIndex(t => t.id === taskId);
-      if (taskIndex !== -1 && flatListRef.current) {
+      const taskIndex = activeTasks.findIndex(t => t.id === taskId);
+      if (taskIndex >= 0 && taskIndex < activeTasks.length && flatListRef.current) {
         setTimeout(() => {
-          flatListRef.current?.scrollToIndex({
-            index: taskIndex,
-            animated: true,
-            viewPosition: 0.3,
-          });
+          try {
+            flatListRef.current?.scrollToIndex({
+              index: taskIndex,
+              animated: true,
+              viewPosition: 0.3,
+            });
+          } catch {
+            // Ignore scroll errors for edge cases
+          }
         }, 100);
       }
     }
   };
 
   const handleDragEnd = ({ data }: { data: TaskCardData[] }) => {
-    setTasks(data);
+    const updates = data.map((task, index) => ({
+      id: task.id,
+      sortOrder: index,
+    }));
+
+    updateSortOrderMutation.mutate(updates);
   };
 
   const handleDragBegin = () => {
@@ -285,7 +305,6 @@ export default function TodayScreen() {
         durationMinutes: String(task.durationMinutes || 60),
         completed: String(task.completed || false),
         isNow: String(task.isNow || false),
-        progress: String(task.progress || 0),
       },
     });
   };
@@ -300,6 +319,7 @@ export default function TodayScreen() {
             dragging={isActive}
             onLongPress={drag}
             onStart={() => handleTaskStart(item.id)}
+            onPause={() => handleTaskPause(item.id)}
             onComplete={() => handleTaskComplete(item.id)}
             onUndoComplete={() => handleTaskUndoComplete(item.id)}
             onPress={() => handleTaskPress(item.id)}
@@ -313,16 +333,58 @@ export default function TodayScreen() {
     [expandedTaskId]
   );
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.indigo[500]} />
+          <Text style={{ color: themeColors.textMuted, marginTop: 16 }}>Loading tasks...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.status.urgent} />
+          <Text style={{ fontSize: 18, fontWeight: '600', marginTop: 16, color: themeColors.text }}>
+            Failed to load tasks
+          </Text>
+          <Text style={{ fontSize: 14, marginTop: 8, textAlign: 'center', color: themeColors.textMuted }}>
+            {error.message || 'Something went wrong'}
+          </Text>
+          <TouchableOpacity
+            style={{
+              marginTop: 24,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              borderRadius: 12,
+              backgroundColor: colors.indigo[500],
+            }}
+            onPress={() => refetch()}
+          >
+            <Text style={{ color: colors.white, fontWeight: '500' }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
         {/* Header */}
         <View
           style={{
-            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+            backgroundColor: isDark ? 'rgba(30, 41, 59, 0.8)' : themeColors.bg,
             borderBottomLeftRadius: 24,
             borderBottomRightRadius: 24,
-            borderBottomWidth: 1,
+            borderBottomWidth: isDark ? 1 : 0,
             borderColor: themeColors.border,
+            overflow: 'hidden',
           }}
         >
           {/* Header Content - Tappable area */}
@@ -341,14 +403,14 @@ export default function TodayScreen() {
                       {formatDateHeader.weekday}
                     </Text>
                     <Text
-                      className="text-xl font-bold mt-0.5"
+                      className="text-2xl font-bold mt-0.5"
                       style={{ color: themeColors.text }}
                     >
                       {formatDateHeader.monthDay}
                     </Text>
                     <Text
                       className="text-xs mt-0.5"
-                      style={{ color: themeColors.textFaint }}
+                      style={{ color: themeColors.textMuted }}
                     >
                       {taskStats.total} tasks · {taskStats.completed} done
                     </Text>
@@ -402,8 +464,10 @@ export default function TodayScreen() {
                       width: style.size,
                       height: style.size,
                       borderRadius: style.size / 2,
-                      backgroundColor: day.isToday ? colors.indigo[500] : themeColors.card,
-                      borderWidth: day.isToday ? 0 : 1,
+                      backgroundColor: day.isToday
+                        ? colors.indigo[500]
+                        : isDark ? themeColors.card : themeColors.bgSubtle,
+                      borderWidth: day.isToday ? 0 : isDark ? 1 : 0,
                       borderColor: themeColors.border,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -419,7 +483,9 @@ export default function TodayScreen() {
                       style={{
                         fontSize: style.fontSize,
                         fontWeight: '600',
-                        color: day.isToday ? colors.white : themeColors.text,
+                        color: day.isToday
+                          ? colors.white
+                          : themeColors.text,
                       }}
                     >
                       {day.num}
@@ -429,7 +495,7 @@ export default function TodayScreen() {
                         style={{
                           fontSize: 8,
                           fontWeight: '500',
-                          color: colors.indigo[400],
+                          color: 'rgba(255, 255, 255, 0.8)',
                           marginTop: -2,
                         }}
                       >
@@ -452,7 +518,7 @@ export default function TodayScreen() {
         {/* Task List */}
         <DraggableFlatList
           ref={flatListRef}
-          data={tasks}
+          data={activeTasks}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           onDragEnd={handleDragEnd}
@@ -460,6 +526,38 @@ export default function TodayScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 200 }}
           showsVerticalScrollIndicator={false}
           activationDistance={10}
+          ListFooterComponent={completedTasks.length > 0 ? (
+            <View style={{ marginTop: 8 }}>
+              <TouchableOpacity
+                onPress={() => setCompletedCollapsed(!completedCollapsed)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                }}
+              >
+                <Ionicons
+                  name={completedCollapsed ? 'chevron-forward' : 'chevron-down'}
+                  size={16}
+                  color={themeColors.textMuted}
+                />
+                <Text style={{ color: themeColors.textMuted, fontSize: 13, fontWeight: '500', marginLeft: 4 }}>
+                  Completed ({completedTasks.length})
+                </Text>
+              </TouchableOpacity>
+              {!completedCollapsed && completedTasks.map(item => (
+                <TaskCard
+                  key={item.id}
+                  task={item}
+                  expanded={expandedTaskId === item.id}
+                  onPress={() => handleTaskPress(item.id)}
+                  onUndoComplete={() => handleTaskUndoComplete(item.id)}
+                  onExpand={() => handleOpenDetail(item)}
+                  style={{ marginBottom: 12 }}
+                />
+              ))}
+            </View>
+          ) : null}
         />
 
     </SafeAreaView>

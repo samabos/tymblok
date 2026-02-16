@@ -44,6 +44,16 @@ public enum InboxItemType
 
 public enum InboxPriority
 {
-    Normal,
-    High
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+public enum TimerState
+{
+    NotStarted,
+    Running,
+    Paused,
+    Completed
 }

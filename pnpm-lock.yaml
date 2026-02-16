@@ -111,6 +111,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.17.0
         version: 5.90.20(react@18.3.1)
+      '@tymblok/api-client':
+        specifier: workspace:^
+        version: link:../../packages/api-client
       '@tymblok/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -268,6 +271,19 @@ importers:
       tailwindcss:
         specifier: ^3.4.19
         version: 3.4.19
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
+  packages/api-client:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.17.0
+        version: 5.90.20(react@18.3.1)
+    devDependencies:
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(typescript@5.9.3)
       typescript:
         specifier: ^5.3.0
         version: 5.9.3

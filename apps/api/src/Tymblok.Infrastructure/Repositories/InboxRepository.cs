@@ -58,6 +58,17 @@ public class InboxRepository : IInboxRepository
             .ToListAsync();
     }
 
+    public async Task<IList<InboxItem>> GetRecurringInboxItemsAsync(Guid userId, CancellationToken ct = default)
+    {
+        return await _context.InboxItems
+            .Include(i => i.RecurrenceRule)
+            .Where(i => i.UserId == userId
+                && i.IsRecurring
+                && i.RecurrenceRuleId != null
+                && !i.IsDismissed)
+            .ToListAsync(ct);
+    }
+
     public async Task<InboxItem> CreateAsync(InboxItem item)
     {
         _context.InboxItems.Add(item);

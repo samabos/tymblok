@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Tymblok.Core.Entities;
 using Tymblok.Core.Interfaces;
+using Tymblok.Core.Services;
 using Tymblok.Infrastructure.Data;
 using Tymblok.Infrastructure.Email;
 using Tymblok.Infrastructure.Repositories;
@@ -86,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IInboxRepository, InboxRepository>();
         services.AddScoped<IBlockRepository, BlockRepository>();
+        services.AddScoped<IRecurrenceRuleRepository, RecurrenceRuleRepository>();
 
         // Services
         services.AddScoped<ITokenService, TokenService>();
@@ -95,6 +97,7 @@ public static class DependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IInboxService, InboxService>();
         services.AddScoped<IBlockService, BlockService>();
+        services.AddScoped<IRecurrenceService, RecurrenceService>();
 
         return services;
     }

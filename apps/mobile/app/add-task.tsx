@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Pressable, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, Button, Input, Badge } from '@tymblok/ui';
 import { spacing, borderRadius, typography, colors } from '@tymblok/theme';
 import { AuthGuard } from '../components/AuthGuard';
-
-type TaskCategory = 'jira' | 'github' | 'meeting' | 'focus';
+import { useCategories, useCreateBlock } from '../services/apiHooks';
 
 export default function AddTaskScreen() {
   return (
@@ -24,14 +23,10 @@ function AddTaskContent() {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [duration, setDuration] = useState(60);
-  const [category, setCategory] = useState<TaskCategory>('focus');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
 
-  const categories: Array<{ key: TaskCategory; label: string }> = [
-    { key: 'jira', label: 'Jira' },
-    { key: 'github', label: 'GitHub' },
-    { key: 'meeting', label: 'Meeting' },
-    { key: 'focus', label: 'Focus' },
-  ];
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
+  const createBlockMutation = useCreateBlock();
 
   const durations = [
     { value: 15, label: '15m' },
@@ -41,10 +36,42 @@ function AddTaskContent() {
     { value: 120, label: '2h' },
   ];
 
-  const handleCreate = () => {
-    // TODO: Create task via API
-    console.log('[AddTask] Creating task:', { title, subtitle, duration, category });
-    router.back();
+  const handleCreate = async () => {
+    if (!title.trim()) {
+      Alert.alert('Error', 'Please enter a task title');
+      return;
+    }
+
+    if (!selectedCategoryId) {
+      Alert.alert('Error', 'Please select a category');
+      return;
+    }
+
+    const now = new Date();
+    const todayDate = now.toISOString().split('T')[0];
+
+    // Round up to next 15-minute interval to avoid tasks being "live" immediately
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const roundedMinutes = Math.ceil(currentMinutes / 15) * 15;
+    const hours = Math.floor(roundedMinutes / 60);
+    const minutes = roundedMinutes % 60;
+    const currentTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+    try {
+      await createBlockMutation.mutateAsync({
+        title: title.trim(),
+        subtitle: subtitle.trim() || undefined,
+        categoryId: selectedCategoryId,
+        date: todayDate,
+        startTime: currentTime,
+        durationMinutes: duration,
+        isUrgent: false,
+      });
+
+      router.back();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to create task. Please try again.');
+    }
   };
 
   const handleCancel = () => {
@@ -187,32 +214,38 @@ function AddTaskContent() {
           }}>
             Category
           </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] }}>
-            {categories.map((cat) => (
-              <Pressable
-                key={cat.key}
-                onPress={() => setCategory(cat.key)}
-                style={{
-                  paddingHorizontal: spacing[3],
-                  paddingVertical: spacing[2],
-                  borderRadius: borderRadius.lg,
-                  borderWidth: 1,
-                  borderColor: category === cat.key
-                    ? themeColors.text
-                    : themeColors.border,
-                  backgroundColor: category === cat.key
-                    ? themeColors.input
-                    : 'transparent',
-                }}
-              >
-                <Badge
-                  variant={cat.key as 'jira' | 'github' | 'meeting' | 'focus'}
-                  size="sm"
-                  label={cat.label}
-                />
-              </Pressable>
-            ))}
-          </View>
+          {categoriesLoading ? (
+            <ActivityIndicator size="small" color={colors.indigo[500]} />
+          ) : (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] }}>
+              {categories?.map((cat) => (
+                <Pressable
+                  key={cat.id}
+                  onPress={() => setSelectedCategoryId(cat.id)}
+                  style={{
+                    paddingHorizontal: spacing[4],
+                    paddingVertical: spacing[3],
+                    borderRadius: borderRadius.lg,
+                    borderWidth: 1,
+                    borderColor: selectedCategoryId === cat.id
+                      ? cat.color
+                      : themeColors.border,
+                    backgroundColor: selectedCategoryId === cat.id
+                      ? cat.color + '20'
+                      : 'transparent',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: typography.sizes.sm,
+                    fontWeight: '500',
+                    color: selectedCategoryId === cat.id ? cat.color : themeColors.text,
+                  }}>
+                    {cat.icon} {cat.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
 

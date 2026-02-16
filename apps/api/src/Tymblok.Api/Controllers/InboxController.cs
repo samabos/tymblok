@@ -41,7 +41,13 @@ public class InboxController : ControllerBase
             request.Priority,
             request.IntegrationId,
             request.ExternalId,
-            request.ExternalUrl
+            request.ExternalUrl,
+            request.IsRecurring,
+            request.RecurrenceType,
+            request.RecurrenceInterval,
+            request.RecurrenceDaysOfWeek,
+            request.RecurrenceEndDate,
+            request.RecurrenceMaxOccurrences
         );
         var item = await _inboxService.CreateAsync(data, userId, ct);
 
@@ -215,6 +221,21 @@ public class InboxController : ControllerBase
 
     private static InboxItemDto MapToDto(InboxItem item)
     {
+        RecurrenceRuleDto? recurrenceRuleDto = null;
+        if (item.RecurrenceRule != null)
+        {
+            recurrenceRuleDto = new RecurrenceRuleDto(
+                item.RecurrenceRule.Id,
+                item.RecurrenceRule.Type,
+                item.RecurrenceRule.Interval,
+                item.RecurrenceRule.DaysOfWeek,
+                item.RecurrenceRule.EndDate,
+                item.RecurrenceRule.MaxOccurrences,
+                item.RecurrenceRule.CreatedAt,
+                item.RecurrenceRule.UpdatedAt
+            );
+        }
+
         return new InboxItemDto(
             item.Id,
             item.Title,
@@ -228,7 +249,10 @@ public class InboxController : ControllerBase
             item.IsScheduled,
             item.ScheduledBlockId,
             item.CreatedAt,
-            item.DismissedAt
+            item.DismissedAt,
+            item.IsRecurring,
+            item.RecurrenceRuleId,
+            recurrenceRuleDto
         );
     }
 }

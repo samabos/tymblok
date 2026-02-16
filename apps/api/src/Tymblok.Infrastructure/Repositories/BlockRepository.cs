@@ -52,6 +52,28 @@ public class BlockRepository : IBlockRepository
             .ToListAsync();
     }
 
+    public async Task<IList<TimeBlock>> GetRecurringParentBlocksAsync(Guid userId, CancellationToken ct = default)
+    {
+        return await _context.TimeBlocks
+            .Include(b => b.Category)
+            .Include(b => b.RecurrenceRule)
+            .Where(b => b.UserId == userId
+                && b.IsRecurring
+                && b.RecurrenceParentId == null
+                && b.RecurrenceRuleId != null)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IList<TimeBlock>> GetByRecurrenceRuleAsync(Guid recurrenceRuleId, Guid userId, CancellationToken ct = default)
+    {
+        return await _context.TimeBlocks
+            .Include(b => b.Category)
+            .Where(b => b.UserId == userId && b.RecurrenceRuleId == recurrenceRuleId)
+            .OrderBy(b => b.Date)
+            .ThenBy(b => b.StartTime)
+            .ToListAsync(ct);
+    }
+
     public async Task<TimeBlock> CreateAsync(TimeBlock block)
     {
         _context.TimeBlocks.Add(block);

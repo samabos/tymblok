@@ -451,6 +451,9 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.Property<bool>("IsDismissed")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsRecurring")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsScheduled")
                         .HasColumnType("boolean");
 
@@ -458,6 +461,9 @@ namespace Tymblok.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<Guid?>("RecurrenceRuleId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("ScheduledBlockId")
                         .HasColumnType("uuid");
@@ -486,6 +492,8 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IntegrationId");
+
+                    b.HasIndex("RecurrenceRuleId");
 
                     b.HasIndex("UserId", "IsDismissed");
 
@@ -557,6 +565,43 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.ToTable("integrations", (string)null);
                 });
 
+            modelBuilder.Entity("Tymblok.Core.Entities.RecurrenceRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DaysOfWeek")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Interval")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MaxOccurrences")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Type");
+
+                    b.ToTable("recurrence_rules", (string)null);
+                });
+
             modelBuilder.Entity("Tymblok.Core.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -622,6 +667,9 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("DurationMinutes")
                         .HasColumnType("integer");
 
@@ -646,11 +694,29 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRecurring")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsUrgent")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("PausedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Progress")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("RecurrenceParentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("RecurrenceRuleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ResumedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
@@ -658,9 +724,15 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.Property<TimeOnly>("StartTime")
                         .HasColumnType("time without time zone");
 
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Subtitle")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<int>("TimerState")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -678,6 +750,8 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("ExternalId");
+
+                    b.HasIndex("RecurrenceRuleId");
 
                     b.HasIndex("UserId", "Date");
 
@@ -857,6 +931,11 @@ namespace Tymblok.Infrastructure.Data.Migrations
                         .HasForeignKey("IntegrationId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Tymblok.Core.Entities.RecurrenceRule", "RecurrenceRule")
+                        .WithMany()
+                        .HasForeignKey("RecurrenceRuleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tymblok.Core.Entities.ApplicationUser", "User")
                         .WithMany("InboxItems")
                         .HasForeignKey("UserId")
@@ -864,6 +943,8 @@ namespace Tymblok.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Integration");
+
+                    b.Navigation("RecurrenceRule");
 
                     b.Navigation("User");
                 });
@@ -898,6 +979,11 @@ namespace Tymblok.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Tymblok.Core.Entities.RecurrenceRule", "RecurrenceRule")
+                        .WithMany("TimeBlocks")
+                        .HasForeignKey("RecurrenceRuleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Tymblok.Core.Entities.ApplicationUser", "User")
                         .WithMany("TimeBlocks")
                         .HasForeignKey("UserId")
@@ -905,6 +991,8 @@ namespace Tymblok.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("RecurrenceRule");
 
                     b.Navigation("User");
                 });
@@ -964,6 +1052,11 @@ namespace Tymblok.Infrastructure.Data.Migrations
             modelBuilder.Entity("Tymblok.Core.Entities.Integration", b =>
                 {
                     b.Navigation("InboxItems");
+                });
+
+            modelBuilder.Entity("Tymblok.Core.Entities.RecurrenceRule", b =>
+                {
+                    b.Navigation("TimeBlocks");
                 });
 #pragma warning restore 612, 618
         }
