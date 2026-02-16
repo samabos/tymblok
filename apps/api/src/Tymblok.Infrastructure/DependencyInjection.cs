@@ -83,12 +83,18 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IInboxRepository, InboxRepository>();
+        services.AddScoped<IBlockRepository, BlockRepository>();
 
         // Services
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IInboxService, InboxService>();
+        services.AddScoped<IBlockService, BlockService>();
 
         return services;
     }

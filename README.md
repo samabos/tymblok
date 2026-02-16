@@ -75,6 +75,19 @@ pnpm dev:desktop  # Tauri dev window
 
 To run on web, press `w` in the Expo dev server.
 
+Install ngrok
+If you don't have ngrok installed:
+
+# Using Chocolatey (Windows)
+choco install ngrok
+
+# Or download from https://ngrok.com/download
+
+Once api is running start ngrok tunnel
+To map localhost:5000 to, open a new terminal and run:
+
+ngrok http 5000
+
 ## Project Structure
 
 ```
