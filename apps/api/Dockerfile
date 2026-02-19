@@ -7,10 +7,10 @@ COPY Tymblok.sln ./
 COPY src/Tymblok.Api/Tymblok.Api.csproj src/Tymblok.Api/
 COPY src/Tymblok.Core/Tymblok.Core.csproj src/Tymblok.Core/
 COPY src/Tymblok.Infrastructure/Tymblok.Infrastructure.csproj src/Tymblok.Infrastructure/
-COPY src/Tymblok.Shared/Tymblok.Shared.csproj src/Tymblok.Shared/
 
-# Copy test projects if they exist
+# Copy test projects
 COPY tests/Tymblok.Api.Tests/Tymblok.Api.Tests.csproj tests/Tymblok.Api.Tests/
+COPY tests/Tymblok.Core.Tests/Tymblok.Core.Tests.csproj tests/Tymblok.Core.Tests/
 COPY tests/Tymblok.Infrastructure.Tests/Tymblok.Infrastructure.Tests.csproj tests/Tymblok.Infrastructure.Tests/
 
 # Restore dependencies

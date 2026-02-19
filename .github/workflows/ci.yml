@@ -1,10 +1,19 @@
-name: CI
+name: CI/CD
 
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: tymblok-api
+  AZURE_RG: tymblok-dev
+  AZURE_LOCATION: uksouth
+  AZURE_PLAN: tymblok-plan
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/tymblok-api
 
 jobs:
   lint:
@@ -83,18 +92,100 @@ jobs:
       - run: pnpm --filter @tymblok/mobile typecheck
       - run: pnpm --filter @tymblok/mobile test
 
-  build-api:
-    name: Build API
+  # --- Deploy jobs (only on main push) ---
+
+  build-and-push:
+    name: Build & Push Image
     needs: [test-api]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          dotnet-version: '10.0.x'
-      - run: cd apps/api && dotnet publish -c Release -o ./publish
-      - uses: actions/upload-artifact@v4
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
         with:
-          name: api-build
-          path: apps/api/publish
+          context: ./apps/api
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Azure
+    needs: [build-and-push]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure App Service exists
+        run: |
+          # Create App Service Plan if it doesn't exist
+          if ! az appservice plan show --name ${{ env.AZURE_PLAN }} --resource-group ${{ env.AZURE_RG }} &>/dev/null; then
+            echo "Creating App Service Plan..."
+            az appservice plan create \
+              --name ${{ env.AZURE_PLAN }} \
+              --resource-group ${{ env.AZURE_RG }} \
+              --sku B1 \
+              --is-linux
+          else
+            echo "App Service Plan already exists"
+          fi
+
+          # Create Web App if it doesn't exist
+          if ! az webapp show --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RG }} &>/dev/null; then
+            echo "Creating Web App..."
+            az webapp create \
+              --name ${{ env.AZURE_WEBAPP_NAME }} \
+              --resource-group ${{ env.AZURE_RG }} \
+              --plan ${{ env.AZURE_PLAN }} \
+              --deployment-container-image-name ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          else
+            echo "Web App already exists"
+          fi
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Set App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-settings-json: |
+            [
+              { "name": "ConnectionStrings__DefaultConnection", "value": "${{ secrets.DATABASE_URL }}", "slotSetting": false },
+              { "name": "Jwt__Secret", "value": "${{ secrets.JWT_SECRET }}", "slotSetting": false },
+              { "name": "OAuth__Google__ClientId", "value": "${{ secrets.GOOGLE_CLIENT_ID }}", "slotSetting": false },
+              { "name": "OAuth__Google__ClientSecret", "value": "${{ secrets.GOOGLE_CLIENT_SECRET }}", "slotSetting": false },
+              { "name": "OAuth__GitHub__ClientId", "value": "${{ secrets.GITHUB_OAUTH_CLIENT_ID }}", "slotSetting": false },
+              { "name": "OAuth__GitHub__ClientSecret", "value": "${{ secrets.GITHUB_OAUTH_CLIENT_SECRET }}", "slotSetting": false },
+              { "name": "OAuth__WebCallbackUrl", "value": "${{ vars.WEB_CALLBACK_URL }}", "slotSetting": false },
+              { "name": "Integrations__EncryptionKey", "value": "${{ secrets.INTEGRATION_ENCRYPTION_KEY }}", "slotSetting": false },
+              { "name": "Email__SmtpHost", "value": "${{ vars.SMTP_HOST }}", "slotSetting": false },
+              { "name": "Email__SmtpPort", "value": "${{ vars.SMTP_PORT }}", "slotSetting": false },
+              { "name": "Email__SmtpUsername", "value": "${{ vars.SMTP_USERNAME }}", "slotSetting": false },
+              { "name": "Email__SmtpPassword", "value": "${{ secrets.SMTP_PASSWORD }}", "slotSetting": false },
+              { "name": "Email__UseSsl", "value": "true", "slotSetting": false },
+              { "name": "Email__UseStartTls", "value": "false", "slotSetting": false },
+              { "name": "Email__FromEmail", "value": "noreply@tymblok.app", "slotSetting": false },
+              { "name": "Email__FromName", "value": "Tymblok", "slotSetting": false },
+              { "name": "Email__AppBaseUrl", "value": "${{ vars.APP_BASE_URL }}", "slotSetting": false }
+            ]
