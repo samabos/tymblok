@@ -217,7 +217,7 @@ export default function InboxScreen() {
                     id: item.id,
                     title: raw?.title ?? item.title,
                     description: raw?.description ?? '',
-                    priority: raw?.priority ?? item.priority,
+                    priority: raw?.priority ?? 'Medium',
                   },
                 });
               }}

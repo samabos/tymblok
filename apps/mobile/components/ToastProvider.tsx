@@ -18,10 +18,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   // Listen for sync events
   useEffect(() => {
-    const unsubscribe = syncEventEmitter.on('syncComplete', (data: SyncAllResponse) => {
-      if (data.totalItemsSynced > 0) {
-        const itemWord = data.totalItemsSynced === 1 ? 'item' : 'items';
-        addToast(`${data.totalItemsSynced} new ${itemWord} synced`);
+    const unsubscribe = syncEventEmitter.on('syncComplete', (data: unknown) => {
+      const syncData = data as SyncAllResponse;
+      if (syncData.totalItemsSynced > 0) {
+        const itemWord = syncData.totalItemsSynced === 1 ? 'item' : 'items';
+        addToast(`${syncData.totalItemsSynced} new ${itemWord} synced`);
       }
     });
     return unsubscribe;
