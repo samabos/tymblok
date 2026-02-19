@@ -1,10 +1,5 @@
 // Auth screens
-export {
-  OnboardingScreen,
-  LoginScreen,
-  SignUpScreen,
-  ForgotPasswordScreen,
-} from './auth';
+export { OnboardingScreen, LoginScreen, SignUpScreen, ForgotPasswordScreen } from './auth';
 export type {
   OnboardingScreenProps,
   LoginScreenProps,

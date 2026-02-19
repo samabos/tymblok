@@ -17,6 +17,7 @@ You're a developer exploring a topic, not a founder pitching an idea.
 **Title:** "Developer Focus & Energy Patterns — Quick Research Survey"
 
 **Intro:**
+
 > I'm researching how developers experience focus and mental energy throughout the workday. This is for personal research — not selling anything. Takes 3-4 minutes. All responses anonymous.
 
 ---
@@ -24,14 +25,16 @@ You're a developer exploring a topic, not a founder pitching an idea.
 ### Section 1: Screening
 
 **Q1.** What best describes your role?
+
 - [ ] Software Developer / Engineer
 - [ ] Engineering Manager / Tech Lead
 - [ ] DevOps / SRE
 - [ ] Designer who codes
 - [ ] Student learning to code
-- [ ] Other: ___
+- [ ] Other: \_\_\_
 
 **Q2.** Years of professional coding experience?
+
 - [ ] Less than 1 year
 - [ ] 1-3 years
 - [ ] 4-7 years
@@ -42,18 +45,21 @@ You're a developer exploring a topic, not a founder pitching an idea.
 ### Section 2: Focus & Energy Patterns
 
 **Q3.** How often do you sit down to code and realize you're too mentally tired to be productive?
+
 - [ ] Rarely (few times a month)
 - [ ] Sometimes (once a week)
 - [ ] Often (several times a week)
 - [ ] Almost daily
 
 **Q4.** When this happens, how do you usually find out?
+
 - [ ] I notice before I start
 - [ ] I realize 15-30 minutes in
 - [ ] I realize after an hour or more
 - [ ] I only notice at the end of the day looking back
 
 **Q5.** What typically causes your unproductive coding sessions? (Select all that apply)
+
 - [ ] Poor sleep the night before
 - [ ] Too many meetings earlier in the day
 - [ ] Stress or anxiety
@@ -61,15 +67,17 @@ You're a developer exploring a topic, not a founder pitching an idea.
 - [ ] Starting work at the wrong time of day
 - [ ] Context switching between tasks
 - [ ] I don't really know — it feels random
-- [ ] Other: ___
+- [ ] Other: \_\_\_
 
 **Q6.** How well do you know your personal "peak coding hours"?
+
 - [ ] Very well — I've figured out my best times
 - [ ] Somewhat — I have a rough idea
 - [ ] Not well — it seems inconsistent
 - [ ] Never thought about it
 
 **Q7.** Do you currently schedule your hardest coding work around your energy levels?
+
 - [ ] Yes, consistently
 - [ ] Sometimes, when I remember
 - [ ] Rarely
@@ -80,6 +88,7 @@ You're a developer exploring a topic, not a founder pitching an idea.
 ### Section 3: Current Tracking Habits
 
 **Q8.** Do you track anything related to your work or health? (Select all that apply)
+
 - [ ] Time tracking (Toggl, Clockify, etc.)
 - [ ] Coding activity (WakaTime, RescueTime, etc.)
 - [ ] Sleep (app or wearable)
@@ -87,27 +96,30 @@ You're a developer exploring a topic, not a founder pitching an idea.
 - [ ] Heart rate or stress (wearable)
 - [ ] Manual journal or notes
 - [ ] Nothing
-- [ ] Other: ___
+- [ ] Other: \_\_\_
 
 **Q9.** If you track anything, has it changed how you work?
+
 - [ ] Yes, significantly
 - [ ] Yes, somewhat
 - [ ] Not really
 - [ ] I don't track anything
 
 **Q10.** What's the main reason you don't track more? (Select one)
+
 - [ ] Too much effort to maintain
 - [ ] Privacy concerns
 - [ ] Don't see the value
 - [ ] Haven't found the right tool
 - [ ] I already track enough
-- [ ] Other: ___
+- [ ] Other: \_\_\_
 
 ---
 
 ### Section 4: Hypotheticals
 
 **Q11.** If you could know — with reasonable accuracy — whether the next 2 hours would be productive or not, how valuable would that be?
+
 - [ ] Extremely valuable
 - [ ] Somewhat valuable
 - [ ] Neutral
@@ -115,6 +127,7 @@ You're a developer exploring a topic, not a founder pitching an idea.
 - [ ] I can already tell this myself
 
 **Q12.** What information do you think would best predict your focus readiness? (Select up to 3)
+
 - [ ] How well I slept
 - [ ] How long since my last break
 - [ ] My calendar load today
@@ -122,30 +135,33 @@ You're a developer exploring a topic, not a founder pitching an idea.
 - [ ] Physical stress indicators (heart rate, etc.)
 - [ ] Self-reported mood
 - [ ] None of these — it's not predictable
-- [ ] Other: ___
+- [ ] Other: \_\_\_
 
 **Q13.** If something could reliably predict your low-energy periods, what would you do with that information?
+
 - [ ] Reschedule deep work to better times
 - [ ] Take a break instead of pushing through
 - [ ] Switch to easier tasks
 - [ ] Probably ignore it and work anyway
 - [ ] I'm not sure
-- [ ] Other: ___
+- [ ] Other: \_\_\_
 
 ---
 
 ### Section 5: Friction & Concerns
 
 **Q14.** What would make you skeptical of any tool claiming to predict your productivity? (Select all that apply)
+
 - [ ] Doubt it would be accurate
 - [ ] Privacy concerns about tracking
 - [ ] Too complicated to set up
 - [ ] Wouldn't trust it over my own judgment
 - [ ] Could be misused by employers
 - [ ] Nothing — I'd be open to trying it
-- [ ] Other: ___
+- [ ] Other: \_\_\_
 
 **Q15.** Would you pay for something that saved you 5+ hours per week of unproductive "zombie coding"?
+
 - [ ] Yes, definitely
 - [ ] Probably, if it actually worked
 - [ ] Maybe, depends on price
@@ -157,6 +173,7 @@ You're a developer exploring a topic, not a founder pitching an idea.
 ### Section 6: Optional Follow-up
 
 **Q16.** Interested in sharing more about your productivity challenges? (15-min call)
+
 - [ ] Yes — [Email field]
 - [ ] No thanks
 
@@ -165,6 +182,7 @@ You're a developer exploring a topic, not a founder pitching an idea.
 ---
 
 > **📊 Key Validation Signals:**
+>
 > - Q3: >50% "often/daily" = problem is real
 > - Q5: Sleep + meetings + breaks selected = confirms multi-factor causes
 > - Q11: >50% "extremely/somewhat valuable" = desire exists
@@ -231,6 +249,7 @@ How do you handle days when you're just... not capable of good work?
 Did a personal experiment. For 3 months, I rated each coding session (1-5) and tracked a few variables: sleep hours, meetings that day, time of day, days since last break.
 
 Findings (for me at least):
+
 - Sleep was the #1 predictor. Under 6 hours = almost always a bad session
 - Afternoon sessions after 2+ hours of meetings were 70% worse than morning sessions
 - My best work happened between 9-11am, but I rarely protected that time
@@ -261,7 +280,7 @@ Started paying attention to what predicts my bad sessions:
 - Starting deep work after 3pm
 
 **Tweet 3:**
-The weird part: I *know* these patterns but still schedule deep work at bad times.
+The weird part: I _know_ these patterns but still schedule deep work at bad times.
 
 It's like knowing you shouldn't eat junk food but doing it anyway.
 
@@ -328,13 +347,13 @@ Not looking for tool recommendations — more interested in frameworks or habits
 
 ## What You're Validating (Without Revealing)
 
-| Question | What You Learn |
-|----------|----------------|
-| "How often are you too tired to code well?" | Problem frequency |
-| "What causes your off days?" | Input signals they recognize |
-| "What would predict focus readiness?" | Validates your feature set |
-| "What would you do with that info?" | Desired outcome (rescheduling) |
-| "Would you pay to avoid zombie coding?" | Willingness to pay |
+| Question                                    | What You Learn                 |
+| ------------------------------------------- | ------------------------------ |
+| "How often are you too tired to code well?" | Problem frequency              |
+| "What causes your off days?"                | Input signals they recognize   |
+| "What would predict focus readiness?"       | Validates your feature set     |
+| "What would you do with that info?"         | Desired outcome (rescheduling) |
+| "Would you pay to avoid zombie coding?"     | Willingness to pay             |
 
 ---
 
@@ -360,15 +379,19 @@ Not looking for tool recommendations — more interested in frameworks or habits
 When people reply to your posts:
 
 **If they describe the exact problem you're solving:**
+
 > "That's exactly what I've been experiencing. Have you found anything that helps?"
 
 **If they suggest a solution close to yours:**
+
 > "Interesting. Do you think that would actually work?"
 
 **If they're skeptical:**
+
 > "Fair point. What would make you believe something like that could work?"
 
 **Never:**
+
 > "Actually I'm building something for this..."
 
 Save the reveal for when you have an MVP and validation data.
@@ -377,12 +400,12 @@ Save the reveal for when you have an MVP and validation data.
 
 ## Metrics to Track
 
-| Signal | Threshold | Meaning |
-|--------|-----------|---------|
-| Q3: "Often/daily" fatigue | >50% | Problem is widespread |
-| Q5: Multiple factors selected | >60% | Multi-signal approach valid |
-| Q11: "Extremely/somewhat valuable" | >50% | Desire exists |
-| Q12: Sleep + coding patterns + stress | >40% combined | Core concept validated |
-| Q15: Would pay | >30% | Business viable |
-| Reddit/HN engagement | 50+ upvotes, 20+ comments | Topic resonates |
-| Interview enthusiasm | "I wish something like that existed" | Strong signal |
+| Signal                                | Threshold                            | Meaning                     |
+| ------------------------------------- | ------------------------------------ | --------------------------- |
+| Q3: "Often/daily" fatigue             | >50%                                 | Problem is widespread       |
+| Q5: Multiple factors selected         | >60%                                 | Multi-signal approach valid |
+| Q11: "Extremely/somewhat valuable"    | >50%                                 | Desire exists               |
+| Q12: Sleep + coding patterns + stress | >40% combined                        | Core concept validated      |
+| Q15: Would pay                        | >30%                                 | Business viable             |
+| Reddit/HN engagement                  | 50+ upvotes, 20+ comments            | Topic resonates             |
+| Interview enthusiasm                  | "I wish something like that existed" | Strong signal               |

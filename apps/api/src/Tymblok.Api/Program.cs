@@ -32,8 +32,8 @@ try
 
     var app = builder.Build();
 
-    // Apply migrations and seed data on startup (Development only)
-    if (app.Environment.IsDevelopment() && !isTestEnvironment)
+    // Apply migrations and seed data on startup
+    if (!isTestEnvironment)
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<TymblokDbContext>();

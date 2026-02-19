@@ -1,5 +1,12 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, RefreshControl, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTheme, Card } from '@tymblok/ui';
@@ -8,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authService, SessionDto } from '../../services/authService';
 import { AuthGuard } from '../../components/AuthGuard';
+import { useAlert } from '../../components/AlertProvider';
 
 export default function SessionsScreen() {
   return (
@@ -22,8 +30,13 @@ function SessionsContent() {
   const themeColors = theme.colors;
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const { confirm } = useAlert();
 
-  const { data: sessions, isLoading, refetch } = useQuery({
+  const {
+    data: sessions,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['sessions'],
     queryFn: () => authService.getSessions(),
   });
@@ -53,33 +66,21 @@ function SessionsContent() {
   };
 
   const handleRevokeSession = (session: SessionDto) => {
-    Alert.alert(
+    confirm(
       'Revoke Session',
       `Are you sure you want to sign out from "${session.deviceName || 'Unknown device'}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: () => revokeSessionMutation.mutate(session.id),
-        },
-      ]
+      () => revokeSessionMutation.mutate(session.id),
+      'Sign Out'
     );
   };
 
   const handleRevokeAll = () => {
     const currentSession = sessions?.find(s => s.isCurrent);
-    Alert.alert(
+    confirm(
       'Sign Out All Devices',
       'This will sign out all other devices. You will remain signed in on this device.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out All',
-          style: 'destructive',
-          onPress: () => revokeAllMutation.mutate(currentSession?.id),
-        },
-      ]
+      () => revokeAllMutation.mutate(currentSession?.id),
+      'Sign Out All'
     );
   };
 
@@ -124,10 +125,7 @@ function SessionsContent() {
         >
           <Ionicons name="arrow-back" size={20} color={themeColors.text} />
         </TouchableOpacity>
-        <Text
-          className="text-xl font-bold flex-1"
-          style={{ color: themeColors.text }}
-        >
+        <Text className="text-xl font-bold flex-1" style={{ color: themeColors.text }}>
           Active Sessions
         </Text>
       </View>
@@ -150,64 +148,65 @@ function SessionsContent() {
           }
         >
           {/* Info Text */}
-          <Text
-            className="text-sm mb-4"
-            style={{ color: themeColors.textMuted }}
-          >
-            {"These are the devices that are currently signed in to your account. You can sign out any session that you don't recognize."}
+          <Text className="text-sm mb-4" style={{ color: themeColors.textMuted }}>
+            {
+              "These are the devices that are currently signed in to your account. You can sign out any session that you don't recognize."
+            }
           </Text>
 
           {/* Current Session */}
-          {sessions?.filter(s => s.isCurrent).map(session => (
-            <View key={session.id} className="mb-4">
-              <Text
-                className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
-                style={{ color: themeColors.textMuted }}
-              >
-                This Device
-              </Text>
-              <Card variant="default" padding="none">
-                <View className="p-4 flex-row items-center gap-3">
-                  <View
-                    className="w-11 h-11 rounded-xl items-center justify-center"
-                    style={{ backgroundColor: `${colors.indigo[500]}20` }}
-                  >
-                    <Ionicons
-                      name={getDeviceIcon(session.deviceType)}
-                      size={22}
-                      color={colors.indigo[500]}
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <View className="flex-row items-center gap-2">
-                      <Text className="font-medium" style={{ color: themeColors.text }}>
-                        {session.deviceName || 'Unknown device'}
-                      </Text>
-                      <View
-                        className="px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: `${colors.status.done}20` }}
-                      >
-                        <Text
-                          className="text-xs font-medium"
-                          style={{ color: colors.status.done }}
-                        >
-                          Current
-                        </Text>
-                      </View>
+          {sessions
+            ?.filter(s => s.isCurrent)
+            .map(session => (
+              <View key={session.id} className="mb-4">
+                <Text
+                  className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
+                  style={{ color: themeColors.textMuted }}
+                >
+                  This Device
+                </Text>
+                <Card variant="default" padding="none">
+                  <View className="p-4 flex-row items-center gap-3">
+                    <View
+                      className="w-11 h-11 rounded-xl items-center justify-center"
+                      style={{ backgroundColor: `${colors.indigo[500]}20` }}
+                    >
+                      <Ionicons
+                        name={getDeviceIcon(session.deviceType)}
+                        size={22}
+                        color={colors.indigo[500]}
+                      />
                     </View>
-                    {session.deviceOs && (
-                      <Text className="text-sm" style={{ color: themeColors.textMuted }}>
-                        {session.deviceOs}
+                    <View className="flex-1">
+                      <View className="flex-row items-center gap-2">
+                        <Text className="font-medium" style={{ color: themeColors.text }}>
+                          {session.deviceName || 'Unknown device'}
+                        </Text>
+                        <View
+                          className="px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${colors.status.done}20` }}
+                        >
+                          <Text
+                            className="text-xs font-medium"
+                            style={{ color: colors.status.done }}
+                          >
+                            Current
+                          </Text>
+                        </View>
+                      </View>
+                      {session.deviceOs && (
+                        <Text className="text-sm" style={{ color: themeColors.textMuted }}>
+                          {session.deviceOs}
+                        </Text>
+                      )}
+                      <Text className="text-xs mt-1" style={{ color: themeColors.textFaint }}>
+                        Active now {session.ipAddress && `• ${session.ipAddress}`}
                       </Text>
-                    )}
-                    <Text className="text-xs mt-1" style={{ color: themeColors.textFaint }}>
-                      Active now {session.ipAddress && `• ${session.ipAddress}`}
-                    </Text>
+                    </View>
                   </View>
-                </View>
-              </Card>
-            </View>
-          ))}
+                </Card>
+              </View>
+            ))}
 
           {/* Other Sessions */}
           {otherSessions.length > 0 && (
@@ -223,7 +222,9 @@ function SessionsContent() {
                   <View
                     key={session.id}
                     className="p-4 flex-row items-center gap-3"
-                    style={index > 0 ? { borderTopWidth: 1, borderColor: themeColors.border } : undefined}
+                    style={
+                      index > 0 ? { borderTopWidth: 1, borderColor: themeColors.border } : undefined
+                    }
                   >
                     <View
                       className="w-11 h-11 rounded-xl items-center justify-center"
@@ -245,7 +246,8 @@ function SessionsContent() {
                         </Text>
                       )}
                       <Text className="text-xs mt-1" style={{ color: themeColors.textFaint }}>
-                        {formatRelativeTime(session.lastActiveAt)} {session.ipAddress && `• ${session.ipAddress}`}
+                        {formatRelativeTime(session.lastActiveAt)}{' '}
+                        {session.ipAddress && `• ${session.ipAddress}`}
                       </Text>
                     </View>
                     <TouchableOpacity
@@ -254,11 +256,7 @@ function SessionsContent() {
                       className="p-2 rounded-lg"
                       style={{ backgroundColor: `${colors.status.urgent}15` }}
                     >
-                      <Ionicons
-                        name="log-out-outline"
-                        size={18}
-                        color={colors.status.urgent}
-                      />
+                      <Ionicons name="log-out-outline" size={18} color={colors.status.urgent} />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -277,11 +275,7 @@ function SessionsContent() {
               </Text>
               <Card variant="default" padding="md">
                 <View className="items-center py-4">
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={40}
-                    color={colors.status.done}
-                  />
+                  <Ionicons name="checkmark-circle-outline" size={40} color={colors.status.done} />
                   <Text
                     className="text-center mt-3 font-medium"
                     style={{ color: themeColors.text }}

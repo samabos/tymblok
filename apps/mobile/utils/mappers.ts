@@ -1,23 +1,7 @@
 import type { BlockDto, InboxItemDto } from '@tymblok/api-client';
+import type { InboxSource, TaskCardData, TimerStatus } from '@tymblok/ui';
 
-// Map BlockDto to TaskCard component props
-export type TimerStatus = 'NotStarted' | 'Running' | 'Paused' | 'Completed';
-
-export interface TaskCardData {
-  id: string;
-  title: string;
-  subtitle?: string;
-  time: string;          // "9:00 AM"
-  endTime: string;       // "10:00 AM"
-  durationMinutes: number;
-  type: 'github' | 'jira' | 'meeting' | 'focus';
-  completed: boolean;
-  urgent: boolean;
-  isNow: boolean;        // Timer running OR current time within block
-  timerState: TimerStatus; // Explicit timer state from backend
-  elapsedSeconds: number; // Cumulative elapsed seconds from backend
-  isRecurring?: boolean; // Is this a recurring task?
-}
+export type { TaskCardData, TimerStatus };
 
 export function mapBlockToTaskCard(block: BlockDto): TaskCardData {
   return {
@@ -34,6 +18,7 @@ export function mapBlockToTaskCard(block: BlockDto): TaskCardData {
     timerState: (block.timerState as TimerStatus) || 'NotStarted',
     elapsedSeconds: block.elapsedSeconds || 0,
     isRecurring: block.isRecurring,
+    externalSource: block.externalSource,
   };
 }
 
@@ -62,7 +47,8 @@ export interface InboxItemData {
   id: string;
   title: string;
   description?: string;
-  source: string;
+  source: InboxSource;
+  time: string;
   type: 'task' | 'update';
   sourceIcon: string;
 }
@@ -72,10 +58,37 @@ export function mapInboxItemToData(item: InboxItemDto): InboxItemData {
     id: item.id,
     title: item.title,
     description: item.description || undefined,
-    source: item.source,
+    source: mapInboxSource(item.source),
+    time: formatRelativeTime(item.createdAt),
     type: item.type === 'Task' ? 'task' : 'update',
     sourceIcon: getSourceIcon(item.source),
   };
+}
+
+function mapInboxSource(source: string): InboxSource {
+  const sourceMap: Record<string, InboxSource> = {
+    GitHub: 'github',
+    Jira: 'jira',
+    GoogleCalendar: 'calendar',
+    Slack: 'slack',
+    Manual: 'manual',
+  };
+  return sourceMap[source] || 'manual';
+}
+
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 1) return 'just now';
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function getSourceIcon(source: string): string {

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   useTheme,
@@ -9,46 +9,64 @@ import {
   Card,
 } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
-
-// Mock data for development
-const weekData = [
-  { day: 'Mon', hours: 6.5, completed: 8 },
-  { day: 'Tue', hours: 7.2, completed: 10 },
-  { day: 'Wed', hours: 5.8, completed: 7 },
-  { day: 'Thu', hours: 8.1, completed: 12 },
-  { day: 'Fri', hours: 6.0, completed: 9 },
-  { day: 'Sat', hours: 2.5, completed: 3 },
-  { day: 'Sun', hours: 1.0, completed: 2 },
-];
-
-const categoryData = [
-  { name: 'Deep Work', hours: 18.5, percent: 45 },
-  { name: 'Meetings', hours: 12.0, percent: 29 },
-  { name: 'Code Review', hours: 6.5, percent: 16 },
-  { name: 'Admin', hours: 4.1, percent: 10 },
-];
+import { useStats } from '../../services/apiHooks';
 
 export default function StatsScreen() {
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const themeColors = theme.colors;
+  const { data: stats, isLoading } = useStats();
 
-  const maxHours = Math.max(...weekData.map(d => d.hours));
-  const todayIndex = 3; // Thursday is highlighted
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
+        <View className="px-5 pt-4 pb-2">
+          <Text className="text-2xl font-bold" style={{ color: themeColors.text }}>
+            Stats
+          </Text>
+          <Text className="text-sm mt-1" style={{ color: themeColors.textMuted }}>
+            Your productivity insights
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.indigo[500]} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const weeklyChart = stats?.weeklyChart ?? [];
+  const maxHours = Math.max(...weeklyChart.map(d => d.hours), 0.001);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayIndex = weeklyChart.findIndex(d => d.date === todayStr);
+
+  // Format change strings
+  const weekChangeStr =
+    stats?.weekSummary.weekChangePercent != null
+      ? `${Math.abs(stats.weekSummary.weekChangePercent)}% vs last week`
+      : 'No prior data';
+  const weekChangePositive = (stats?.weekSummary.weekChangePercent ?? 0) >= 0;
+
+  const tasksChangeStr =
+    stats?.weekSummary.tasksDoneChange != null
+      ? `${Math.abs(stats.weekSummary.tasksDoneChange)} vs last week`
+      : 'No prior data';
+  const tasksChangePositive = (stats?.weekSummary.tasksDoneChange ?? 0) >= 0;
+
+  const monthChangeStr =
+    stats?.monthSummary.monthChangePercent != null
+      ? `${Math.abs(stats.monthSummary.monthChangePercent)}% vs last month`
+      : 'No prior data';
+  const monthChangePositive = (stats?.monthSummary.monthChangePercent ?? 0) >= 0;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
       {/* Header */}
       <View className="px-5 pt-4 pb-2">
-        <Text
-          className="text-2xl font-bold"
-          style={{ color: themeColors.text }}
-        >
+        <Text className="text-2xl font-bold" style={{ color: themeColors.text }}>
           Stats
         </Text>
-        <Text
-          className="text-sm mt-1"
-          style={{ color: themeColors.textMuted }}
-        >
+        <Text className="text-sm mt-1" style={{ color: themeColors.textMuted }}>
           Your productivity insights
         </Text>
       </View>
@@ -63,30 +81,43 @@ export default function StatsScreen() {
           <View className="flex-1">
             <StatCard
               title="This Week"
-              value="37.1h"
-              change={{ value: '12% vs last week', positive: true }}
+              value={`${stats?.weekSummary.thisWeekHours ?? 0}h`}
+              change={{ value: weekChangeStr, positive: weekChangePositive }}
             />
           </View>
           <View className="flex-1">
             <StatCard
               title="Tasks Done"
-              value={51}
-              change={{ value: '8 more than last week', positive: true }}
+              value={stats?.weekSummary.tasksDone ?? 0}
+              change={{ value: tasksChangeStr, positive: tasksChangePositive }}
+            />
+          </View>
+        </View>
+        <View className="flex-row gap-3 pt-3">
+          <View className="flex-1">
+            <StatCard
+              title="This Month"
+              value={`${stats?.monthSummary.thisMonthHours ?? 0}h`}
+              change={{ value: monthChangeStr, positive: monthChangePositive }}
+            />
+          </View>
+          <View className="flex-1">
+            <StatCard
+              title="Avg / Day"
+              value={`${stats?.monthSummary.avgHoursPerDay ?? 0}h`}
+              change={{ value: 'This week', positive: true }}
             />
           </View>
         </View>
 
         {/* Weekly Chart */}
         <Card variant="default" padding="md" style={{ marginTop: 12 }}>
-          <Text
-            className="font-semibold mb-4"
-            style={{ color: themeColors.text }}
-          >
+          <Text className="font-semibold mb-4" style={{ color: themeColors.text }}>
             Daily Hours
           </Text>
           <View className="flex-row items-end justify-between h-32">
-            {weekData.map((day, i) => (
-              <View key={day.day} className="flex-1 items-center gap-2">
+            {weeklyChart.map((day, i) => (
+              <View key={day.dayLabel} className="flex-1 items-center gap-2">
                 <View className="w-full justify-end h-24">
                   <View
                     style={{
@@ -106,7 +137,7 @@ export default function StatsScreen() {
                     fontWeight: i === todayIndex ? '600' : '400',
                   }}
                 >
-                  {day.day}
+                  {day.dayLabel}
                 </Text>
               </View>
             ))}
@@ -115,17 +146,29 @@ export default function StatsScreen() {
 
         {/* Category Breakdown */}
         <View style={{ marginTop: 12 }}>
-          <CategoryBreakdown categories={categoryData} />
+          <CategoryBreakdown
+            categories={
+              stats?.categoryBreakdown.map(c => ({
+                name: c.categoryName,
+                hours: c.hours,
+                percent: c.percent,
+                color: c.categoryColor,
+              })) ?? []
+            }
+          />
         </View>
 
         {/* Streak */}
         <View style={{ marginTop: 12 }}>
-          <StreakCard currentStreak={12} bestStreak={28} />
+          <StreakCard
+            currentStreak={stats?.streak.currentStreak ?? 0}
+            bestStreak={stats?.streak.bestStreak ?? 0}
+          />
         </View>
 
         {/* Focus Score */}
         <View style={{ marginTop: 12 }}>
-          <FocusScoreCard score={85} />
+          <FocusScoreCard score={stats?.focusScore ?? 0} />
         </View>
       </ScrollView>
     </SafeAreaView>

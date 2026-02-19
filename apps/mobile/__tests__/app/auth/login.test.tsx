@@ -21,10 +21,30 @@ jest.mock('expo-linking', () => ({
 jest.mock('../../../services/authService', () => ({
   authService: {
     login: jest.fn(),
-    getExternalLoginUrl: jest.fn((provider: string, redirectUrl: string) =>
-      `https://api.example.com/auth/external/${provider}?mobile=true&redirect_uri=${encodeURIComponent(redirectUrl)}`
+    getExternalLoginUrl: jest.fn(
+      (provider: string, redirectUrl: string) =>
+        `https://api.example.com/auth/external/${provider}?mobile=true&redirect_uri=${encodeURIComponent(redirectUrl)}`
     ),
   },
+  mapUserDtoToUser: (dto: Record<string, unknown>) => ({
+    id: dto.id,
+    email: dto.email,
+    name: dto.name,
+    avatar_url: dto.avatarUrl,
+    email_verified: dto.emailVerified,
+    has_password: dto.hasPassword,
+    timezone: dto.timezone ?? 'UTC',
+    working_hours_start: dto.workingHoursStart ?? '09:00',
+    working_hours_end: dto.workingHoursEnd ?? '18:00',
+    lunch_start: dto.lunchStart ?? '12:00',
+    lunch_duration_minutes: dto.lunchDurationMinutes ?? 60,
+    notification_block_reminder: dto.notificationBlockReminder ?? true,
+    notification_reminder_minutes: dto.notificationReminderMinutes ?? 5,
+    notification_daily_summary: dto.notificationDailySummary ?? true,
+    created_at: dto.createdAt,
+    updated_at: dto.createdAt,
+  }),
+  OAuthProvider: {},
 }));
 
 // Mock authStore
@@ -159,9 +179,7 @@ describe('LoginScreen', () => {
   });
 
   it('should show loading state while signing in', async () => {
-    mockLogin.mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 100))
-    );
+    mockLogin.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
 
     render(<LoginScreen />);
 

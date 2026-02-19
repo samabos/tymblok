@@ -124,4 +124,24 @@ public class BlockRepository : IBlockRepository
     {
         _context.Entry(block).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
     }
+
+    public async Task<TimeBlock?> GetByExternalIdAsync(Guid userId, string externalId)
+    {
+        return await _context.TimeBlocks
+            .FirstOrDefaultAsync(b => b.UserId == userId && b.ExternalId == externalId);
+    }
+
+    public async Task<IList<TimeBlock>> GetUncompletedPastBlocksAsync(Guid userId, DateOnly today, CancellationToken ct = default)
+    {
+        return await _context.TimeBlocks
+            .Include(b => b.Category)
+            .Where(b => b.UserId == userId
+                && b.Date < today
+                && !b.IsCompleted
+                && b.TimerState != TimerState.Completed
+                && !b.IsRecurring)
+            .OrderBy(b => b.Date)
+            .ThenBy(b => b.SortOrder)
+            .ToListAsync(ct);
+    }
 }

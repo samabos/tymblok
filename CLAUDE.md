@@ -17,6 +17,7 @@
 ## Tech Stack
 
 ### Backend (apps/api)
+
 - **Runtime:** .NET 10
 - **Framework:** ASP.NET Core 10
 - **ORM:** Entity Framework Core 10 (Code-First)
@@ -26,6 +27,7 @@
 - **Payments:** Stripe
 
 ### Frontend (apps/mobile)
+
 - **Framework:** React Native + Expo (SDK 50+)
 - **Navigation:** Expo Router (file-based)
 - **State:** Zustand
@@ -34,12 +36,14 @@
 - **Gestures:** React Native Gesture Handler
 
 ### Shared Packages
+
 - **@tymblok/ui:** React Native components
 - **@tymblok/theme:** Design tokens (colors, typography, spacing)
 - **@tymblok/shared:** TypeScript types, Zod validators, utilities
 - **@tymblok/api-client:** Typed API client with TanStack Query hooks
 
 ### Infrastructure
+
 - **Cloud:** Azure (App Service, PostgreSQL Flexible Server, Redis Cache)
 - **CI/CD:** GitHub Actions
 - **Monitoring:** Application Insights
@@ -80,36 +84,39 @@ tymblok/
 
 ## Key Documentation
 
-| Document | Purpose | When to Reference |
-|----------|---------|-------------------|
-| `ARCHITECTURE.md` | System design, auth flows, security | API design, infrastructure |
-| `DATABASE_SCHEMA.md` | EF Core entities, relationships | Database changes, new entities |
-| `API_SPEC.md` | Endpoint contracts, DTOs | Implementing/consuming APIs |
-| `TYMBLOK_UI_SPEC.md` | Design tokens, component specs | Building UI components |
-| `PRODUCT_REQUIREMENTS.md` | User stories, acceptance criteria | Understanding features |
-| `IMPLEMENTATION_PLAN.md` | Task breakdown, prompts | Starting new tasks |
-| `prototype.jsx` | Interactive UI prototype | Visual reference for styling |
+| Document                  | Purpose                             | When to Reference              |
+| ------------------------- | ----------------------------------- | ------------------------------ |
+| `ARCHITECTURE.md`         | System design, auth flows, security | API design, infrastructure     |
+| `DATABASE_SCHEMA.md`      | EF Core entities, relationships     | Database changes, new entities |
+| `API_SPEC.md`             | Endpoint contracts, DTOs            | Implementing/consuming APIs    |
+| `TYMBLOK_UI_SPEC.md`      | Design tokens, component specs      | Building UI components         |
+| `PRODUCT_REQUIREMENTS.md` | User stories, acceptance criteria   | Understanding features         |
+| `IMPLEMENTATION_PLAN.md`  | Task breakdown, prompts             | Starting new tasks             |
+| `prototype.jsx`           | Interactive UI prototype            | Visual reference for styling   |
 
 ---
 
 ## Development Workflow
 
 ### Branch Naming
+
 ```
 feature/{phase}.{task}-{short-description}
 Example: feature/1.4-timeblocks-endpoints
 ```
 
 ### Commit Convention
+
 ```
 feat: add user authentication endpoints
-fix: resolve token refresh race condition  
+fix: resolve token refresh race condition
 test: add unit tests for TimeBlockService
 chore: configure eslint for shared packages
 docs: update API documentation
 ```
 
 ### Task Workflow
+
 1. Read task from `IMPLEMENTATION_PLAN.md`
 2. Create feature branch
 3. Implement feature
@@ -126,17 +133,20 @@ docs: update API documentation
 ### API (.NET)
 
 **Project Organization:**
+
 - Controllers: Thin, delegate to services
 - Services: Business logic with interfaces
 - Repositories: Data access (via EF Core)
 - DTOs: Separate from entities, in Tymblok.Shared
 
 **Naming:**
+
 - Async methods: suffix with `Async`
 - Interfaces: prefix with `I`
 - DTOs: suffix with `Dto`, `Request`, `Response`
 
 **Patterns:**
+
 ```csharp
 // Controller
 [HttpPost]
@@ -145,32 +155,33 @@ public async Task<ActionResult<ApiResponse<BlockDto>>> CreateBlock(
     CancellationToken ct)
 {
     var block = await _blockService.CreateAsync(request, UserId, ct);
-    return CreatedAtAction(nameof(GetBlock), new { id = block.Id }, 
+    return CreatedAtAction(nameof(GetBlock), new { id = block.Id },
         ApiResponse.Success(block));
 }
 
 // Service
 public async Task<BlockDto> CreateAsync(
-    CreateBlockRequest request, 
+    CreateBlockRequest request,
     Guid userId,
     CancellationToken ct)
 {
     // Validate plan limits
     await _subscriptionService.EnforceLimitAsync(userId, Feature.BlocksPerDay, ct);
-    
+
     // Business logic
     var block = new TimeBlock { ... };
     _context.TimeBlocks.Add(block);
     await _context.SaveChangesAsync(ct);
-    
+
     // Audit log
     await _auditService.LogAsync(AuditAction.Create, block, ct);
-    
+
     return block.ToDto();
 }
 ```
 
 **Testing:**
+
 - Unit tests for services with mocked dependencies
 - Integration tests for endpoints with test database
 - Use `WebApplicationFactory` for API tests
@@ -178,6 +189,7 @@ public async Task<BlockDto> CreateAsync(
 ### Mobile (React Native)
 
 **Component Structure:**
+
 ```typescript
 // components/TaskCard.tsx
 interface TaskCardProps {
@@ -193,6 +205,7 @@ export function TaskCard({ task, onPress, onComplete }: TaskCardProps) {
 ```
 
 **Hooks Pattern:**
+
 ```typescript
 // hooks/useBlocks.ts
 export function useBlocks(date: string) {
@@ -214,6 +227,7 @@ export function useCreateBlock() {
 ```
 
 **File Naming:**
+
 - Components: PascalCase (`TaskCard.tsx`)
 - Hooks: camelCase with `use` prefix (`useBlocks.ts`)
 - Utils: camelCase (`formatTime.ts`)
@@ -224,6 +238,7 @@ export function useCreateBlock() {
 ## Common Patterns
 
 ### API Response Format
+
 ```typescript
 // Success
 {
@@ -239,10 +254,11 @@ export function useCreateBlock() {
 ```
 
 ### Plan Limit Enforcement
+
 ```csharp
 // In services that need plan checks
 await _subscriptionService.EnforceLimitAsync(
-    userId, 
+    userId,
     Feature.BlocksPerDay,  // or IntegrationsCount, StatsHistoryDays, etc.
     cancellationToken
 );
@@ -250,6 +266,7 @@ await _subscriptionService.EnforceLimitAsync(
 ```
 
 ### Audit Logging
+
 ```csharp
 // Log significant actions
 await _auditService.LogAsync(
@@ -262,14 +279,15 @@ await _auditService.LogAsync(
 ```
 
 ### Optimistic Updates (Mobile)
+
 ```typescript
 useMutation({
   mutationFn: api.blocks.complete,
-  onMutate: async (blockId) => {
+  onMutate: async blockId => {
     await queryClient.cancelQueries({ queryKey: ['blocks'] });
     const previous = queryClient.getQueryData(['blocks']);
-    queryClient.setQueryData(['blocks'], (old) => 
-      old?.map(b => b.id === blockId ? { ...b, isCompleted: true } : b)
+    queryClient.setQueryData(['blocks'], old =>
+      old?.map(b => (b.id === blockId ? { ...b, isCompleted: true } : b))
     );
     return { previous };
   },
@@ -296,13 +314,13 @@ When implementing features, ensure:
 
 ## Testing Requirements
 
-| Code Type | Coverage Target | Test Types |
-|-----------|-----------------|------------|
-| API Services | >80% | Unit tests |
-| API Endpoints | >70% | Integration tests |
-| Mobile Components | >70% | Snapshot + interaction |
-| Mobile Hooks | >80% | Unit tests |
-| Validators | 100% | Unit tests |
+| Code Type         | Coverage Target | Test Types             |
+| ----------------- | --------------- | ---------------------- |
+| API Services      | >80%            | Unit tests             |
+| API Endpoints     | >70%            | Integration tests      |
+| Mobile Components | >70%            | Snapshot + interaction |
+| Mobile Hooks      | >80%            | Unit tests             |
+| Validators        | 100%            | Unit tests             |
 
 ---
 
@@ -335,6 +353,7 @@ docker-compose up -d  # Start PostgreSQL + Redis
 ## Environment Variables
 
 ### API (.env or appsettings)
+
 ```
 ConnectionStrings__DefaultConnection=Host=localhost;Database=tymblok_dev;Username=postgres;Password=postgres
 ConnectionStrings__Redis=localhost:6379
@@ -345,6 +364,7 @@ Stripe__WebhookSecret=whsec_...
 ```
 
 ### Mobile (.env)
+
 ```
 EXPO_PUBLIC_API_URL=http://localhost:5000/v1
 ```
@@ -364,6 +384,7 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/v1
 ## Current Status
 
 ### Completed (Phase 0: Foundation)
+
 - [x] Monorepo setup (Turborepo + pnpm)
 - [x] Mobile app shell with Expo Router
 - [x] Tab navigation (Today, Inbox, Week, Settings)
@@ -377,6 +398,7 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/v1
 - [x] Shared types package (@tymblok/shared)
 
 ### Completed (Phase 1.1: Backend Authentication)
+
 - [x] JWT authentication with refresh token rotation
 - [x] Auth endpoints (POST /api/auth/register, /login, /refresh)
 - [x] TokenService for JWT generation/validation
@@ -387,6 +409,7 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/v1
 - [x] 27 unit and integration tests
 
 ### In Progress (Phase 1.2: Frontend Authentication)
+
 - [ ] API service with Axios
 - [ ] Login screen with email/password
 - [ ] Register screen
@@ -394,11 +417,13 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/v1
 - [ ] Token refresh interceptor
 
 ### Not Started Yet (Phase 1.3: Tasks CRUD)
+
 - [ ] Tasks CRUD endpoints (GET/POST/PATCH/DELETE /api/tasks)
 - [ ] Schedule blocks CRUD endpoints
 - [ ] Categories endpoints
 
 ### Not Started Yet (Phase 2: Mobile MVP)
+
 - [ ] Day view calendar UI
 - [ ] TimeBlock component (draggable/resizable)
 - [ ] Task cards and forms
@@ -406,6 +431,7 @@ EXPO_PUBLIC_API_URL=http://localhost:5000/v1
 - [ ] Settings screen
 
 ### Not Started Yet (Phase 3+)
+
 - [ ] Google Calendar sync
 - [ ] GitHub integration
 - [ ] Jira integration
@@ -433,4 +459,4 @@ dotnet ef database update --project src/Tymblok.Infrastructure --startup-project
 
 ---
 
-*Last updated: January 2026*
+_Last updated: January 2026_

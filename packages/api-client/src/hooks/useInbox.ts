@@ -1,10 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { InboxApi } from '../api/inbox';
-import type {
-  InboxItemDto,
-  CreateInboxItemRequest,
-  UpdateInboxItemRequest,
-} from '../types/inbox';
+import type { InboxItemDto, CreateInboxItemRequest, UpdateInboxItemRequest } from '../types/inbox';
 
 // Query key factory
 export const inboxKeys = {
@@ -36,8 +32,8 @@ export const createInboxHooks = (inboxApi: InboxApi) => {
 
     return useMutation({
       mutationFn: (data: CreateInboxItemRequest) => inboxApi.create(data),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: inboxKeys.lists() });
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: inboxKeys.lists() });
       },
     });
   };
@@ -84,7 +80,7 @@ export const createInboxHooks = (inboxApi: InboxApi) => {
       mutationFn: (id: string) => inboxApi.dismiss(id),
 
       // Optimistic update - mark as dismissed
-      onMutate: async (id) => {
+      onMutate: async id => {
         await queryClient.cancelQueries({ queryKey: inboxKeys.lists() });
 
         const previousItems = queryClient.getQueryData<InboxItemDto[]>(inboxKeys.list());

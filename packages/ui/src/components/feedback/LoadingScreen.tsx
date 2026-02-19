@@ -36,9 +36,7 @@ export function LoadingScreen({
           style={[
             styles.gradient,
             {
-              backgroundColor: isDark
-                ? 'rgba(99, 102, 241, 0.15)'
-                : 'rgba(99, 102, 241, 0.1)',
+              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)',
             },
           ]}
         />
@@ -55,9 +53,7 @@ export function LoadingScreen({
       )}
 
       {/* Message */}
-      <Text style={[styles.message, { color: themeColors.textMuted }]}>
-        {message}
-      </Text>
+      <Text style={[styles.message, { color: themeColors.textMuted }]}>{message}</Text>
     </View>
   );
 }
@@ -80,10 +76,7 @@ function AnimatedLogo() {
 
     // Subtle pulse
     scale.value = withRepeat(
-      withSequence(
-        withTiming(1.02, { duration: 2000 }),
-        withTiming(1, { duration: 2000 })
-      ),
+      withSequence(withTiming(1.02, { duration: 2000 }), withTiming(1, { duration: 2000 })),
       -1,
       false
     );
@@ -108,12 +101,7 @@ function AnimatedLogo() {
 
         {/* Blocks */}
         {blocks.map((block, index) => (
-          <AnimatedBlock
-            key={index}
-            opacity={block.opacity}
-            delay={block.delay}
-            index={index}
-          />
+          <AnimatedBlock key={index} opacity={block.opacity} delay={block.delay} index={index} />
         ))}
 
         {/* Timeline dot */}
@@ -135,25 +123,14 @@ function AnimatedBlock({
   const blockOpacity = useSharedValue(0);
 
   useEffect(() => {
-    blockOpacity.value = withDelay(
-      delay,
-      withTiming(opacity, { duration: 500 })
-    );
+    blockOpacity.value = withDelay(delay, withTiming(opacity, { duration: 500 }));
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: blockOpacity.value,
   }));
 
-  return (
-    <Animated.View
-      style={[
-        styles.block,
-        { top: 8 + index * 14 },
-        animatedStyle,
-      ]}
-    />
-  );
+  return <Animated.View style={[styles.block, { top: 8 + index * 14 }, animatedStyle]} />;
 }
 
 // Loading progress bar
@@ -168,10 +145,7 @@ function LoadingBar({ progress }: { progress?: number }) {
     } else {
       // Indeterminate animation
       animatedProgress.value = withRepeat(
-        withSequence(
-          withTiming(0.7, { duration: 1500 }),
-          withTiming(0.3, { duration: 1500 })
-        ),
+        withSequence(withTiming(0.7, { duration: 1500 }), withTiming(0.3, { duration: 1500 })),
         -1,
         false
       );
@@ -198,13 +172,7 @@ function LoadingBar({ progress }: { progress?: number }) {
 }
 
 // Simple loading spinner
-export function LoadingSpinner({
-  size = 24,
-  color,
-}: {
-  size?: number;
-  color?: string;
-}) {
+export function LoadingSpinner({ size = 24, color }: { size?: number; color?: string }) {
   const { theme } = useTheme();
   const rotation = useSharedValue(0);
 

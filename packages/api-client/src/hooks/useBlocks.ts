@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import type { BlocksApi } from '../api/blocks';
 import type {
   BlockDto,
@@ -17,10 +17,14 @@ export const blockKeys = {
 };
 
 export const createBlockHooks = (blocksApi: BlocksApi) => {
-  const useBlocks = (params?: GetBlocksParams) => {
+  const useBlocks = (
+    params?: GetBlocksParams,
+    options?: Pick<UseQueryOptions<BlockDto[]>, 'enabled'>,
+  ) => {
     return useQuery({
       queryKey: blockKeys.list(params),
       queryFn: () => blocksApi.list(params),
+      ...options,
     });
   };
 
@@ -150,6 +154,17 @@ export const createBlockHooks = (blocksApi: BlocksApi) => {
     });
   };
 
+  const useCarryOver = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: () => blocksApi.carryOver(),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: blockKeys.lists() });
+      },
+    });
+  };
+
   // Special hook for drag-and-drop reordering
   const useUpdateBlocksSortOrder = () => {
     const queryClient = useQueryClient();
@@ -157,31 +172,27 @@ export const createBlockHooks = (blocksApi: BlocksApi) => {
     return useMutation({
       mutationFn: async (updates: Array<{ id: string; sortOrder: number }>) => {
         // Batch update
-        await Promise.all(
-          updates.map(({ id, sortOrder }) =>
-            blocksApi.update(id, { sortOrder })
-          )
-        );
+        await Promise.all(updates.map(({ id, sortOrder }) => blocksApi.update(id, { sortOrder })));
       },
 
       // Optimistic update
-      onMutate: async (updates) => {
+      onMutate: async updates => {
         await queryClient.cancelQueries({ queryKey: blockKeys.lists() });
 
         const previousBlocks = queryClient.getQueriesData({ queryKey: blockKeys.lists() });
 
         // Update all matching queries
-        queryClient.setQueriesData<BlockDto[]>({ queryKey: blockKeys.lists() }, (old) => {
+        queryClient.setQueriesData<BlockDto[]>({ queryKey: blockKeys.lists() }, old => {
           if (!old) return old;
 
           const updateMap = new Map(updates.map(u => [u.id, u.sortOrder]));
 
-          return old.map(block => {
-            const newSortOrder = updateMap.get(block.id);
-            return newSortOrder !== undefined
-              ? { ...block, sortOrder: newSortOrder }
-              : block;
-          }).sort((a, b) => a.sortOrder - b.sortOrder);
+          return old
+            .map(block => {
+              const newSortOrder = updateMap.get(block.id);
+              return newSortOrder !== undefined ? { ...block, sortOrder: newSortOrder } : block;
+            })
+            .sort((a, b) => a.sortOrder - b.sortOrder);
         });
 
         return { previousBlocks };
@@ -209,6 +220,7 @@ export const createBlockHooks = (blocksApi: BlocksApi) => {
     useDeleteBlock,
     useRestoreBlock,
     useUpdateBlocksSortOrder,
+    useCarryOver,
     blockKeys,
   };
 };

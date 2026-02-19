@@ -43,7 +43,13 @@ function AnimatedLogo() {
           <Rect x="14" y="26" width="20" height="8" rx="2" fill="white" fillOpacity={0.8} />
           <Rect x="14" y="36" width="20" height="8" rx="2" fill="white" />
           {/* Side time indicator */}
-          <Path d="M10 10v28" stroke="white" strokeWidth={2} strokeLinecap="round" strokeOpacity={0.5} />
+          <Path
+            d="M10 10v28"
+            stroke="white"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeOpacity={0.5}
+          />
           <Circle cx={10} cy={30} r={2} fill="white" />
         </Svg>
       </LinearGradient>
@@ -61,7 +67,12 @@ export function LoadingScreen({ message }: LoadingScreenProps) {
 
       <AnimatedLogo />
       <Text style={styles.title}>Tymblok</Text>
-      <ActivityIndicator testID="loading-indicator" size="large" color="#6366f1" style={styles.spinner} />
+      <ActivityIndicator
+        testID="loading-indicator"
+        size="large"
+        color="#6366f1"
+        style={styles.spinner}
+      />
       {message && <Text style={styles.message}>{message}</Text>}
     </View>
   );

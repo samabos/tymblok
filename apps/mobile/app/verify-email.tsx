@@ -14,8 +14,8 @@ export default function VerifyEmailScreen() {
   const params = useLocalSearchParams<{ userId?: string; token?: string }>();
   const { theme } = useTheme();
   const themeColors = theme.colors;
-  const updateUser = useAuthStore((state) => state.updateUser);
-  const user = useAuthStore((state) => state.user);
+  const updateUser = useAuthStore(state => state.updateUser);
+  const user = useAuthStore(state => state.user);
 
   const [screenState, setScreenState] = useState<ScreenState>('verifying');
   const [error, setError] = useState<string | null>(null);

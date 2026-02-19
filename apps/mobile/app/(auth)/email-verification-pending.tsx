@@ -203,10 +203,7 @@ export default function EmailVerificationPendingScreen() {
         </View>
 
         {/* Sign Out Link */}
-        <TouchableOpacity
-          className="mt-6 py-3 items-center"
-          onPress={handleSignOut}
-        >
+        <TouchableOpacity className="mt-6 py-3 items-center" onPress={handleSignOut}>
           <Text className="text-sm" style={{ color: themeColors.textMuted }}>
             Sign in with a different account
           </Text>

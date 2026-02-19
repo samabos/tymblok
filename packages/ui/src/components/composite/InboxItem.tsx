@@ -9,20 +9,22 @@ import Animated, {
   Layout,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, typography, layout, springConfig, getLabelColor } from '@tymblok/theme';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  colors,
+  spacing,
+  borderRadius,
+  typography,
+  layout,
+  springConfig,
+  getLabelColor,
+} from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Badge } from '../primitives/Badge';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
-
-export type InboxSource =
-  | 'google-drive'
-  | 'jira'
-  | 'calendar'
-  | 'github'
-  | 'slack'
-  | 'manual';
+export type InboxSource = 'google-drive' | 'jira' | 'calendar' | 'github' | 'slack' | 'manual';
 export type InboxItemType = 'task' | 'update' | 'reminder';
 export type InboxPriority = 'high' | 'normal';
 
@@ -44,13 +46,7 @@ export interface InboxItemProps {
   style?: ViewStyle;
 }
 
-export function InboxItem({
-  item,
-  onAdd,
-  onDismiss,
-  onPress,
-  style,
-}: InboxItemProps) {
+export function InboxItem({ item, onAdd, onDismiss, onPress, style }: InboxItemProps) {
   const { isDark, theme } = useTheme();
   const themeColors = theme.colors;
   const scale = useSharedValue(1);
@@ -77,13 +73,15 @@ export function InboxItem({
   }));
 
   // Light: shadow elevation, no border. Dark: subtle border.
-  const cardShadowStyle = isDark ? {} : {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  };
+  const cardShadowStyle = isDark
+    ? {}
+    : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+      };
 
   return (
     <AnimatedTouchable
@@ -109,34 +107,38 @@ export function InboxItem({
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text
-            style={[styles.title, { color: themeColors.text }]}
-            numberOfLines={1}
-          >
+          <Text style={[styles.title, { color: themeColors.text }]} numberOfLines={1}>
             {item.title}
           </Text>
-          {item.priority === 'high' && (
-            <Badge variant="urgent" size="sm" label="High" />
-          )}
+          {item.priority === 'high' && <Badge variant="urgent" size="sm" label="High" />}
         </View>
 
         <View style={styles.meta}>
-          <Text style={[styles.source, { color: themeColors.textFaint }]}>
-            {sourceLabel}
-          </Text>
-          <Text style={[styles.separator, { color: themeColors.textFaint }]}>
-            ·
-          </Text>
-          <Text style={[styles.time, { color: themeColors.textFaint }]}>
-            {item.time}
-          </Text>
+          {item.source === 'calendar' && (
+            <Ionicons
+              name="logo-google"
+              size={12}
+              color={themeColors.textFaint}
+              style={{ marginRight: 4 }}
+              accessibilityLabel="Google Calendar"
+            />
+          )}
+          {item.source === 'github' && (
+            <Ionicons
+              name="logo-github"
+              size={12}
+              color={themeColors.textFaint}
+              style={{ marginRight: 4 }}
+              accessibilityLabel="GitHub"
+            />
+          )}
+          <Text style={[styles.source, { color: themeColors.textFaint }]}>{sourceLabel}</Text>
+          <Text style={[styles.separator, { color: themeColors.textFaint }]}>·</Text>
+          <Text style={[styles.time, { color: themeColors.textFaint }]}>{item.time}</Text>
         </View>
 
         {item.description && (
-          <Text
-            style={[styles.description, { color: themeColors.textFaint }]}
-            numberOfLines={2}
-          >
+          <Text style={[styles.description, { color: themeColors.textFaint }]} numberOfLines={2}>
             {item.description}
           </Text>
         )}
@@ -157,9 +159,7 @@ export function InboxItem({
                 ]}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <Text style={[styles.actionIcon, { color: themeColors.textMuted }]}>
-                  ×
-                </Text>
+                <Text style={[styles.actionIcon, { color: themeColors.textMuted }]}>×</Text>
               </TouchableOpacity>
             )}
             {onAdd && (

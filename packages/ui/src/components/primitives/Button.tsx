@@ -9,11 +9,7 @@ import {
   StyleProp,
   PressableProps,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, borderRadius, layout, typography, springConfig } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';

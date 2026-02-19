@@ -37,42 +37,42 @@ export const colors = {
     500: '#a855f7',
     600: '#9333ea',
   },
-  
+
   // Semantic - Task Types
   taskType: {
-    github: '#10b981',    // emerald-500
-    jira: '#3b82f6',      // blue-500
-    meeting: '#a855f7',   // purple-500
-    focus: '#f59e0b',     // amber-500
+    github: '#10b981', // emerald-500
+    jira: '#3b82f6', // blue-500
+    meeting: '#a855f7', // purple-500
+    focus: '#f59e0b', // amber-500
   },
-  
+
   // Status
   status: {
-    urgent: '#ef4444',    // red-500
-    live: '#6366f1',      // indigo-500
-    done: '#10b981',      // emerald-500
+    urgent: '#ef4444', // red-500
+    live: '#6366f1', // indigo-500
+    done: '#10b981', // emerald-500
   },
-  
+
   // Dark Theme
   dark: {
-    bg: '#020617',        // slate-950
-    card: '#0f172a',      // slate-900
-    border: '#1e293b',    // slate-800
+    bg: '#020617', // slate-950
+    card: '#0f172a', // slate-900
+    border: '#1e293b', // slate-800
     text: '#ffffff',
     textMuted: '#94a3b8', // slate-400
     textFaint: '#64748b', // slate-500
-    input: '#1e293b',     // slate-800
+    input: '#1e293b', // slate-800
   },
-  
+
   // Light Theme
   light: {
-    bg: '#f8fafc',        // slate-50
+    bg: '#f8fafc', // slate-50
     card: '#ffffff',
-    border: '#e2e8f0',    // slate-200
-    text: '#0f172a',      // slate-900
+    border: '#e2e8f0', // slate-200
+    text: '#0f172a', // slate-900
     textMuted: '#475569', // slate-600
     textFaint: '#94a3b8', // slate-400
-    input: '#f1f5f9',     // slate-100
+    input: '#f1f5f9', // slate-100
   },
 };
 ```
@@ -83,10 +83,10 @@ export const colors = {
 // packages/theme/typography.ts
 export const typography = {
   fonts: {
-    sans: 'Inter',        // UI text
+    sans: 'Inter', // UI text
     mono: 'JetBrains Mono', // Times, code
   },
-  
+
   sizes: {
     xs: 10,
     sm: 12,
@@ -97,7 +97,7 @@ export const typography = {
     '2xl': 20,
     '3xl': 24,
   },
-  
+
   weights: {
     normal: '400',
     medium: '500',
@@ -182,6 +182,7 @@ App
 ## Screens
 
 ### 1. Loading Screen
+
 **Purpose:** Initial app load, auth check  
 **Duration:** 1.5s simulated, real = until data ready
 
@@ -207,13 +208,14 @@ App
 
 ### 2. Onboarding (3 slides)
 
-| Slide | Icon | Title | Description |
-|-------|------|-------|-------------|
-| 1 | Block Tower | Time Blocking Made Simple | Plan your day with visual time blocks |
-| 2 | Code Brackets + Clock | Built for Developers | Integrates with GitHub, Jira, and calendar |
-| 3 | Checkmark Box | Focus & Ship | Track deep work, build streaks |
+| Slide | Icon                  | Title                     | Description                                |
+| ----- | --------------------- | ------------------------- | ------------------------------------------ |
+| 1     | Block Tower           | Time Blocking Made Simple | Plan your day with visual time blocks      |
+| 2     | Code Brackets + Clock | Built for Developers      | Integrates with GitHub, Jira, and calendar |
+| 3     | Checkmark Box         | Focus & Ship              | Track deep work, build streaks             |
 
 **Components:**
+
 - Skip button (top right)
 - Dot indicators (tappable)
 - Continue / Get Started button
@@ -254,6 +256,7 @@ App
 ```
 
 **States:**
+
 - Default
 - Loading (button shows spinner)
 - Error (shake input, red border)
@@ -263,6 +266,7 @@ App
 ### 4. Sign Up Screen
 
 Same layout as Login with:
+
 - Back button (top left)
 - Full Name field added
 - Password hint: "Must be at least 8 characters"
@@ -274,6 +278,7 @@ Same layout as Login with:
 ### 5. Forgot Password Screen
 
 **States:**
+
 1. **Form:** Email input + Reset Password button
 2. **Success:** Check email illustration + confirmation message + Resend option
 
@@ -314,6 +319,7 @@ Same layout as Login with:
 ```
 
 **Task Card States:**
+
 - Default
 - Expanded (shows elapsed time, pause/done buttons)
 - Completed (muted, checkmark)
@@ -321,6 +327,7 @@ Same layout as Login with:
 - Dragging (elevated, opacity)
 
 **Interactions:**
+
 - Single tap → Expand/collapse
 - Drag → Reorder
 - Expand icon (⤢) → Task Detail Modal
@@ -355,6 +362,7 @@ Same layout as Login with:
 ```
 
 **Source Colors:**
+
 - Google Drive: Yellow
 - Jira: Blue
 - GitHub: White/Black
@@ -605,12 +613,12 @@ interface ButtonProps {
 }
 ```
 
-| Variant | Style |
-|---------|-------|
-| primary | indigo-600 bg, white text, shadow |
+| Variant   | Style                                |
+| --------- | ------------------------------------ |
+| primary   | indigo-600 bg, white text, shadow    |
 | secondary | slate-800/100 bg, muted text, border |
-| danger | red-500/10 bg, red text |
-| ghost | transparent, muted text |
+| danger    | red-500/10 bg, red text              |
+| ghost     | transparent, muted text              |
 
 ### 2. Input
 
@@ -699,11 +707,11 @@ interface SkeletonProps {
 
 ### Transitions
 
-| Name | Duration | Easing | Usage |
-|------|----------|--------|-------|
-| fast | 100ms | ease | Button press |
-| normal | 200ms | ease-out | Modal, card expand |
-| slow | 300ms | ease-in-out | Screen transition, bottom sheet |
+| Name   | Duration | Easing      | Usage                           |
+| ------ | -------- | ----------- | ------------------------------- |
+| fast   | 100ms    | ease        | Button press                    |
+| normal | 200ms    | ease-out    | Modal, card expand              |
+| slow   | 300ms    | ease-in-out | Screen transition, bottom sheet |
 
 ### Keyframes
 
@@ -775,20 +783,20 @@ interface Task {
   title: string;
   subtitle?: string;
   type: 'github' | 'jira' | 'meeting' | 'focus';
-  time: string;        // "09:00"
-  endTime: string;     // "10:30"
+  time: string; // "09:00"
+  endTime: string; // "10:30"
   completed: boolean;
   urgent?: boolean;
   isNow?: boolean;
-  progress?: number;   // 0-100
-  elapsed?: string;    // "00:45"
+  progress?: number; // 0-100
+  elapsed?: string; // "00:45"
 }
 
 interface InboxItem {
   id: string;
   title: string;
   source: 'google-drive' | 'jira' | 'calendar' | 'github' | 'slack';
-  time: string;        // "2h ago"
+  time: string; // "2h ago"
   type: 'task' | 'update' | 'reminder';
   priority?: 'high' | 'normal';
 }
@@ -820,6 +828,7 @@ interface UserStats {
 ## Implementation Priority
 
 ### Phase 1: Core (MVP)
+
 1. Theme provider + design tokens
 2. Basic components (Button, Input, Card, Badge)
 3. Login / Sign Up screens
@@ -827,6 +836,7 @@ interface UserStats {
 5. Bottom navigation
 
 ### Phase 2: Features
+
 6. Task interactions (expand, drag, complete)
 7. Add Task modal
 8. Inbox screen
@@ -834,6 +844,7 @@ interface UserStats {
 10. Settings with theme toggle
 
 ### Phase 3: Polish
+
 11. Profile & Integrations screens
 12. Task Detail modal
 13. Onboarding flow
@@ -905,6 +916,7 @@ packages/theme/src/
 ## React Native Considerations
 
 ### Libraries to Use
+
 - `react-native-reanimated` - Animations
 - `react-native-gesture-handler` - Drag & swipe
 - `@gorhom/bottom-sheet` - Bottom sheet modals
@@ -912,12 +924,14 @@ packages/theme/src/
 - `expo-haptics` - Haptic feedback on interactions
 
 ### Platform Differences
+
 - Use `Platform.select()` for iOS/Android specifics
 - iOS: Use SF Pro fonts as fallback
 - Android: Use Roboto as fallback
 - Bottom nav: Account for home indicator on iOS
 
 ### Tauri Desktop Adaptations
+
 - Larger touch targets not needed (can use tighter spacing)
 - Add keyboard shortcuts (Cmd+N for new task, etc.)
 - Window controls integration
@@ -934,4 +948,4 @@ This prototype contains all screens, states, and interactions in a single React 
 
 ---
 
-*Generated for Tymblok by Claude • January 2026*
+_Generated for Tymblok by Claude • January 2026_

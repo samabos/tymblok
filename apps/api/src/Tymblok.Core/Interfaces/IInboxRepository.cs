@@ -44,6 +44,16 @@ public interface IInboxRepository
     void Delete(InboxItem item);
 
     /// <summary>
+    /// Get an inbox item by external ID for deduplication
+    /// </summary>
+    Task<InboxItem?> GetByExternalIdAsync(Guid userId, string externalId);
+
+    /// <summary>
+    /// Get all inbox items for a specific integration
+    /// </summary>
+    Task<IList<InboxItem>> GetByIntegrationIdAsync(Guid integrationId, CancellationToken ct = default);
+
+    /// <summary>
     /// Save changes to the database
     /// </summary>
     Task SaveChangesAsync(CancellationToken ct = default);

@@ -88,6 +88,8 @@ public static class DependencyInjection
         services.AddScoped<IInboxRepository, InboxRepository>();
         services.AddScoped<IBlockRepository, BlockRepository>();
         services.AddScoped<IRecurrenceRuleRepository, RecurrenceRuleRepository>();
+        services.AddScoped<IIntegrationRepository, IntegrationRepository>();
+        services.AddScoped<ISupportContentRepository, SupportContentRepository>();
 
         // Services
         services.AddScoped<ITokenService, TokenService>();
@@ -97,7 +99,23 @@ public static class DependencyInjection
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IInboxService, InboxService>();
         services.AddScoped<IBlockService, BlockService>();
+        services.AddScoped<IStatsService, StatsService>();
         services.AddScoped<IRecurrenceService, RecurrenceService>();
+        services.AddScoped<ISupportContentService, SupportContentService>();
+
+        // Integration infrastructure
+        services.AddScoped<ITokenEncryptionService, TokenEncryptionService>();
+        services.AddSingleton<IOAuthStateService, OAuthStateService>();
+        services.AddScoped<IIntegrationService, IntegrationService>();
+
+        // Integration providers (unified OAuth — same credentials as auth login)
+        services.Configure<GitHubSettings>(configuration.GetSection("OAuth:GitHub"));
+        services.AddScoped<IIntegrationProviderService, GitHubProviderService>();
+        services.Configure<GoogleCalendarSettings>(configuration.GetSection("OAuth:Google"));
+        services.AddScoped<IIntegrationProviderService, GoogleCalendarProviderService>();
+
+        // Integration sync background worker
+        services.AddHostedService<IntegrationSyncWorker>();
 
         return services;
     }

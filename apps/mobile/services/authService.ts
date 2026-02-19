@@ -12,6 +12,16 @@ export interface UserDto {
   emailVerified: boolean;
   hasPassword: boolean;
   createdAt: string;
+  // Working hours
+  timezone: string;
+  workingHoursStart: string;
+  workingHoursEnd: string;
+  lunchStart: string;
+  lunchDurationMinutes: number;
+  // Notification preferences
+  notificationBlockReminder: boolean;
+  notificationReminderMinutes: number;
+  notificationDailySummary: boolean;
   linkedProviders?: string[];
 }
 
@@ -84,32 +94,69 @@ export interface SessionsResponse {
 
 export type OAuthProvider = 'google' | 'github';
 
+/** Map camelCase API UserDto to snake_case shared User type */
+export function mapUserDtoToUser(dto: UserDto): import('@tymblok/shared').User {
+  return {
+    id: dto.id,
+    email: dto.email,
+    name: dto.name,
+    avatar_url: dto.avatarUrl,
+    email_verified: dto.emailVerified,
+    has_password: dto.hasPassword,
+    timezone: dto.timezone ?? 'UTC',
+    working_hours_start: dto.workingHoursStart ?? '09:00',
+    working_hours_end: dto.workingHoursEnd ?? '18:00',
+    lunch_start: dto.lunchStart ?? '12:00',
+    lunch_duration_minutes: dto.lunchDurationMinutes ?? 60,
+    notification_block_reminder: dto.notificationBlockReminder ?? true,
+    notification_reminder_minutes: dto.notificationReminderMinutes ?? 5,
+    notification_daily_summary: dto.notificationDailySummary ?? true,
+    created_at: dto.createdAt,
+    updated_at: dto.createdAt,
+  };
+}
+
 export const authService = {
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', data, { skipAuth: true });
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', data, {
+      skipAuth: true,
+    });
     return response.data;
   },
 
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', data, { skipAuth: true });
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', data, {
+      skipAuth: true,
+    });
     return response.data;
   },
 
   async refresh(data: RefreshRequest): Promise<RefreshResponse> {
-    const response = await api.post<ApiResponse<RefreshResponse>>('/auth/refresh', data, { skipAuth: true });
+    const response = await api.post<ApiResponse<RefreshResponse>>('/auth/refresh', data, {
+      skipAuth: true,
+    });
     return response.data;
   },
 
   async forgotPassword(email: string): Promise<void> {
-    await api.post<ApiResponse<void>>('/auth/forgot-password', { email } as ForgotPasswordRequest, { skipAuth: true });
+    await api.post<ApiResponse<void>>('/auth/forgot-password', { email } as ForgotPasswordRequest, {
+      skipAuth: true,
+    });
   },
 
   async resetPassword(email: string, token: string, newPassword: string): Promise<void> {
-    await api.post<ApiResponse<void>>('/auth/reset-password', { email, token, newPassword } as ResetPasswordRequest, { skipAuth: true });
+    await api.post<ApiResponse<void>>(
+      '/auth/reset-password',
+      { email, token, newPassword } as ResetPasswordRequest,
+      { skipAuth: true }
+    );
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    await api.post<ApiResponse<void>>('/auth/change-password', { currentPassword, newPassword } as ChangePasswordRequest);
+    await api.post<ApiResponse<void>>('/auth/change-password', {
+      currentPassword,
+      newPassword,
+    } as ChangePasswordRequest);
   },
 
   async setPassword(password: string): Promise<void> {
@@ -130,9 +177,14 @@ export const authService = {
 
     // Determine MIME type from extension
     const extension = fileName.split('.').pop()?.toLowerCase();
-    const mimeType = extension === 'png' ? 'image/png' :
-                     extension === 'gif' ? 'image/gif' :
-                     extension === 'webp' ? 'image/webp' : 'image/jpeg';
+    const mimeType =
+      extension === 'png'
+        ? 'image/png'
+        : extension === 'gif'
+          ? 'image/gif'
+          : extension === 'webp'
+            ? 'image/webp'
+            : 'image/jpeg';
 
     // Append the file to form data
     formData.append('file', {
@@ -141,7 +193,10 @@ export const authService = {
       type: mimeType,
     } as unknown as Blob);
 
-    const response = await api.uploadFile<ApiResponse<{ avatarUrl: string }>>('/auth/avatar', formData);
+    const response = await api.uploadFile<ApiResponse<{ avatarUrl: string }>>(
+      '/auth/avatar',
+      formData
+    );
     return response.data;
   },
 
@@ -150,11 +205,17 @@ export const authService = {
   },
 
   async resendVerificationEmail(userId: string): Promise<void> {
-    await api.post<ApiResponse<void>>('/auth/resend-verification', { userId } as ResendVerificationRequest);
+    await api.post<ApiResponse<void>>('/auth/resend-verification', {
+      userId,
+    } as ResendVerificationRequest);
   },
 
   async verifyEmail(userId: string, token: string): Promise<void> {
-    await api.post<ApiResponse<void>>('/auth/verify-email', { userId, token } as VerifyEmailRequest, { skipAuth: true });
+    await api.post<ApiResponse<void>>(
+      '/auth/verify-email',
+      { userId, token } as VerifyEmailRequest,
+      { skipAuth: true }
+    );
   },
 
   async getLinkedProviders(): Promise<string[]> {

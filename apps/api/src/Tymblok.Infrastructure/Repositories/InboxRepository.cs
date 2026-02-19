@@ -85,6 +85,19 @@ public class InboxRepository : IInboxRepository
         _context.InboxItems.Remove(item);
     }
 
+    public async Task<InboxItem?> GetByExternalIdAsync(Guid userId, string externalId)
+    {
+        return await _context.InboxItems
+            .FirstOrDefaultAsync(i => i.UserId == userId && i.ExternalId == externalId);
+    }
+
+    public async Task<IList<InboxItem>> GetByIntegrationIdAsync(Guid integrationId, CancellationToken ct = default)
+    {
+        return await _context.InboxItems
+            .Where(i => i.IntegrationId == integrationId)
+            .ToListAsync(ct);
+    }
+
     public async Task SaveChangesAsync(CancellationToken ct = default)
     {
         await _context.SaveChangesAsync(ct);

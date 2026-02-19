@@ -62,11 +62,7 @@ const createTestQueryClient = () =>
 
 const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 };
 
 describe('SessionsScreen', () => {

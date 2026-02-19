@@ -46,9 +46,7 @@ export function AuthLayout({
             <View className="items-center mb-6">
               {showLogo && <TymblokLogo size="md" style={{ marginBottom: 12 }} />}
               <Text className="text-xl font-bold text-white">{title}</Text>
-              {subtitle && (
-                <Text className="mt-1 text-sm text-slate-400">{subtitle}</Text>
-              )}
+              {subtitle && <Text className="mt-1 text-sm text-slate-400">{subtitle}</Text>}
             </View>
 
             {/* Card with form content */}
@@ -62,9 +60,7 @@ export function AuthLayout({
                 <Text className="text-sm text-slate-400">{footer.text} </Text>
                 <Link href={footer.href} asChild>
                   <Pressable>
-                    <Text className="text-sm font-semibold text-indigo-500">
-                      {footer.linkText}
-                    </Text>
+                    <Text className="text-sm font-semibold text-indigo-500">{footer.linkText}</Text>
                   </Pressable>
                 </Link>
               </View>

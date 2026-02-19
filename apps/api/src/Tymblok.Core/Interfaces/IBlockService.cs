@@ -12,6 +12,7 @@ public record CreateBlockData(
     bool IsUrgent,
     string? ExternalId,
     string? ExternalUrl,
+    Entities.IntegrationProvider? ExternalSource = null,
     // Recurrence
     bool IsRecurring = false,
     Entities.RecurrenceType? RecurrenceType = null,
@@ -89,4 +90,9 @@ public interface IBlockService
     /// Restore a deleted time block
     /// </summary>
     Task<BlockWithCategory> RestoreAsync(Guid blockId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Carry over uncompleted, non-recurring blocks from past dates to today
+    /// </summary>
+    Task<IList<TimeBlock>> CarryOverAsync(Guid userId, CancellationToken ct = default);
 }

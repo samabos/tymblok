@@ -72,9 +72,7 @@ export function LoginScreen({
           style={[
             styles.gradient,
             {
-              backgroundColor: isDark
-                ? 'rgba(99, 102, 241, 0.15)'
-                : 'rgba(99, 102, 241, 0.1)',
+              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)',
             },
           ]}
         />
@@ -82,9 +80,7 @@ export function LoginScreen({
           style={[
             styles.gradientSecondary,
             {
-              backgroundColor: isDark
-                ? 'rgba(168, 85, 247, 0.1)'
-                : 'rgba(168, 85, 247, 0.05)',
+              backgroundColor: isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)',
             },
           ]}
         />
@@ -141,9 +137,7 @@ export function LoginScreen({
             </Text>
           </Pressable>
 
-          {error && (
-            <Text style={styles.errorText}>{error}</Text>
-          )}
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
           <Button
             variant="primary"
@@ -173,20 +167,12 @@ export function LoginScreen({
         {(onGoogleLogin || onGitHubLogin) && (
           <View style={styles.socialButtons}>
             {onGoogleLogin && (
-              <Button
-                variant="secondary"
-                onPress={onGoogleLogin}
-                style={styles.socialButton}
-              >
+              <Button variant="secondary" onPress={onGoogleLogin} style={styles.socialButton}>
                 Google
               </Button>
             )}
             {onGitHubLogin && (
-              <Button
-                variant="secondary"
-                onPress={onGitHubLogin}
-                style={styles.socialButton}
-              >
+              <Button variant="secondary" onPress={onGitHubLogin} style={styles.socialButton}>
                 GitHub
               </Button>
             )}
@@ -204,9 +190,7 @@ export function LoginScreen({
               onSignUp();
             }}
           >
-            <Text style={[styles.signUpLink, { color: colors.indigo[500] }]}>
-              Sign up
-            </Text>
+            <Text style={[styles.signUpLink, { color: colors.indigo[500] }]}>Sign up</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -219,10 +203,7 @@ function AnimatedLogo() {
 
   React.useEffect(() => {
     translateY.value = withRepeat(
-      withSequence(
-        withTiming(-8, { duration: 3000 }),
-        withTiming(0, { duration: 3000 })
-      ),
+      withSequence(withTiming(-8, { duration: 3000 }), withTiming(0, { duration: 3000 })),
       -1,
       false
     );
@@ -238,10 +219,7 @@ function AnimatedLogo() {
         <View style={styles.timeline} />
         <View style={styles.timelineDot} />
         {[0.4, 0.6, 0.8, 1].map((opacity, index) => (
-          <View
-            key={index}
-            style={[styles.block, { opacity, top: 6 + index * 11 }]}
-          />
+          <View key={index} style={[styles.block, { opacity, top: 6 + index * 11 }]} />
         ))}
       </View>
     </Animated.View>

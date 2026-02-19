@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTheme, Card } from '@tymblok/ui';
@@ -20,7 +28,7 @@ export default function SetPasswordScreen() {
 function SetPasswordContent() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
-  const updateUser = useAuthStore((state) => state.updateUser);
+  const updateUser = useAuthStore(state => state.updateUser);
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,7 +40,8 @@ function SetPasswordContent() {
 
   const passwordsMatch = !confirmPassword || newPassword.trim() === confirmPassword.trim();
   const passwordLongEnough = !newPassword || newPassword.trim().length >= 8;
-  const isDisabled = !newPassword || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
+  const isDisabled =
+    !newPassword || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
 
   const handleSetPassword = async () => {
     setError(null);
@@ -156,7 +165,9 @@ function SetPasswordContent() {
               </View>
               <Text
                 className="text-xs mt-2"
-                style={{ color: !passwordLongEnough ? colors.status.urgent : themeColors.textFaint }}
+                style={{
+                  color: !passwordLongEnough ? colors.status.urgent : themeColors.textFaint,
+                }}
               >
                 Must be at least 8 characters
               </Text>
@@ -202,7 +213,15 @@ function SetPasswordContent() {
             </Card>
 
             {error && (
-              <Card variant="default" padding="md" style={{ backgroundColor: `${colors.status.urgent}15`, borderWidth: 1, borderColor: `${colors.status.urgent}30` }}>
+              <Card
+                variant="default"
+                padding="md"
+                style={{
+                  backgroundColor: `${colors.status.urgent}15`,
+                  borderWidth: 1,
+                  borderColor: `${colors.status.urgent}30`,
+                }}
+              >
                 <Text className="text-sm text-center" style={{ color: colors.status.urgent }}>
                   {error}
                 </Text>

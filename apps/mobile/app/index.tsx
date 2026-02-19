@@ -9,7 +9,13 @@ import { OnboardingScreen } from '../components/OnboardingScreen';
 
 const ONBOARDING_KEY = 'tymblok-onboarding-completed';
 
-type AppState = 'loading' | 'onboarding' | 'biometric_pending' | 'biometric_failed' | 'authenticated' | 'unauthenticated';
+type AppState =
+  | 'loading'
+  | 'onboarding'
+  | 'biometric_pending'
+  | 'biometric_failed'
+  | 'authenticated'
+  | 'unauthenticated';
 
 function useAppState() {
   const { isAuthenticated, isLoading, setLoading } = useAuthStore();
@@ -44,7 +50,14 @@ function useAppState() {
     if (!isLoading && isAuthenticated && isEnabled && !biometricPassed && !biometricFailed) {
       performBiometricAuth();
     }
-  }, [isLoading, isAuthenticated, isEnabled, biometricPassed, biometricFailed, performBiometricAuth]);
+  }, [
+    isLoading,
+    isAuthenticated,
+    isEnabled,
+    biometricPassed,
+    biometricFailed,
+    performBiometricAuth,
+  ]);
 
   const completeOnboarding = useCallback(async () => {
     await AsyncStorage.setItem(ONBOARDING_KEY, 'true');

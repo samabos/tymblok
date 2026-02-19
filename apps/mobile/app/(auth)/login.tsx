@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Pressable, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Pressable,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Link } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { useAuthStore } from '../../stores/authStore';
-import { authService, OAuthProvider } from '../../services/authService';
+import { authService, mapUserDtoToUser, OAuthProvider } from '../../services/authService';
 import { useBiometricSignIn } from '../../hooks/useBiometricSignIn';
 import { TymblokLogo } from '../../components/icons';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +30,7 @@ export default function LoginScreen() {
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const setAuth = useAuthStore(state => state.setAuth);
 
   const {
     canUseBiometricSignIn,
@@ -41,7 +48,7 @@ export default function LoginScreen() {
     if (!biometricIsLoading && canUseBiometricSignIn && !showPasswordForm) {
       handleBiometricSignIn();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [biometricIsLoading, canUseBiometricSignIn]);
 
   const handleBiometricSignIn = async () => {
@@ -76,29 +83,12 @@ export default function LoginScreen() {
     try {
       const response = await authService.login({ email: email.trim(), password: password.trim() });
 
-      setAuth(
-        {
-          id: response.user.id,
-          email: response.user.email,
-          name: response.user.name,
-          avatar_url: response.user.avatarUrl,
-          email_verified: response.user.emailVerified,
-          has_password: response.user.hasPassword,
-          timezone: 'UTC',
-          working_hours_start: '09:00',
-          working_hours_end: '17:00',
-          lunch_start: '12:00',
-          lunch_duration_minutes: 60,
-          created_at: response.user.createdAt,
-          updated_at: response.user.createdAt,
-        },
-        {
-          access_token: response.accessToken,
-          refresh_token: response.refreshToken,
-          expires_in: response.expiresIn,
-          token_type: 'Bearer',
-        }
-      );
+      setAuth(mapUserDtoToUser(response.user), {
+        access_token: response.accessToken,
+        refresh_token: response.refreshToken,
+        expires_in: response.expiresIn,
+        token_type: 'Bearer',
+      });
 
       // Re-store biometric credentials if enabled for this user (after session expiry)
       if (biometricIsEnabled) {
@@ -159,16 +149,21 @@ export default function LoginScreen() {
               has_password: queryParams.hasPassword === 'true',
               timezone: 'UTC',
               working_hours_start: '09:00',
-              working_hours_end: '17:00',
+              working_hours_end: '18:00',
               lunch_start: '12:00',
               lunch_duration_minutes: 60,
+              notification_block_reminder: true,
+              notification_reminder_minutes: 5,
+              notification_daily_summary: true,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             },
             {
               access_token: queryParams.accessToken as string,
               refresh_token: queryParams.refreshToken as string,
-              expires_in: queryParams.expiresIn ? parseInt(queryParams.expiresIn as string, 10) : 900,
+              expires_in: queryParams.expiresIn
+                ? parseInt(queryParams.expiresIn as string, 10)
+                : 900,
               token_type: 'Bearer',
             }
           );
@@ -202,12 +197,8 @@ export default function LoginScreen() {
           <View className="items-center mb-8">
             <TymblokLogo size="md" style={{ marginBottom: 12 }} />
             <Text className="text-3xl font-bold text-white text-center">Welcome back</Text>
-            <Text className="text-lg text-slate-300 text-center mt-2">
-              {rememberedUser.name}
-            </Text>
-            <Text className="text-sm text-slate-500 text-center mt-1">
-              {rememberedUser.email}
-            </Text>
+            <Text className="text-lg text-slate-300 text-center mt-2">{rememberedUser.name}</Text>
+            <Text className="text-sm text-slate-500 text-center mt-1">{rememberedUser.email}</Text>
           </View>
 
           {error && (
@@ -235,7 +226,9 @@ export default function LoginScreen() {
                 />
               )}
               <Text className="text-white text-base font-semibold">
-                {biometricLoading ? 'Signing in...' : `Sign in with ${biometricType || 'Biometrics'}`}
+                {biometricLoading
+                  ? 'Signing in...'
+                  : `Sign in with ${biometricType || 'Biometrics'}`}
               </Text>
             </TouchableOpacity>
 
@@ -255,11 +248,10 @@ export default function LoginScreen() {
             </View>
 
             {/* Switch Account */}
-            <TouchableOpacity
-              className="py-3 items-center"
-              onPress={handleSwitchAccount}
-            >
-              <Text className="text-slate-400 text-sm">Not {rememberedUser.name}? Sign in with a different account</Text>
+            <TouchableOpacity className="py-3 items-center" onPress={handleSwitchAccount}>
+              <Text className="text-slate-400 text-sm">
+                Not {rememberedUser.name}? Sign in with a different account
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -311,11 +303,7 @@ export default function LoginScreen() {
                 onPress={() => setShowPassword(!showPassword)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={20}
-                  color="#64748b"
-                />
+                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#64748b" />
               </TouchableOpacity>
             </View>
           </View>
@@ -396,9 +384,7 @@ export default function LoginScreen() {
             className="mt-4 py-2 items-center"
             onPress={() => setShowPasswordForm(false)}
           >
-            <Text className="text-slate-500 text-sm">
-              Back to biometric sign-in
-            </Text>
+            <Text className="text-slate-500 text-sm">Back to biometric sign-in</Text>
           </TouchableOpacity>
         )}
       </View>

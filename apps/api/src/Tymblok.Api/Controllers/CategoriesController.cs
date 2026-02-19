@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,16 +11,19 @@ namespace Tymblok.Api.Controllers;
 [ApiController]
 [Route("api/categories")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class CategoriesController : ControllerBase
+public class CategoriesController : BaseApiController
 {
     private readonly ICategoryService _categoryService;
+    private readonly ICurrentUser _currentUser;
     private readonly ILogger<CategoriesController> _logger;
 
     public CategoriesController(
         ICategoryService categoryService,
+        ICurrentUser currentUser,
         ILogger<CategoriesController> logger)
     {
         _categoryService = categoryService;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -34,7 +36,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateCategoryRequest request, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var data = new CreateCategoryData(request.Name, request.Color, request.Icon);
         var category = await _categoryService.CreateAsync(data, userId, ct);
 
@@ -52,7 +54,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var categories = await _categoryService.GetAllAsync(userId, ct);
         var categoryDtos = categories.Select(MapToDto).ToList();
 
@@ -68,7 +70,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var category = await _categoryService.GetByIdAsync(id, userId, ct);
 
         if (category == null)
@@ -90,7 +92,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryRequest request, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -123,7 +125,7 @@ public class CategoriesController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -146,28 +148,6 @@ public class CategoriesController : ControllerBase
         {
             return Conflict(CreateErrorResponse(ex.Code, ex.Message));
         }
-    }
-
-    private Guid GetUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
-    }
-
-    private ApiResponse<T> WrapResponse<T>(T data)
-    {
-        return new ApiResponse<T>(
-            data,
-            new ApiMeta(DateTime.UtcNow.ToString("o"), HttpContext.TraceIdentifier)
-        );
-    }
-
-    private ApiError CreateErrorResponse(string code, string message)
-    {
-        return new ApiError(
-            new ErrorDetails(code, message),
-            new ApiMeta(DateTime.UtcNow.ToString("o"), HttpContext.TraceIdentifier)
-        );
     }
 
     private static CategoryDto MapToDto(Category category)

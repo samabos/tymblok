@@ -6,6 +6,10 @@ export const {
   categories: categoryHooks,
   inbox: inboxHooks,
   blocks: blockHooks,
+  integrations: integrationHooks,
+  content: contentHooks,
+  settings: settingsHooks,
+  stats: statsHooks,
 } = createApiHooks(api);
 
 // Convenience exports
@@ -17,14 +21,8 @@ export const {
   useDeleteCategory,
 } = categoryHooks;
 
-export const {
-  useInboxItems,
-  useInboxItem,
-  useCreateInboxItem,
-  useUpdateInboxItem,
-  useDismissInboxItem,
-  useDeleteInboxItem,
-} = inboxHooks;
+export const { useInboxItems, useCreateInboxItem, useUpdateInboxItem, useDismissInboxItem } =
+  inboxHooks;
 
 export const {
   useBlocks,
@@ -36,6 +34,20 @@ export const {
   usePauseBlock,
   useResumeBlock,
   useDeleteBlock,
-  useRestoreBlock,
   useUpdateBlocksSortOrder,
+  useCarryOver,
 } = blockHooks;
+
+export const {
+  useIntegrations,
+  useConnectIntegration,
+  useDisconnectIntegration,
+  useSyncIntegration,
+  useSyncAllIntegrations,
+} = integrationHooks;
+
+export const { useSupportContent } = contentHooks;
+
+export const { useUpdateSettings } = settingsHooks;
+
+export const { useStats } = statsHooks;

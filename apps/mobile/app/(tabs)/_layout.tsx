@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { useAuthStore } from '../../stores/authStore';
+import { useInboxItems } from '../../services/apiHooks';
 
 export default function TabLayout() {
   const { theme, isDark } = useTheme();
@@ -24,6 +25,10 @@ export default function TabLayout() {
       router.replace('/(auth)/email-verification-pending');
     }
   }, [isAuthenticated, isLoading, user]);
+
+  // Fetch inbox items to show badge count (undismissed items)
+  const { data: inboxItems } = useInboxItems();
+  const inboxBadgeCount = inboxItems?.filter(item => !item.isDismissed).length ?? 0;
 
   // Don't render tabs while checking auth, if not authenticated, or email not verified
   if (isLoading || !isAuthenticated || (user && !user.email_verified)) {
@@ -57,7 +62,12 @@ export default function TabLayout() {
         options={{
           title: 'Inbox',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="file-tray-outline" color={color} focused={focused} badge={5} />
+            <TabIcon
+              name="file-tray-outline"
+              color={color}
+              focused={focused}
+              badge={inboxBadgeCount}
+            />
           ),
         }}
       />
@@ -74,12 +84,6 @@ export default function TabLayout() {
             // Navigate with reset param to trigger date reset
             router.setParams({ reset: Date.now().toString() });
           },
-        }}
-      />
-      <Tabs.Screen
-        name="add"
-        options={{
-          href: null, // Hide from tab bar
         }}
       />
       <Tabs.Screen

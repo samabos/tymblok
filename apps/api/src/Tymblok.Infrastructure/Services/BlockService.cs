@@ -85,6 +85,7 @@ public class BlockService : IBlockService
             IsUrgent = data.IsUrgent,
             ExternalId = data.ExternalId,
             ExternalUrl = data.ExternalUrl,
+            ExternalSource = data.ExternalSource,
             IsCompleted = false,
             Progress = 0,
             ElapsedSeconds = 0,
@@ -187,8 +188,11 @@ public class BlockService : IBlockService
             {
                 // Skip if block already exists for this date and recurrence rule
                 var alreadyExists = existingBlocks.Any(b =>
-                    b.Date == occurrenceDate &&
-                    b.RecurrenceRuleId == parentBlock.RecurrenceRuleId);
+                        b.Date == occurrenceDate &&
+                        b.RecurrenceRuleId == parentBlock.RecurrenceRuleId)
+                    || generatedBlocks.Any(b =>
+                        b.Date == occurrenceDate &&
+                        b.RecurrenceRuleId == parentBlock.RecurrenceRuleId);
 
                 if (alreadyExists) continue;
 
@@ -219,10 +223,24 @@ public class BlockService : IBlockService
             {
                 // Skip if block already exists for this date and recurrence rule
                 var alreadyExists = existingBlocks.Any(b =>
-                    b.Date == occurrenceDate &&
-                    b.RecurrenceRuleId == inboxItem.RecurrenceRuleId);
+                        b.Date == occurrenceDate &&
+                        b.RecurrenceRuleId == inboxItem.RecurrenceRuleId)
+                    || generatedBlocks.Any(b =>
+                        b.Date == occurrenceDate &&
+                        b.RecurrenceRuleId == inboxItem.RecurrenceRuleId);
 
                 if (alreadyExists) continue;
+
+                // Skip if a block with the same title already exists for this date
+                // (prevents cross-source duplicates from TimeBlocks and InboxItems)
+                var titleExists = existingBlocks.Any(b =>
+                        b.Date == occurrenceDate &&
+                        b.Title == inboxItem.Title)
+                    || generatedBlocks.Any(b =>
+                        b.Date == occurrenceDate &&
+                        b.Title == inboxItem.Title);
+
+                if (titleExists) continue;
 
                 // Create new occurrence from inbox item
                 var occurrence = await CreateBlockFromInboxItemAsync(inboxItem, occurrenceDate, userId);
@@ -237,9 +255,15 @@ public class BlockService : IBlockService
             await _repository.SaveChangesAsync(ct);
         }
 
-        // Combine and return all blocks
+        // Combine, deduplicate, and return all blocks.
+        // Dedup by RecurrenceRuleId for recurring blocks to handle duplicates
+        // already persisted in the database from prior bugs or race conditions.
         return existingBlocks
             .Concat(generatedBlocks)
+            .GroupBy(b => b.RecurrenceRuleId != null
+                ? $"rule:{b.RecurrenceRuleId}:{b.Date}"
+                : $"id:{b.Id}")
+            .Select(g => g.First())
             .OrderBy(b => b.Date)
             .ThenBy(b => b.StartTime)
             .ThenBy(b => b.SortOrder)
@@ -276,8 +300,11 @@ public class BlockService : IBlockService
 
             // Skip if block already exists for this date and recurrence rule
             var alreadyExists = existingBlocks.Any(b =>
-                b.Date == date &&
-                b.RecurrenceRuleId == parentBlock.RecurrenceRuleId);
+                    b.Date == date &&
+                    b.RecurrenceRuleId == parentBlock.RecurrenceRuleId)
+                || generatedBlocks.Any(b =>
+                    b.Date == date &&
+                    b.RecurrenceRuleId == parentBlock.RecurrenceRuleId);
 
             if (alreadyExists) continue;
 
@@ -306,10 +333,24 @@ public class BlockService : IBlockService
 
             // Skip if block already exists for this date and recurrence rule
             var alreadyExists = existingBlocks.Any(b =>
-                b.Date == date &&
-                b.RecurrenceRuleId == inboxItem.RecurrenceRuleId);
+                    b.Date == date &&
+                    b.RecurrenceRuleId == inboxItem.RecurrenceRuleId)
+                || generatedBlocks.Any(b =>
+                    b.Date == date &&
+                    b.RecurrenceRuleId == inboxItem.RecurrenceRuleId);
 
             if (alreadyExists) continue;
+
+            // Skip if a block with the same title already exists for this date
+            // (prevents cross-source duplicates from TimeBlocks and InboxItems)
+            var titleExists = existingBlocks.Any(b =>
+                    b.Date == date &&
+                    b.Title == inboxItem.Title)
+                || generatedBlocks.Any(b =>
+                    b.Date == date &&
+                    b.Title == inboxItem.Title);
+
+            if (titleExists) continue;
 
             // Create new occurrence from inbox item
             var occurrence = await CreateBlockFromInboxItemAsync(inboxItem, date, userId);
@@ -323,9 +364,15 @@ public class BlockService : IBlockService
             await _repository.SaveChangesAsync(ct);
         }
 
-        // Combine and return all blocks
+        // Combine, deduplicate, and return all blocks.
+        // Dedup by RecurrenceRuleId for recurring blocks to handle duplicates
+        // already persisted in the database from prior bugs or race conditions.
         return existingBlocks
             .Concat(generatedBlocks)
+            .GroupBy(b => b.RecurrenceRuleId != null
+                ? $"rule:{b.RecurrenceRuleId}:{b.Date}"
+                : $"id:{b.Id}")
+            .Select(g => g.First())
             .OrderBy(b => b.StartTime)
             .ThenBy(b => b.SortOrder)
             .ToList();
@@ -840,5 +887,60 @@ public class BlockService : IBlockService
         );
 
         return new BlockWithCategory(block, categoryData);
+    }
+
+    public async Task<IList<TimeBlock>> CarryOverAsync(Guid userId, CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // 1. Get uncompleted past blocks (non-recurring, non-deleted via EF filter)
+        var pastBlocks = await _repository.GetUncompletedPastBlocksAsync(userId, today, ct);
+        if (pastBlocks.Count == 0) return Array.Empty<TimeBlock>();
+
+        // 2. Get today's existing blocks to determine max SortOrder
+        var todayBlocks = await _repository.GetByDateAsync(userId, today);
+        var maxSortOrder = todayBlocks.Any() ? todayBlocks.Max(b => b.SortOrder) : 0;
+
+        // 3. Move each past block to today
+        foreach (var block in pastBlocks)
+        {
+            var oldDate = block.Date;
+
+            // If timer was running, accumulate elapsed time before resetting
+            if (block.TimerState == TimerState.Running && block.ResumedAt.HasValue)
+            {
+                var runDuration = (DateTime.UtcNow - block.ResumedAt.Value).TotalSeconds;
+                block.ElapsedSeconds += (int)runDuration;
+            }
+
+            // Move to today
+            block.Date = today;
+
+            // Reset timer state but preserve elapsed seconds (partial work kept)
+            block.TimerState = TimerState.NotStarted;
+            block.StartedAt = null;
+            block.PausedAt = null;
+            block.ResumedAt = null;
+
+            // Place after today's existing blocks
+            maxSortOrder++;
+            block.SortOrder = maxSortOrder;
+
+            _repository.Update(block);
+
+            // Audit log
+            await _auditService.LogAsync(
+                action: "CarryOver",
+                entityType: "TimeBlock",
+                entityId: block.Id.ToString(),
+                userId: userId,
+                oldValues: new { Date = oldDate },
+                newValues: new { Date = today });
+        }
+
+        // 4. Batch save
+        await _repository.SaveChangesAsync(ct);
+
+        return pastBlocks;
     }
 }

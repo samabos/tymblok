@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -10,6 +17,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthGuard } from '../../components/AuthGuard';
+import { useAlert } from '../../components/AlertProvider';
 
 const AVATAR_SIZE = 256; // Resize avatars to 256x256 for storage efficiency
 
@@ -34,6 +42,7 @@ function ProfileContent() {
   // Email is read-only
   const email = user?.email || '';
   const avatarUrl = user?.avatar_url;
+  const { alert, error: showError, confirm } = useAlert();
 
   // Use stored has_password from user object (set during login/OAuth)
   const hasPassword = user?.has_password ?? true;
@@ -43,54 +52,38 @@ function ProfileContent() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
+    confirm(
       'Sign Out',
       'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            // Revoke refresh token on server before clearing local state
-            try {
-              if (tokens?.refresh_token) {
-                await authService.logout(tokens.refresh_token);
-              }
-            } catch (error) {
-              // Log but don't block logout if API fails
-              console.warn('[Logout] Failed to revoke token:', error);
-            }
-            clearAuth();
-            // Navigate to login - AuthGuard on protected screens handles back navigation
-            router.replace('/(auth)/login');
-          },
-        },
-      ]
+      async () => {
+        try {
+          if (tokens?.refresh_token) {
+            await authService.logout(tokens.refresh_token);
+          }
+        } catch (error) {
+          console.warn('[Logout] Failed to revoke token:', error);
+        }
+        clearAuth();
+        router.replace('/(auth)/login');
+      },
+      'Sign Out'
     );
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
+    confirm(
       'Delete Account',
       'This action cannot be undone. All your data will be permanently deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            // TODO: Call API to delete account
-            console.log('[Profile] Delete account requested');
-          },
-        },
-      ]
+      () => {
+        alert('Coming Soon', 'Account deletion will be available in a future update.');
+      },
+      'Delete'
     );
   };
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Name cannot be empty');
+      showError('Error', 'Name cannot be empty');
       return;
     }
 
@@ -106,37 +99,21 @@ function ProfileContent() {
       setIsEditing(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update profile';
-      Alert.alert('Error', message);
+      showError('Error', message);
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleChangeAvatar = async () => {
-    // Show action sheet with options
-    Alert.alert(
-      'Change Avatar',
-      'Choose an option',
-      [
-        {
-          text: 'Take Photo',
-          onPress: () => pickImage('camera'),
-        },
-        {
-          text: 'Choose from Library',
-          onPress: () => pickImage('library'),
-        },
-        ...(avatarUrl ? [{
-          text: 'Remove Photo',
-          style: 'destructive' as const,
-          onPress: handleDeleteAvatar,
-        }] : []),
-        {
-          text: 'Cancel',
-          style: 'cancel' as const,
-        },
-      ]
-    );
+    const buttons = [
+      { text: 'Take Photo', onPress: () => pickImage('camera') },
+      { text: 'Choose from Library', onPress: () => pickImage('library') },
+    ];
+    if (avatarUrl) {
+      buttons.push({ text: 'Remove Photo', onPress: handleDeleteAvatar });
+    }
+    alert('Change Avatar', 'Choose an option', buttons);
   };
 
   const pickImage = async (source: 'camera' | 'library') => {
@@ -145,38 +122,39 @@ function ProfileContent() {
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Camera permission is required to take photos.');
+          showError('Permission Denied', 'Camera permission is required to take photos.');
           return;
         }
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Photo library permission is required to choose photos.');
+          showError('Permission Denied', 'Photo library permission is required to choose photos.');
           return;
         }
       }
 
       // Launch picker
-      const result = source === 'camera'
-        ? await ImagePicker.launchCameraAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-          })
-        : await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-          });
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ['images'],
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            });
 
       if (!result.canceled && result.assets[0]) {
         await uploadAvatar(result.assets[0].uri);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to pick image';
-      Alert.alert('Error', message);
+      showError('Error', message);
     }
   };
 
@@ -194,7 +172,7 @@ function ProfileContent() {
       updateUser({ avatar_url: response.avatarUrl });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to upload avatar';
-      Alert.alert('Error', message);
+      showError('Error', message);
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -207,7 +185,7 @@ function ProfileContent() {
       updateUser({ avatar_url: null });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete avatar';
-      Alert.alert('Error', message);
+      showError('Error', message);
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -224,10 +202,7 @@ function ProfileContent() {
         >
           <Ionicons name="arrow-back" size={20} color={themeColors.text} />
         </TouchableOpacity>
-        <Text
-          className="text-xl font-bold flex-1"
-          style={{ color: themeColors.text }}
-        >
+        <Text className="text-xl font-bold flex-1" style={{ color: themeColors.text }}>
           Profile
         </Text>
       </View>
@@ -264,16 +239,10 @@ function ProfileContent() {
               )}
             </TouchableOpacity>
           </View>
-          <Text
-            className="text-xl font-bold mt-4"
-            style={{ color: themeColors.text }}
-          >
+          <Text className="text-xl font-bold mt-4" style={{ color: themeColors.text }}>
             {name}
           </Text>
-          <Text
-            className="text-sm mt-1"
-            style={{ color: themeColors.textMuted }}
-          >
+          <Text className="text-sm mt-1" style={{ color: themeColors.textMuted }}>
             {email}
           </Text>
         </View>
@@ -327,10 +296,7 @@ function ProfileContent() {
                 </View>
               ) : (
                 <>
-                  <Text
-                    className="text-sm mb-1"
-                    style={{ color: themeColors.textMuted }}
-                  >
+                  <Text className="text-sm mb-1" style={{ color: themeColors.textMuted }}>
                     Full Name
                   </Text>
                   <Text className="font-medium" style={{ color: themeColors.text }}>
@@ -339,15 +305,9 @@ function ProfileContent() {
                 </>
               )}
             </View>
-            <View
-              className="p-4 border-t"
-              style={{ borderColor: themeColors.border }}
-            >
+            <View className="p-4 border-t" style={{ borderColor: themeColors.border }}>
               {/* Email is not editable */}
-              <Text
-                className="text-sm mb-1"
-                style={{ color: themeColors.textMuted }}
-              >
+              <Text className="text-sm mb-1" style={{ color: themeColors.textMuted }}>
                 Email
               </Text>
               <Text className="font-medium" style={{ color: themeColors.text }}>
@@ -355,60 +315,6 @@ function ProfileContent() {
               </Text>
             </View>
           </Card>
-        </View>
-
-        {/* Activity Stats */}
-        <View className="mb-4">
-          <Text
-            className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
-            style={{ color: themeColors.textMuted }}
-          >
-            Activity
-          </Text>
-          <View className="flex-row gap-3">
-            <Card variant="default" padding="md" style={{ flex: 1 }}>
-              <Text
-                className="text-2xl font-bold text-center"
-                style={{ color: themeColors.text }}
-              >
-                156
-              </Text>
-              <Text
-                className="text-xs text-center mt-1"
-                style={{ color: themeColors.textMuted }}
-              >
-                Tasks Done
-              </Text>
-            </Card>
-            <Card variant="default" padding="md" style={{ flex: 1 }}>
-              <Text
-                className="text-2xl font-bold text-center"
-                style={{ color: themeColors.text }}
-              >
-                12
-              </Text>
-              <Text
-                className="text-xs text-center mt-1"
-                style={{ color: themeColors.textMuted }}
-              >
-                Day Streak
-              </Text>
-            </Card>
-            <Card variant="default" padding="md" style={{ flex: 1 }}>
-              <Text
-                className="text-2xl font-bold text-center"
-                style={{ color: themeColors.text }}
-              >
-                89h
-              </Text>
-              <Text
-                className="text-xs text-center mt-1"
-                style={{ color: themeColors.textMuted }}
-              >
-                This Month
-              </Text>
-            </Card>
-          </View>
         </View>
 
         {/* Account Actions */}
@@ -422,7 +328,9 @@ function ProfileContent() {
           <Card variant="default" padding="none">
             <TouchableOpacity
               className="p-4 flex-row items-center justify-between"
-              onPress={() => router.push(hasPassword ? '/(auth)/change-password' : '/(auth)/set-password')}
+              onPress={() =>
+                router.push(hasPassword ? '/(auth)/change-password' : '/(auth)/set-password')
+              }
             >
               <View className="flex-row items-center gap-3">
                 <View
@@ -447,7 +355,9 @@ function ProfileContent() {
             <TouchableOpacity
               className="p-4 flex-row items-center justify-between border-t"
               style={{ borderColor: themeColors.border }}
-              onPress={() => console.log('[Profile] Export data')}
+              onPress={() =>
+                alert('Coming Soon', 'Data export will be available in a future update.')
+              }
             >
               <View className="flex-row items-center gap-3">
                 <View
@@ -484,7 +394,11 @@ function ProfileContent() {
           >
             Danger Zone
           </Text>
-          <Card variant="outlined" padding="none" style={{ borderColor: `${colors.status.urgent}30` }}>
+          <Card
+            variant="outlined"
+            padding="none"
+            style={{ borderColor: `${colors.status.urgent}30` }}
+          >
             <TouchableOpacity
               className="p-4 flex-row items-center gap-3"
               onPress={handleDeleteAccount}

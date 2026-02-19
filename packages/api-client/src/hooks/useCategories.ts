@@ -1,10 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CategoriesApi } from '../api/categories';
-import type {
-  CategoryDto,
-  CreateCategoryRequest,
-  UpdateCategoryRequest,
-} from '../types/category';
+import type { CategoryDto, CreateCategoryRequest, UpdateCategoryRequest } from '../types/category';
 
 // Query key factory
 export const categoryKeys = {

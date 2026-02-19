@@ -117,7 +117,11 @@ describe('ResetPasswordScreen', () => {
     fireEvent.press(resetButton);
 
     await waitFor(() => {
-      expect(mockResetPassword).toHaveBeenCalledWith('test@example.com', 'valid-token', 'newpassword123');
+      expect(mockResetPassword).toHaveBeenCalledWith(
+        'test@example.com',
+        'valid-token',
+        'newpassword123'
+      );
     });
   });
 
@@ -206,7 +210,7 @@ describe('ResetPasswordScreen', () => {
 
   it('should show loading state while resetting', async () => {
     mockUseLocalSearchParams.mockReturnValue({ token: 'valid-token', email: 'test@example.com' });
-    mockResetPassword.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    mockResetPassword.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
 
     render(<ResetPasswordScreen />);
 

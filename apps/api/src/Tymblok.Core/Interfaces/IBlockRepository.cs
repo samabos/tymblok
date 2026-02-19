@@ -69,4 +69,14 @@ public interface IBlockRepository
     /// Detach an entity from the change tracker
     /// </summary>
     void Detach(TimeBlock block);
+
+    /// <summary>
+    /// Get a time block by external ID for a user (for integration dedup)
+    /// </summary>
+    Task<TimeBlock?> GetByExternalIdAsync(Guid userId, string externalId);
+
+    /// <summary>
+    /// Get uncompleted, non-recurring blocks from past dates (carry-over candidates)
+    /// </summary>
+    Task<IList<TimeBlock>> GetUncompletedPastBlocksAsync(Guid userId, DateOnly today, CancellationToken ct = default);
 }

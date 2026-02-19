@@ -69,9 +69,7 @@ export function SignUpScreen({
           style={[
             styles.gradient,
             {
-              backgroundColor: isDark
-                ? 'rgba(99, 102, 241, 0.15)'
-                : 'rgba(99, 102, 241, 0.1)',
+              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)',
             },
           ]}
         />
@@ -79,9 +77,7 @@ export function SignUpScreen({
           style={[
             styles.gradientSecondary,
             {
-              backgroundColor: isDark
-                ? 'rgba(168, 85, 247, 0.1)'
-                : 'rgba(168, 85, 247, 0.05)',
+              backgroundColor: isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)',
             },
           ]}
         />
@@ -106,18 +102,13 @@ export function SignUpScreen({
             <View style={styles.timeline} />
             <View style={styles.timelineDot} />
             {[0.4, 0.6, 0.8, 1].map((opacity, index) => (
-              <View
-                key={index}
-                style={[styles.block, { opacity, top: 6 + index * 11 }]}
-              />
+              <View key={index} style={[styles.block, { opacity, top: 6 + index * 11 }]} />
             ))}
           </View>
         </View>
 
         {/* Branding */}
-        <Text style={[styles.title, { color: themeColors.text }]}>
-          Create your account
-        </Text>
+        <Text style={[styles.title, { color: themeColors.text }]}>Create your account</Text>
         <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
           Start time blocking like a developer
         </Text>
@@ -173,8 +164,7 @@ export function SignUpScreen({
 
         {/* Terms */}
         <Text style={[styles.terms, { color: themeColors.textFaint }]}>
-          By signing up, you agree to our{' '}
-          <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
+          By signing up, you agree to our <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
           <Text style={styles.termsLink}>Privacy Policy</Text>
         </Text>
 
@@ -193,20 +183,12 @@ export function SignUpScreen({
         {(onGoogleSignUp || onGitHubSignUp) && (
           <View style={styles.socialButtons}>
             {onGoogleSignUp && (
-              <Button
-                variant="secondary"
-                onPress={onGoogleSignUp}
-                style={styles.socialButton}
-              >
+              <Button variant="secondary" onPress={onGoogleSignUp} style={styles.socialButton}>
                 Google
               </Button>
             )}
             {onGitHubSignUp && (
-              <Button
-                variant="secondary"
-                onPress={onGitHubSignUp}
-                style={styles.socialButton}
-              >
+              <Button variant="secondary" onPress={onGitHubSignUp} style={styles.socialButton}>
                 GitHub
               </Button>
             )}
@@ -224,9 +206,7 @@ export function SignUpScreen({
               onLogin();
             }}
           >
-            <Text style={[styles.loginLink, { color: colors.indigo[500] }]}>
-              Sign in
-            </Text>
+            <Text style={[styles.loginLink, { color: colors.indigo[500] }]}>Sign in</Text>
           </Pressable>
         </View>
       </ScrollView>

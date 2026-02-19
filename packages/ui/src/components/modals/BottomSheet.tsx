@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions, ViewStyle } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Dimensions,
+  Platform,
+  ViewStyle,
+  Modal,
+} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,13 +16,14 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { spacing, borderRadius, springConfig, duration } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 88 : 70;
 
 export interface BottomSheetProps {
   visible: boolean;
@@ -44,28 +54,28 @@ export function BottomSheet({
   const backdropOpacity = useSharedValue(0);
   const context = useSharedValue({ y: 0 });
 
-  // Calculate snap point heights
+  // Available height above tab bar
+  const availableHeight = SCREEN_HEIGHT - TAB_BAR_HEIGHT;
+
+  // Calculate snap point heights (as percentage of available height)
   const snapPointHeights = useMemo(
-    () => snapPoints.map((point) => (point / 100) * SCREEN_HEIGHT),
-    [snapPoints]
+    () => snapPoints.map(point => (point / 100) * availableHeight),
+    [snapPoints, availableHeight]
   );
 
   const maxHeight = Math.max(...snapPointHeights);
   const minHeight = Math.min(...snapPointHeights);
 
-  // Open/close animations
+  // Open/close animations (within available height above tab bar)
   useEffect(() => {
     if (visible) {
-      translateY.value = withSpring(
-        SCREEN_HEIGHT - maxHeight,
-        springConfig.gentle
-      );
+      translateY.value = withSpring(availableHeight - maxHeight, springConfig.gentle);
       backdropOpacity.value = withTiming(1, { duration: duration.slow });
     } else {
       translateY.value = withSpring(SCREEN_HEIGHT, springConfig.gentle);
       backdropOpacity.value = withTiming(0, { duration: duration.normal });
     }
-  }, [visible, maxHeight]);
+  }, [visible, maxHeight, availableHeight]);
 
   const closeSheet = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -77,31 +87,24 @@ export function BottomSheet({
     .onStart(() => {
       context.value = { y: translateY.value };
     })
-    .onUpdate((event) => {
+    .onUpdate(event => {
       const newY = context.value.y + event.translationY;
-      // Clamp between max open and closed positions
-      translateY.value = Math.max(
-        SCREEN_HEIGHT - maxHeight,
-        Math.min(SCREEN_HEIGHT, newY)
-      );
+      translateY.value = Math.max(availableHeight - maxHeight, Math.min(SCREEN_HEIGHT, newY));
     })
-    .onEnd((event) => {
-      const shouldClose =
-        event.velocityY > 500 ||
-        translateY.value > SCREEN_HEIGHT - minHeight / 2;
+    .onEnd(event => {
+      const shouldClose = event.velocityY > 500 || translateY.value > availableHeight - minHeight / 2;
 
       if (shouldClose) {
         translateY.value = withSpring(SCREEN_HEIGHT, springConfig.gentle);
         backdropOpacity.value = withTiming(0, { duration: duration.normal });
         runOnJS(closeSheet)();
       } else {
-        // Snap to nearest point
         const currentY = translateY.value;
-        let nearestSnap = SCREEN_HEIGHT - maxHeight;
+        let nearestSnap = availableHeight - maxHeight;
         let nearestDistance = Math.abs(currentY - nearestSnap);
 
-        snapPointHeights.forEach((height) => {
-          const snapY = SCREEN_HEIGHT - height;
+        snapPointHeights.forEach(height => {
+          const snapY = availableHeight - height;
           const distance = Math.abs(currentY - snapY);
           if (distance < nearestDistance) {
             nearestSnap = snapY;
@@ -126,69 +129,63 @@ export function BottomSheet({
   }
 
   return (
-    <View style={styles.overlay} pointerEvents="box-none">
-      {/* Backdrop */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
-        <Animated.View
-          style={[
-            styles.backdrop,
-            { backgroundColor: themeColors.overlay },
-            animatedBackdropStyle,
-          ]}
-        />
-      </Pressable>
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+      <GestureHandlerRootView style={styles.overlay}>
+        {/* Backdrop */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
+          <Animated.View
+            style={[styles.backdrop, { backgroundColor: themeColors.overlay }, animatedBackdropStyle]}
+          />
+        </Pressable>
 
-      {/* Sheet */}
-      <GestureDetector gesture={gesture}>
+        {/* Sheet */}
         <Animated.View
           style={[
             styles.sheet,
             {
               backgroundColor: themeColors.card,
-              paddingBottom: insets.bottom + spacing[4],
-              maxHeight: maxHeight,
+              paddingBottom: spacing[4],
+              height: maxHeight,
             },
             animatedSheetStyle,
             style,
           ]}
         >
-          {/* Handle */}
-          {showHandle && (
-            <View style={styles.handleContainer}>
-              <View
-                style={[styles.handle, { backgroundColor: themeColors.border }]}
-              />
-            </View>
-          )}
-
-          {/* Header */}
-          {(title || showCloseButton) && (
-            <View style={styles.header}>
-              <Text style={[styles.title, { color: themeColors.text }]}>
-                {title}
-              </Text>
-              {showCloseButton && (
-                <Pressable onPress={closeSheet} hitSlop={8}>
-                  <Text style={[styles.closeButton, { color: themeColors.textMuted }]}>
-                    ✕
-                  </Text>
-                </Pressable>
+          {/* Draggable handle + header area */}
+          <GestureDetector gesture={gesture}>
+            <Animated.View>
+              {/* Handle */}
+              {showHandle && (
+                <View style={styles.handleContainer}>
+                  <View style={[styles.handle, { backgroundColor: themeColors.border }]} />
+                </View>
               )}
-            </View>
-          )}
 
-          {/* Content */}
+              {/* Header */}
+              {(title || showCloseButton) && (
+                <View style={styles.header}>
+                  <Text style={[styles.title, { color: themeColors.text }]}>{title}</Text>
+                  {showCloseButton && (
+                    <Pressable onPress={closeSheet} hitSlop={8}>
+                      <Text style={[styles.closeButton, { color: themeColors.textMuted }]}>✕</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+            </Animated.View>
+          </GestureDetector>
+
+          {/* Content — free from drag gesture so ScrollViews work */}
           <View style={styles.content}>{children}</View>
         </Animated.View>
-      </GestureDetector>
-    </View>
+      </GestureHandlerRootView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
+    flex: 1,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -197,10 +194,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
+    top: 0,
     borderTopLeftRadius: borderRadius['2xl'],
     borderTopRightRadius: borderRadius['2xl'],
-    minHeight: 200,
   },
   handleContainer: {
     alignItems: 'center',
@@ -229,5 +225,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: spacing[6],
+    overflow: 'hidden',
   },
 });

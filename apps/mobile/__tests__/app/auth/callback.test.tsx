@@ -37,7 +37,7 @@ describe('OAuthCallbackScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
-    (useAuthStore as unknown as jest.Mock).mockImplementation((selector) =>
+    (useAuthStore as unknown as jest.Mock).mockImplementation(selector =>
       selector({ setAuth: mockSetAuth })
     );
   });

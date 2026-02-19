@@ -3,14 +3,14 @@ import type { CategoryDto } from './category';
 export enum RecurrenceType {
   Daily = 'Daily',
   Weekly = 'Weekly',
-  Monthly = 'Monthly'
+  Monthly = 'Monthly',
 }
 
 export enum TimerState {
   NotStarted = 'NotStarted',
   Running = 'Running',
   Paused = 'Paused',
-  Completed = 'Completed'
+  Completed = 'Completed',
 }
 
 export interface RecurrenceRuleDto {
@@ -41,6 +41,7 @@ export interface BlockDto {
   sortOrder: number;
   externalId: string | null;
   externalUrl: string | null;
+  externalSource: string | null;
   createdAt: string;
   completedAt: string | null;
   // Timer
@@ -65,6 +66,7 @@ export interface CreateBlockRequest {
   isUrgent?: boolean;
   externalId?: string | null;
   externalUrl?: string | null;
+  externalSource?: string | null;
   // Recurrence
   isRecurring?: boolean;
   recurrenceType?: RecurrenceType | null;
@@ -95,4 +97,9 @@ export interface GetBlocksParams {
 
 export interface BlocksResponse {
   blocks: BlockDto[];
+}
+
+export interface CarryOverResponse {
+  carriedOverBlocks: BlockDto[];
+  count: number;
 }

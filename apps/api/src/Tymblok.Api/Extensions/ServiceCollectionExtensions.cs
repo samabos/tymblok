@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
+using Tymblok.Api.Services;
+using Tymblok.Core.Interfaces;
 
 namespace Tymblok.Api.Extensions;
 
@@ -162,6 +164,8 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddAuthorization();
+
+        services.AddScoped<ICurrentUser, CurrentUser>();
 
         return services;
     }

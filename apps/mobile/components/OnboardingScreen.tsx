@@ -16,7 +16,13 @@ function BlockTowerIcon() {
       <Rect x="14" y="16" width="20" height="8" rx="2" fill="white" fillOpacity={0.6} />
       <Rect x="14" y="26" width="20" height="8" rx="2" fill="white" fillOpacity={0.8} />
       <Rect x="14" y="36" width="20" height="8" rx="2" fill="white" />
-      <Path d="M10 10v28" stroke="white" strokeWidth={2} strokeLinecap="round" strokeOpacity={0.5} />
+      <Path
+        d="M10 10v28"
+        stroke="white"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeOpacity={0.5}
+      />
       <Circle cx={10} cy={30} r={2} fill="white" />
     </Svg>
   );
@@ -25,10 +31,28 @@ function BlockTowerIcon() {
 function DeveloperIcon() {
   return (
     <Svg width={64} height={64} viewBox="0 0 48 48" fill="none">
-      <Path d="M14 12L8 24L14 36" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M34 12L40 24L34 36" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d="M14 12L8 24L14 36"
+        stroke="white"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M34 12L40 24L34 36"
+        stroke="white"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <Circle cx={24} cy={24} r={8} stroke="white" strokeWidth={2.5} fill="none" />
-      <Path d="M24 20v4l3 2" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d="M24 20v4l3 2"
+        stroke="white"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }
@@ -36,8 +60,23 @@ function DeveloperIcon() {
 function CheckmarkIcon() {
   return (
     <Svg width={64} height={64} viewBox="0 0 48 48" fill="none">
-      <Rect x="8" y="8" width="32" height="32" rx="8" stroke="white" strokeWidth={2.5} fill="none" />
-      <Path d="M16 24l6 6 10-12" stroke="white" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+      <Rect
+        x="8"
+        y="8"
+        width="32"
+        height="32"
+        rx="8"
+        stroke="white"
+        strokeWidth={2.5}
+        fill="none"
+      />
+      <Path
+        d="M16 24l6 6 10-12"
+        stroke="white"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }
@@ -125,10 +164,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             <TouchableOpacity
               key={i}
               onPress={() => setCurrentSlide(i)}
-              style={[
-                styles.dot,
-                i === currentSlide ? styles.dotActive : styles.dotInactive,
-              ]}
+              style={[styles.dot, i === currentSlide ? styles.dotActive : styles.dotInactive]}
             />
           ))}
         </View>

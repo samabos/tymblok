@@ -1,13 +1,16 @@
- schedule modal
-  - Dismiss (×) button
+schedule modal
+
+- Dismiss (×) button
 - EmptyState (inbox zero illustration)
 
 Data:
+
 - Use useInbox hook with filters
 - useDismissInboxItem mutation
 - Pull to refresh
 
 Schedule flow:
+
 - Add button opens a mini modal
 - Select date, time, duration, category
 - useScheduleInboxItem mutation
@@ -15,6 +18,7 @@ Schedule flow:
 Reference /docs/TYMBLOK_UI_SPEC.md for source colors.
 
 Write tests for filtering and schedule flow.
+
 ```
 
 **Checklist:**
@@ -53,14 +57,16 @@ See remaining tasks following the same pattern in the full document.
 For each task, use this template:
 
 ```
+
 Read /docs/IMPLEMENTATION_PLAN.md task {X.X}.
 
 Create branch: feature/{X.X}-{short-name}
 
 Implement the feature following the requirements.
 Reference these docs as needed:
+
 - /docs/ARCHITECTURE.md
-- /docs/DATABASE_SCHEMA.md  
+- /docs/DATABASE_SCHEMA.md
 - /docs/API_SPEC.md
 - /docs/TYMBLOK_UI_SPEC.md
 - /docs/prototype.jsx (for UI styling)
@@ -70,6 +76,7 @@ Run linter and fix any issues.
 Commit with conventional commits.
 Push and create PR.
 Ensure CI passes before requesting review.
+
 ```
 
 ---
@@ -93,3 +100,4 @@ After MVP launch, these features from the original "Out of Scope" become Phase 2
 ---
 
 *Last updated: January 2026*
+```

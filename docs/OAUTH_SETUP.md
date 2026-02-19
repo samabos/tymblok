@@ -5,10 +5,12 @@ This guide explains how to configure Google and GitHub OAuth for Tymblok API.
 ## Overview
 
 Tymblok supports external authentication via:
+
 - **Google** - Sign in with Google account
 - **GitHub** - Sign in with GitHub account
 
 Users can:
+
 - Register/login using OAuth providers
 - Link OAuth to existing email/password accounts
 - Use multiple OAuth providers on the same account
@@ -106,12 +108,14 @@ You'll get a URL like: `https://abc123.ngrok-free.app`
 ### 4. Update Google/GitHub OAuth Settings
 
 Add to your OAuth credentials:
+
 - **Authorized JavaScript origins**: `https://abc123.ngrok-free.app`
 - **Authorized redirect URIs**: `https://abc123.ngrok-free.app/signin-google`
 
 ### 5. Update Mobile App
 
 Update `apps/mobile/.env`:
+
 ```
 EXPO_PUBLIC_API_URL=https://abc123.ngrok-free.app
 ```
@@ -204,32 +208,32 @@ dotnet user-secrets set "OAuth:GitHub:ClientSecret" "your-client-secret"
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/auth/external/{provider}` | Start OAuth flow (provider: `google` or `github`) |
-| GET | `/api/auth/external/callback` | Internal OAuth callback (handled automatically) |
-| GET | `/api/auth/external/providers` | List linked providers (requires auth) |
-| DELETE | `/api/auth/external/link/{provider}` | Unlink provider (requires auth) |
-| GET | `/api/auth/has-password` | Check if user has password set (requires auth) |
+| Method | Endpoint                             | Description                                       |
+| ------ | ------------------------------------ | ------------------------------------------------- |
+| GET    | `/api/auth/external/{provider}`      | Start OAuth flow (provider: `google` or `github`) |
+| GET    | `/api/auth/external/callback`        | Internal OAuth callback (handled automatically)   |
+| GET    | `/api/auth/external/providers`       | List linked providers (requires auth)             |
+| DELETE | `/api/auth/external/link/{provider}` | Unlink provider (requires auth)                   |
+| GET    | `/api/auth/has-password`             | Check if user has password set (requires auth)    |
 
 ### Query Parameters for `/api/auth/external/{provider}`
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `mobile` | bool | `false` | Set to `true` for mobile deep link callback |
-| `returnUrl` | string | `/` | URL to redirect after auth (web only) |
-| `redirectUrl` | string | `null` | Custom redirect URL for mobile (e.g., Expo URL) |
+| Parameter     | Type   | Default | Description                                     |
+| ------------- | ------ | ------- | ----------------------------------------------- |
+| `mobile`      | bool   | `false` | Set to `true` for mobile deep link callback     |
+| `returnUrl`   | string | `/`     | URL to redirect after auth (web only)           |
+| `redirectUrl` | string | `null`  | Custom redirect URL for mobile (e.g., Expo URL) |
 
 ---
 
 ## Account Linking Behavior
 
-| Scenario | Behavior |
-|----------|----------|
-| New OAuth user, new email | Creates new account |
-| New OAuth user, existing email | Links OAuth to existing account |
-| Existing OAuth user | Logs in to linked account |
-| Unlink only sign-in method | Blocked (must add password first) |
+| Scenario                       | Behavior                          |
+| ------------------------------ | --------------------------------- |
+| New OAuth user, new email      | Creates new account               |
+| New OAuth user, existing email | Links OAuth to existing account   |
+| Existing OAuth user            | Logs in to linked account         |
+| Unlink only sign-in method     | Blocked (must add password first) |
 
 ---
 
@@ -240,6 +244,7 @@ dotnet user-secrets set "OAuth:GitHub:ClientSecret" "your-client-secret"
 The API is configured to handle forwarded headers from reverse proxies (nginx, load balancers, etc.). This is required for OAuth to work correctly behind a proxy.
 
 The middleware is already configured in `WebApplicationExtensions.cs`:
+
 ```csharp
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
@@ -254,6 +259,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 Ensure your reverse proxy (nginx, Azure App Service, etc.) forwards the correct headers:
 
 **nginx example:**
+
 ```nginx
 location / {
     proxy_pass http://localhost:5000;
@@ -269,15 +275,18 @@ location / {
 Add these to your OAuth provider settings:
 
 **Google Cloud Console:**
+
 - Authorized JavaScript origins: `https://api.yourdomain.com`
 - Authorized redirect URIs: `https://api.yourdomain.com/signin-google`
 
 **GitHub Developer Settings:**
+
 - Authorization callback URL: `https://api.yourdomain.com/signin-github`
 
 ### 4. Mobile App Configuration
 
 For production mobile builds, ensure the URL scheme is configured in `app.json`:
+
 ```json
 {
   "expo": {
@@ -325,6 +334,7 @@ Available at `https://localhost:5001/swagger` (or your ngrok URL)
 **Cause**: The redirect URI sent to Google/GitHub doesn't match what's registered.
 
 **Solution**:
+
 1. Check the exact URL in the error message
 2. The redirect URI for Google OAuth is `/signin-google`, NOT `/api/auth/external/callback`
 3. Ensure the protocol matches (`https://` not `http://`)
@@ -341,6 +351,7 @@ Available at `https://localhost:5001/swagger` (or your ngrok URL)
 **Cause**: The app isn't receiving the deep link redirect.
 
 **Solutions**:
+
 1. Ensure `WebBrowser.maybeCompleteAuthSession()` is called at the top of your screen
 2. Use `Linking.createURL()` to generate the redirect URL
 3. Pass the redirect URL to the backend via `redirectUrl` query parameter
@@ -383,12 +394,12 @@ Available at `https://localhost:5001/swagger` (or your ngrok URL)
 
 ## Quick Reference
 
-| Environment | Google Redirect URI | GitHub Redirect URI |
-|-------------|---------------------|---------------------|
-| Local (web) | `https://localhost:5001/signin-google` | `https://localhost:5001/signin-github` |
+| Environment | Google Redirect URI                                   | GitHub Redirect URI                                   |
+| ----------- | ----------------------------------------------------- | ----------------------------------------------------- |
+| Local (web) | `https://localhost:5001/signin-google`                | `https://localhost:5001/signin-github`                |
 | ngrok (dev) | `https://your-subdomain.ngrok-free.app/signin-google` | `https://your-subdomain.ngrok-free.app/signin-github` |
-| Production | `https://api.yourdomain.com/signin-google` | `https://api.yourdomain.com/signin-github` |
+| Production  | `https://api.yourdomain.com/signin-google`            | `https://api.yourdomain.com/signin-github`            |
 
 ---
 
-*Last updated: February 2026*
+_Last updated: February 2026_

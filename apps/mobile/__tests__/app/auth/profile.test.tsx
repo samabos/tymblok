@@ -22,10 +22,18 @@ jest.mock('@tymblok/ui', () => ({
   }),
   Avatar: ({ name }: { name: string }) => <>{name}</>,
   Card: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  Input: ({ value, onChangeText, label }: { value: string; onChangeText: (text: string) => void; label: string }) => (
+  Input: ({
+    value,
+    onChangeText,
+    label,
+  }: {
+    value: string;
+    onChangeText: (text: string) => void;
+    label: string;
+  }) => (
     <>
       <>{label}</>
-      <input value={value} onChange={(e) => onChangeText(e.target.value)} />
+      <input value={value} onChange={e => onChangeText(e.target.value)} />
     </>
   ),
 }));

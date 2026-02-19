@@ -13,6 +13,7 @@ public record CreateBlockRequest(
     bool IsUrgent = false,
     string? ExternalId = null,
     string? ExternalUrl = null,
+    IntegrationProvider? ExternalSource = null,
     // Recurrence
     bool IsRecurring = false,
     RecurrenceType? RecurrenceType = null,
@@ -52,6 +53,7 @@ public record BlockDto(
     int SortOrder,
     string? ExternalId,
     string? ExternalUrl,
+    IntegrationProvider? ExternalSource,
     DateTime CreatedAt,
     DateTime? CompletedAt,
     // Timer
@@ -68,4 +70,9 @@ public record BlockDto(
 
 public record BlocksResponse(
     IList<BlockDto> Blocks
+);
+
+public record CarryOverResponse(
+    IList<BlockDto> CarriedOverBlocks,
+    int Count
 );

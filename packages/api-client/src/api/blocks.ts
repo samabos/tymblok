@@ -4,15 +4,16 @@ import type {
   UpdateBlockRequest,
   GetBlocksParams,
   BlocksResponse,
+  CarryOverResponse,
 } from '../types/block';
 import type { ApiResponse } from '../types/common';
 
 // ApiClient type based on the mobile api service
 export interface ApiClient {
-  get: <T>(endpoint: string, options?: any) => Promise<T>;
-  post: <T>(endpoint: string, body?: unknown, options?: any) => Promise<T>;
-  patch: <T>(endpoint: string, body?: unknown, options?: any) => Promise<T>;
-  delete: <T>(endpoint: string, options?: any) => Promise<T>;
+  get: <T>(endpoint: string, options?: Record<string, unknown>) => Promise<T>;
+  post: <T>(endpoint: string, body?: unknown, options?: Record<string, unknown>) => Promise<T>;
+  patch: <T>(endpoint: string, body?: unknown, options?: Record<string, unknown>) => Promise<T>;
+  delete: <T>(endpoint: string, options?: Record<string, unknown>) => Promise<T>;
 }
 
 export const createBlocksApi = (api: ApiClient) => ({
@@ -70,6 +71,11 @@ export const createBlocksApi = (api: ApiClient) => ({
 
   async restore(id: string): Promise<BlockDto> {
     const response = await api.post<ApiResponse<BlockDto>>(`/blocks/${id}/restore`);
+    return response.data;
+  },
+
+  async carryOver(): Promise<CarryOverResponse> {
+    const response = await api.post<ApiResponse<CarryOverResponse>>('/blocks/carry-over');
     return response.data;
   },
 });

@@ -29,6 +29,7 @@ export const colors = {
     meeting: '#a855f7', // purple-500 - calendar events
     calendar: '#a855f7', // purple-500 - alias for meeting
     focus: '#f59e0b', // amber-500 - deep work
+    break: '#10b981', // emerald-500 - breaks/lunch
     slack: '#ec4899', // pink-500 - messages
     googleDrive: '#f59e0b', // amber-500 - documents
     linear: '#6366f1', // indigo-500 - issues
@@ -144,16 +145,18 @@ export function getLabelColor(label: string, fallback = colors.indigo[500]): str
 
   // Handle common aliases
   const aliasMap: Record<string, LabelColor> = {
-    'googledrive': 'googleDrive',
+    googledrive: 'googleDrive',
     'google-drive': 'googleDrive',
-    'pr': 'github',
-    'pullrequest': 'github',
-    'issue': 'jira',
-    'ticket': 'jira',
-    'event': 'meeting',
-    'call': 'meeting',
-    'deepwork': 'focus',
-    'work': 'focus',
+    pr: 'github',
+    pullrequest: 'github',
+    issue: 'jira',
+    ticket: 'jira',
+    event: 'meeting',
+    call: 'meeting',
+    deepwork: 'focus',
+    work: 'focus',
+    lunch: 'break',
+    rest: 'break',
   };
 
   const mappedLabel = aliasMap[normalizedLabel] || normalizedLabel;

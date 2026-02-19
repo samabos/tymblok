@@ -147,12 +147,15 @@ public class InboxRecurrenceTests : IDisposable
 
         await _inboxService.CreateAsync(createData, _userId);
 
-        // Act - Query for a Monday (2026-02-16)
-        var monday = new DateOnly(2026, 2, 16);
+        // Act - Query for a future Monday (find next Monday from today)
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var daysUntilMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
+        if (daysUntilMonday == 0) daysUntilMonday = 7; // If today is Monday, use next Monday
+        var monday = today.AddDays(daysUntilMonday);
         var blocksOnMonday = await _blockService.GetByDateAsync(_userId, monday);
 
         // Query for Tuesday (should not generate)
-        var tuesday = new DateOnly(2026, 2, 17);
+        var tuesday = monday.AddDays(1);
         var blocksOnTuesday = await _blockService.GetByDateAsync(_userId, tuesday);
 
         // Assert
@@ -239,9 +242,10 @@ public class InboxRecurrenceTests : IDisposable
 
         await _inboxService.CreateAsync(createData, _userId);
 
-        // Act - Query for a week range
-        var startDate = new DateOnly(2026, 2, 16);
-        var endDate = new DateOnly(2026, 2, 22);
+        // Act - Query for a week range starting from today (recurrence starts from creation date)
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var startDate = today;
+        var endDate = today.AddDays(6);
         var blocks = await _blockService.GetByDateRangeAsync(_userId, startDate, endDate);
 
         // Assert - Should have 7 blocks (one for each day)

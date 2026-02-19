@@ -167,7 +167,10 @@ export function useBiometricSignIn() {
    * Attempt to sign in using biometrics.
    * Returns true if successful, false otherwise.
    */
-  const signInWithBiometrics = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+  const signInWithBiometrics = useCallback(async (): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
     if (!isEnabled || !rememberedUser) {
       return { success: false, error: 'Biometric sign-in not enabled' };
     }
@@ -213,9 +216,12 @@ export function useBiometricSignIn() {
           has_password: true,
           timezone: 'UTC',
           working_hours_start: '09:00',
-          working_hours_end: '17:00',
+          working_hours_end: '18:00',
           lunch_start: '12:00',
           lunch_duration_minutes: 60,
+          notification_block_reminder: true,
+          notification_reminder_minutes: 5,
+          notification_daily_summary: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -246,44 +252,45 @@ export function useBiometricSignIn() {
    * SECURITY: Only restores credentials for the SAME user who enabled biometric.
    * If a different user logs in, they must enable biometric themselves.
    */
-  const updateStoredCredentials = useCallback(async (
-    credentials?: {
+  const updateStoredCredentials = useCallback(
+    async (credentials?: {
       user: { id: string; email: string; name: string; avatar_url: string | null };
       refreshToken: string;
-    }
-  ): Promise<boolean> => {
-    if (!isEnabled) {
-      return false;
-    }
+    }): Promise<boolean> => {
+      if (!isEnabled) {
+        return false;
+      }
 
-    const userData = credentials?.user || user;
-    const refreshToken = credentials?.refreshToken || tokens?.refresh_token;
+      const userData = credentials?.user || user;
+      const refreshToken = credentials?.refreshToken || tokens?.refresh_token;
 
-    if (!userData || !refreshToken) {
-      return false;
-    }
+      if (!userData || !refreshToken) {
+        return false;
+      }
 
-    // SECURITY CHECK: Only auto-restore for the same user who enabled biometric
-    // If different user, they must explicitly enable biometric sign-in themselves
-    if (enabledUserId && enabledUserId !== userData.id) {
-      console.log('[BiometricSignIn] Different user logged in, not auto-restoring credentials');
-      return false;
-    }
+      // SECURITY CHECK: Only auto-restore for the same user who enabled biometric
+      // If different user, they must explicitly enable biometric sign-in themselves
+      if (enabledUserId && enabledUserId !== userData.id) {
+        console.log('[BiometricSignIn] Different user logged in, not auto-restoring credentials');
+        return false;
+      }
 
-    // Store updated user info and token
-    const rememberedUserData: RememberedUser = {
-      id: userData.id,
-      email: userData.email,
-      name: userData.name,
-      avatarUrl: userData.avatar_url,
-    };
+      // Store updated user info and token
+      const rememberedUserData: RememberedUser = {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        avatarUrl: userData.avatar_url,
+      };
 
-    await setStorageItem(REMEMBERED_USER_KEY, JSON.stringify(rememberedUserData));
-    await setStorageItem(REMEMBERED_REFRESH_TOKEN_KEY, refreshToken);
+      await setStorageItem(REMEMBERED_USER_KEY, JSON.stringify(rememberedUserData));
+      await setStorageItem(REMEMBERED_REFRESH_TOKEN_KEY, refreshToken);
 
-    setRememberedUser(rememberedUserData);
-    return true;
-  }, [isEnabled, enabledUserId, user, tokens]);
+      setRememberedUser(rememberedUserData);
+      return true;
+    },
+    [isEnabled, enabledUserId, user, tokens]
+  );
 
   /**
    * Check if biometric sign-in can be used right now.

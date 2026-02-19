@@ -15,6 +15,9 @@ export interface User {
   working_hours_end: string;
   lunch_start: string;
   lunch_duration_minutes: number;
+  notification_block_reminder: boolean;
+  notification_reminder_minutes: number;
+  notification_daily_summary: boolean;
   created_at: string;
   updated_at: string;
 }

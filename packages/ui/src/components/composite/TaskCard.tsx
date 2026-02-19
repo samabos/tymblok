@@ -32,6 +32,7 @@ export interface TaskCardData {
   timerState?: TimerStatus;
   elapsedSeconds?: number;
   isRecurring?: boolean;
+  externalSource?: string | null;
 }
 
 export interface TaskCardProps {
@@ -102,19 +103,17 @@ export function TaskCard({
 
   const cardBorderStyle = { borderWidth: 0 };
 
-  const cardShadowStyle = isDark ? {} : {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: task.isNow ? 0.12 : 0.08,
-    shadowRadius: task.isNow ? 16 : 12,
-    elevation: task.isNow ? 6 : 3,
-  };
+  const cardShadowStyle = isDark
+    ? {}
+    : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: task.isNow ? 0.12 : 0.08,
+        shadowRadius: task.isNow ? 16 : 12,
+        elevation: task.isNow ? 6 : 3,
+      };
 
-  const taskStatusLabel = task.completed
-    ? 'Completed'
-    : task.isNow
-      ? 'In progress'
-      : 'Scheduled';
+  const taskStatusLabel = task.completed ? 'Completed' : task.isNow ? 'In progress' : 'Scheduled';
 
   const handleLongPress = () => {
     if (onLongPress) {
@@ -137,9 +136,7 @@ export function TaskCard({
       style={[
         styles.container,
         {
-          backgroundColor: task.isNow && isDark
-            ? 'rgba(99, 102, 241, 0.12)'
-            : themeColors.card,
+          backgroundColor: task.isNow && isDark ? 'rgba(99, 102, 241, 0.12)' : themeColors.card,
           opacity: task.isNow ? 1 : task.completed ? 0.6 : 1,
         },
         cardBorderStyle,
@@ -151,7 +148,6 @@ export function TaskCard({
       entering={FadeIn.duration(300)}
       layout={Layout.springify()}
     >
-
       <View style={styles.content}>
         {/* Header row */}
         <View style={styles.headerRow}>
@@ -159,9 +155,7 @@ export function TaskCard({
             style={[
               styles.time,
               {
-                color: task.completed
-                  ? themeColors.textFaint
-                  : themeColors.textMuted,
+                color: task.completed ? themeColors.textFaint : themeColors.textMuted,
               },
               task.completed && styles.completedText,
             ]}
@@ -171,13 +165,7 @@ export function TaskCard({
           </Text>
 
           <View style={styles.headerRight}>
-            {!task.completed && task.urgent && (
-              <Badge
-                variant="urgent"
-                size="sm"
-                label="Urgent"
-              />
-            )}
+            {!task.completed && task.urgent && <Badge variant="urgent" size="sm" label="Urgent" />}
 
             {/* Start/Pause button */}
             {!task.completed && timerState !== 'Running' && onStart && (
@@ -231,11 +219,7 @@ export function TaskCard({
             <Ionicons
               name="repeat-outline"
               size={14}
-              color={task.completed
-                ? themeColors.textFaint
-                : task.isNow
-                  ? themeColors.textMuted
-                  : themeColors.textMuted}
+              color={task.completed ? themeColors.textFaint : themeColors.textMuted}
               accessibilityLabel="Recurring task"
             />
           )}
@@ -280,12 +264,35 @@ export function TaskCard({
           </Text>
         )}
 
+        {/* Source indicator */}
+        {task.externalSource && (
+          <View style={styles.sourceRow}>
+            <Ionicons
+              name={
+                task.externalSource === 'GoogleCalendar'
+                  ? 'logo-google'
+                  : task.externalSource === 'GitHub'
+                    ? 'logo-github'
+                    : 'link-outline'
+              }
+              size={11}
+              color={task.completed ? themeColors.textFaint : themeColors.textFaint}
+              accessibilityLabel={getExternalSourceLabel(task.externalSource)}
+            />
+            <Text
+              style={[
+                styles.sourceLabel,
+                { color: task.completed ? themeColors.textFaint : themeColors.textFaint },
+              ]}
+            >
+              {getExternalSourceLabel(task.externalSource)}
+            </Text>
+          </View>
+        )}
+
         {/* Expanded content */}
         {expanded && (
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            style={styles.expandedContent}
-          >
+          <Animated.View entering={FadeIn.duration(200)} style={styles.expandedContent}>
             <View style={styles.actions}>
               {/* Left side - expand/more button */}
               <View style={styles.actionsLeft}>
@@ -296,7 +303,10 @@ export function TaskCard({
                       onExpand();
                     }}
                     activeOpacity={0.7}
-                    style={[styles.circleButton, { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle }]}
+                    style={[
+                      styles.circleButton,
+                      { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle },
+                    ]}
                     accessibilityLabel="Open task details"
                     accessibilityRole="button"
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
@@ -330,7 +340,10 @@ export function TaskCard({
                       onUndoComplete();
                     }}
                     activeOpacity={0.7}
-                    style={[styles.circleButton, { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle }]}
+                    style={[
+                      styles.circleButton,
+                      { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle },
+                    ]}
                     accessibilityLabel="Undo completion"
                     accessibilityRole="button"
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
@@ -342,9 +355,7 @@ export function TaskCard({
             </View>
           </Animated.View>
         )}
-
       </View>
-
     </AnimatedPressable>
   );
 }
@@ -352,6 +363,14 @@ export function TaskCard({
 function getTypeColor(type: TaskType): string {
   // Use centralized getLabelColor for consistency across all components
   return getLabelColor(type);
+}
+
+function getExternalSourceLabel(source: string): string {
+  const labels: Record<string, string> = {
+    GoogleCalendar: 'Google Calendar',
+    GitHub: 'GitHub',
+  };
+  return labels[source] || source;
 }
 
 function formatElapsed(totalSeconds: number): string {
@@ -424,6 +443,15 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: typography.sizes.sm,
     marginTop: spacing[1],
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing[1],
+  },
+  sourceLabel: {
+    fontSize: typography.sizes.xs,
   },
   completed: {
     // opacity handled at container level

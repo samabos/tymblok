@@ -1,13 +1,5 @@
 import React, { useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  Pressable,
-  FlatList,
-  ViewToken,
-} from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Pressable, FlatList, ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -61,13 +53,11 @@ export function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) 
     },
   ];
 
-  const handleViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-        setCurrentIndex(viewableItems[0].index);
-      }
+  const handleViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems.length > 0 && viewableItems[0].index !== null) {
+      setCurrentIndex(viewableItems[0].index);
     }
-  ).current;
+  }).current;
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
@@ -96,9 +86,7 @@ export function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) 
     <View style={styles.slide}>
       <AnimatedIconContainer>{item.icon}</AnimatedIconContainer>
       <Text style={[styles.title, { color: themeColors.text }]}>{item.title}</Text>
-      <Text style={[styles.description, { color: themeColors.textMuted }]}>
-        {item.description}
-      </Text>
+      <Text style={[styles.description, { color: themeColors.textMuted }]}>{item.description}</Text>
     </View>
   );
 
@@ -110,9 +98,7 @@ export function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) 
           style={[
             styles.gradient,
             {
-              backgroundColor: isDark
-                ? 'rgba(99, 102, 241, 0.15)'
-                : 'rgba(99, 102, 241, 0.1)',
+              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)',
             },
           ]}
         />
@@ -120,9 +106,7 @@ export function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) 
           style={[
             styles.gradientSecondary,
             {
-              backgroundColor: isDark
-                ? 'rgba(168, 85, 247, 0.1)'
-                : 'rgba(168, 85, 247, 0.05)',
+              backgroundColor: isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)',
             },
           ]}
         />
@@ -131,9 +115,7 @@ export function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) 
       {/* Skip button */}
       <View style={styles.header}>
         <Pressable onPress={handleSkip}>
-          <Text style={[styles.skipText, { color: themeColors.textMuted }]}>
-            Skip
-          </Text>
+          <Text style={[styles.skipText, { color: themeColors.textMuted }]}>Skip</Text>
         </Pressable>
       </View>
 
@@ -142,7 +124,7 @@ export function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) 
         ref={flatListRef}
         data={slides}
         renderItem={renderSlide}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -165,8 +147,8 @@ export function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) 
                       index === currentIndex
                         ? colors.indigo[500]
                         : isDark
-                        ? colors.dark.border
-                        : colors.light.border,
+                          ? colors.dark.border
+                          : colors.light.border,
                     width: index === currentIndex ? 24 : 8,
                   },
                 ]}
@@ -176,12 +158,7 @@ export function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) 
         </View>
 
         {/* Button */}
-        <Button
-          variant="primary"
-          size="lg"
-          fullWidth
-          onPress={goToNext}
-        >
+        <Button variant="primary" size="lg" fullWidth onPress={goToNext}>
           {currentIndex === slides.length - 1 ? 'Get Started' : 'Continue'}
         </Button>
       </View>
@@ -196,19 +173,13 @@ function AnimatedIconContainer({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     translateY.value = withRepeat(
-      withSequence(
-        withTiming(-10, { duration: 2000 }),
-        withTiming(0, { duration: 2000 })
-      ),
+      withSequence(withTiming(-10, { duration: 2000 }), withTiming(0, { duration: 2000 })),
       -1,
       false
     );
 
     scale.value = withRepeat(
-      withSequence(
-        withTiming(1.02, { duration: 2000 }),
-        withTiming(1, { duration: 2000 })
-      ),
+      withSequence(withTiming(1.02, { duration: 2000 }), withTiming(1, { duration: 2000 })),
       -1,
       false
     );
@@ -230,13 +201,7 @@ function BlockTowerIcon() {
       <View style={styles.timelineDot} />
       {/* Blocks */}
       {[0.4, 0.6, 0.8, 1].map((opacity, index) => (
-        <View
-          key={index}
-          style={[
-            styles.block,
-            { opacity, top: 8 + index * 14 },
-          ]}
-        />
+        <View key={index} style={[styles.block, { opacity, top: 8 + index * 14 }]} />
       ))}
     </View>
   );

@@ -1,10 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle, StyleProp, Pressable, PressableProps } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { spacing, borderRadius, shadows, springConfig } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -82,23 +78,19 @@ export function Card({
     );
   }
 
-  return (
-    <View style={[styles.base, variantStyles, paddingStyle, style]}>{children}</View>
-  );
+  return <View style={[styles.base, variantStyles, paddingStyle, style]}>{children}</View>;
 }
 
-function getVariantStyles(
-  variant: CardVariant,
-  isDark: boolean,
-  themeColors: any
-): ViewStyle {
-  const cardShadow = isDark ? {} : {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  };
+function getVariantStyles(variant: CardVariant, isDark: boolean, themeColors: any): ViewStyle {
+  const cardShadow = isDark
+    ? {}
+    : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+      };
 
   const variants: Record<CardVariant, ViewStyle> = {
     default: {
@@ -111,13 +103,15 @@ function getVariantStyles(
       backgroundColor: themeColors.card,
       borderWidth: isDark ? 1 : 0,
       borderColor: themeColors.border,
-      ...(isDark ? shadows.lg : {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 16,
-        elevation: 6,
-      }),
+      ...(isDark
+        ? shadows.lg
+        : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 16,
+            elevation: 6,
+          }),
     },
     outlined: {
       backgroundColor: 'transparent',

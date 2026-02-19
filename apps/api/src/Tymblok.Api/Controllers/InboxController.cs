@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,16 +11,19 @@ namespace Tymblok.Api.Controllers;
 [ApiController]
 [Route("api/inbox")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class InboxController : ControllerBase
+public class InboxController : BaseApiController
 {
     private readonly IInboxService _inboxService;
+    private readonly ICurrentUser _currentUser;
     private readonly ILogger<InboxController> _logger;
 
     public InboxController(
         IInboxService inboxService,
+        ICurrentUser currentUser,
         ILogger<InboxController> logger)
     {
         _inboxService = inboxService;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -34,7 +36,7 @@ public class InboxController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateInboxItemRequest request, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var data = new CreateInboxItemData(
             request.Title,
             request.Description,
@@ -69,7 +71,7 @@ public class InboxController : ControllerBase
         [FromQuery] InboxPriority? priority = null,
         CancellationToken ct = default)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var filters = new InboxItemFilters(isDismissed, source, priority);
         var items = await _inboxService.GetAllAsync(userId, filters, ct);
         var itemDtos = items.Select(MapToDto).ToList();
@@ -86,7 +88,7 @@ public class InboxController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var item = await _inboxService.GetByIdAsync(id, userId, ct);
 
         if (item == null)
@@ -108,7 +110,7 @@ public class InboxController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateInboxItemRequest request, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -145,7 +147,7 @@ public class InboxController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Dismiss(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -176,7 +178,7 @@ public class InboxController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -195,28 +197,6 @@ public class InboxController : ControllerBase
         {
             return StatusCode(StatusCodes.Status403Forbidden, CreateErrorResponse(ex.Code, ex.Message));
         }
-    }
-
-    private Guid GetUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
-    }
-
-    private ApiResponse<T> WrapResponse<T>(T data)
-    {
-        return new ApiResponse<T>(
-            data,
-            new ApiMeta(DateTime.UtcNow.ToString("o"), HttpContext.TraceIdentifier)
-        );
-    }
-
-    private ApiError CreateErrorResponse(string code, string message)
-    {
-        return new ApiError(
-            new ErrorDetails(code, message),
-            new ApiMeta(DateTime.UtcNow.ToString("o"), HttpContext.TraceIdentifier)
-        );
     }
 
     private static InboxItemDto MapToDto(InboxItem item)

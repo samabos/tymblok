@@ -68,48 +68,53 @@
 ## Technology Stack
 
 ### Backend
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| Runtime | .NET 10 | Performance, C# expertise, long-term support |
-| Framework | ASP.NET Core 10 | Mature, fast, great tooling |
-| ORM | Entity Framework Core 10 | Code-first, migrations, LINQ |
-| Database | PostgreSQL 16 | Reliable, JSON support, free |
-| Cache | Redis | Session management, rate limiting |
-| Auth | JWT + Refresh Tokens | Stateless, mobile-friendly |
-| OAuth | OAuth 2.0 / OIDC | GitHub, Google, Jira integration |
+
+| Component | Technology               | Rationale                                    |
+| --------- | ------------------------ | -------------------------------------------- |
+| Runtime   | .NET 10                  | Performance, C# expertise, long-term support |
+| Framework | ASP.NET Core 10          | Mature, fast, great tooling                  |
+| ORM       | Entity Framework Core 10 | Code-first, migrations, LINQ                 |
+| Database  | PostgreSQL 16            | Reliable, JSON support, free                 |
+| Cache     | Redis                    | Session management, rate limiting            |
+| Auth      | JWT + Refresh Tokens     | Stateless, mobile-friendly                   |
+| OAuth     | OAuth 2.0 / OIDC         | GitHub, Google, Jira integration             |
 
 ### Frontend (Shared)
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| Language | TypeScript | Type safety, shared types with API |
-| State | Zustand | Simple, performant, works everywhere |
-| API Client | TanStack Query | Caching, optimistic updates |
-| Forms | React Hook Form + Zod | Validation, performance |
+
+| Component  | Technology            | Rationale                            |
+| ---------- | --------------------- | ------------------------------------ |
+| Language   | TypeScript            | Type safety, shared types with API   |
+| State      | Zustand               | Simple, performant, works everywhere |
+| API Client | TanStack Query        | Caching, optimistic updates          |
+| Forms      | React Hook Form + Zod | Validation, performance              |
 
 ### Mobile
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| Framework | React Native + Expo | Cross-platform, fast iteration |
-| Navigation | Expo Router | File-based routing |
-| Animations | Reanimated 3 | 60fps native animations |
-| Gestures | React Native Gesture Handler | Drag, swipe support |
-| Storage | Expo SecureStore | Token storage |
+
+| Component  | Technology                   | Rationale                      |
+| ---------- | ---------------------------- | ------------------------------ |
+| Framework  | React Native + Expo          | Cross-platform, fast iteration |
+| Navigation | Expo Router                  | File-based routing             |
+| Animations | Reanimated 3                 | 60fps native animations        |
+| Gestures   | React Native Gesture Handler | Drag, swipe support            |
+| Storage    | Expo SecureStore             | Token storage                  |
 
 ### Desktop
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| Framework | Tauri 2.0 | Lightweight, Rust backend |
-| UI | React (same as mobile) | Code sharing |
-| Storage | Tauri fs + keyring | Secure local storage |
+
+| Component | Technology             | Rationale                 |
+| --------- | ---------------------- | ------------------------- |
+| Framework | Tauri 2.0              | Lightweight, Rust backend |
+| UI        | React (same as mobile) | Code sharing              |
+| Storage   | Tauri fs + keyring     | Secure local storage      |
 
 ### Infrastructure
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| Hosting | Azure App Service | .NET native, easy scaling |
-| Database | Azure Database for PostgreSQL | Managed, backups |
-| Cache | Azure Cache for Redis | Managed Redis |
-| CI/CD | GitHub Actions | Integrated with repo |
-| Monitoring | Application Insights | Azure native APM |
+
+| Component  | Technology                    | Rationale                 |
+| ---------- | ----------------------------- | ------------------------- |
+| Hosting    | Azure App Service             | .NET native, easy scaling |
+| Database   | Azure Database for PostgreSQL | Managed, backups          |
+| Cache      | Azure Cache for Redis         | Managed Redis             |
+| CI/CD      | GitHub Actions                | Integrated with repo      |
+| Monitoring | Application Insights          | Azure native APM          |
 
 ---
 
@@ -208,6 +213,7 @@ tymblok/
 ## API Design
 
 ### Base URL
+
 ```
 Production: https://api.tymblok.app/v1
 Staging:    https://api-staging.tymblok.app/v1
@@ -215,11 +221,13 @@ Local:      http://localhost:5000/v1
 ```
 
 ### Authentication
+
 ```
 Authorization: Bearer <jwt_token>
 ```
 
 ### Response Format
+
 ```typescript
 // Success
 {
@@ -248,57 +256,58 @@ Authorization: Bearer <jwt_token>
 
 ### Endpoints Overview
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| **Auth** |
-| POST | /auth/register | Create account |
-| POST | /auth/login | Get tokens |
-| POST | /auth/refresh | Refresh access token |
-| POST | /auth/forgot-password | Request reset email |
-| POST | /auth/reset-password | Reset with token |
-| POST | /auth/oauth/{provider} | OAuth callback |
-| **Users** |
-| GET | /users/me | Get current user |
-| PATCH | /users/me | Update profile |
-| DELETE | /users/me | Delete account |
-| PUT | /users/me/password | Change password |
-| **Time Blocks** |
-| GET | /blocks | List blocks (date filter) |
-| POST | /blocks | Create block |
-| GET | /blocks/{id} | Get block |
-| PATCH | /blocks/{id} | Update block |
-| DELETE | /blocks/{id} | Delete block |
-| POST | /blocks/{id}/complete | Mark complete |
-| PUT | /blocks/reorder | Reorder blocks |
-| **Categories** |
-| GET | /categories | List categories |
-| POST | /categories | Create custom |
-| PATCH | /categories/{id} | Update |
-| DELETE | /categories/{id} | Delete |
-| **Inbox** |
-| GET | /inbox | List items |
-| POST | /inbox | Create item |
-| DELETE | /inbox/{id} | Dismiss |
-| POST | /inbox/{id}/schedule | Add to schedule |
-| **Stats** |
-| GET | /stats/summary | Weekly summary |
-| GET | /stats/daily | Daily breakdown |
-| GET | /stats/categories | By category |
-| GET | /stats/streak | Streak info |
+| Method           | Endpoint                         | Description               |
+| ---------------- | -------------------------------- | ------------------------- |
+| **Auth**         |
+| POST             | /auth/register                   | Create account            |
+| POST             | /auth/login                      | Get tokens                |
+| POST             | /auth/refresh                    | Refresh access token      |
+| POST             | /auth/forgot-password            | Request reset email       |
+| POST             | /auth/reset-password             | Reset with token          |
+| POST             | /auth/oauth/{provider}           | OAuth callback            |
+| **Users**        |
+| GET              | /users/me                        | Get current user          |
+| PATCH            | /users/me                        | Update profile            |
+| DELETE           | /users/me                        | Delete account            |
+| PUT              | /users/me/password               | Change password           |
+| **Time Blocks**  |
+| GET              | /blocks                          | List blocks (date filter) |
+| POST             | /blocks                          | Create block              |
+| GET              | /blocks/{id}                     | Get block                 |
+| PATCH            | /blocks/{id}                     | Update block              |
+| DELETE           | /blocks/{id}                     | Delete block              |
+| POST             | /blocks/{id}/complete            | Mark complete             |
+| PUT              | /blocks/reorder                  | Reorder blocks            |
+| **Categories**   |
+| GET              | /categories                      | List categories           |
+| POST             | /categories                      | Create custom             |
+| PATCH            | /categories/{id}                 | Update                    |
+| DELETE           | /categories/{id}                 | Delete                    |
+| **Inbox**        |
+| GET              | /inbox                           | List items                |
+| POST             | /inbox                           | Create item               |
+| DELETE           | /inbox/{id}                      | Dismiss                   |
+| POST             | /inbox/{id}/schedule             | Add to schedule           |
+| **Stats**        |
+| GET              | /stats/summary                   | Weekly summary            |
+| GET              | /stats/daily                     | Daily breakdown           |
+| GET              | /stats/categories                | By category               |
+| GET              | /stats/streak                    | Streak info               |
 | **Integrations** |
-| GET | /integrations | List connected |
-| POST | /integrations/{provider}/connect | Start OAuth |
-| DELETE | /integrations/{provider} | Disconnect |
-| POST | /integrations/{provider}/sync | Manual sync |
-| **Settings** |
-| GET | /settings | Get all settings |
-| PATCH | /settings | Update settings |
+| GET              | /integrations                    | List connected            |
+| POST             | /integrations/{provider}/connect | Start OAuth               |
+| DELETE           | /integrations/{provider}         | Disconnect                |
+| POST             | /integrations/{provider}/sync    | Manual sync               |
+| **Settings**     |
+| GET              | /settings                        | Get all settings          |
+| PATCH            | /settings                        | Update settings           |
 
 ---
 
 ## Authentication Flow
 
 ### Email/Password Login
+
 ```
 ┌────────┐          ┌────────┐          ┌────────┐
 │ Client │          │  API   │          │   DB   │
@@ -329,6 +338,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 ### Token Refresh
+
 ```
 ┌────────┐          ┌────────┐          ┌────────┐
 │ Client │          │  API   │          │ Redis  │
@@ -354,6 +364,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 ### OAuth Flow (GitHub Example)
+
 ```
 ┌────────┐       ┌────────┐       ┌────────┐       ┌────────┐
 │ Client │       │  API   │       │ GitHub │       │   DB   │
@@ -394,6 +405,7 @@ Authorization: Bearer <jwt_token>
 #### 1. Security (CC Series)
 
 **Authentication & Access Control:**
+
 - JWT access tokens: 15 min expiry
 - Refresh tokens: 7 day expiry, stored in Redis with rotation
 - Multi-factor authentication (MFA) via TOTP (optional, required for Pro)
@@ -402,6 +414,7 @@ Authorization: Bearer <jwt_token>
 - Failed login lockout (5 attempts → 15 min lockout)
 
 **API Security:**
+
 - HTTPS only (HSTS enabled, TLS 1.3)
 - Rate limiting: 100 req/min per user, 10 req/min for auth endpoints
 - Input validation on all endpoints (FluentValidation)
@@ -411,6 +424,7 @@ Authorization: Bearer <jwt_token>
 - Security headers (CSP, X-Frame-Options, etc.)
 
 **Infrastructure Security:**
+
 - Azure Virtual Network isolation
 - Network Security Groups (NSGs)
 - Azure DDoS Protection
@@ -420,12 +434,14 @@ Authorization: Bearer <jwt_token>
 #### 2. Availability (A Series)
 
 **Uptime & Reliability:**
+
 - Target SLA: 99.9% uptime
 - Azure App Service with auto-scaling
 - Health check endpoints with monitoring
 - Graceful degradation patterns
 
 **Disaster Recovery:**
+
 - Database: Geo-redundant backups (daily, 30-day retention)
 - Redis: AOF persistence with hourly snapshots
 - Recovery Time Objective (RTO): 4 hours
@@ -433,6 +449,7 @@ Authorization: Bearer <jwt_token>
 - Documented DR runbook
 
 **Incident Response:**
+
 - PagerDuty integration for alerts
 - Incident severity classification
 - Post-incident review process
@@ -440,12 +457,14 @@ Authorization: Bearer <jwt_token>
 #### 3. Processing Integrity (PI Series)
 
 **Data Validation:**
+
 - Input validation at API layer
 - Business rule validation in services
 - Database constraints (foreign keys, check constraints)
 - Idempotency keys for critical operations
 
 **Audit Trail:**
+
 - All data modifications logged
 - Immutable audit log table
 - User action tracking (who, what, when)
@@ -461,12 +480,14 @@ Authorization: Bearer <jwt_token>
 | Public | Plan features | None required |
 
 **Encryption:**
+
 - At rest: Azure Storage Service Encryption (AES-256)
 - In transit: TLS 1.3
 - Application-level: AES-256-GCM for integration tokens
 - Key management: Azure Key Vault with rotation
 
 **Access Controls:**
+
 - Role-based access control (RBAC) for admin functions
 - Principle of least privilege
 - Service account separation
@@ -474,6 +495,7 @@ Authorization: Bearer <jwt_token>
 #### 5. Privacy (P Series)
 
 **GDPR/CCPA Compliance:**
+
 - Explicit consent collection at registration
 - Privacy policy acceptance tracking
 - Right to access: Data export endpoint
@@ -490,6 +512,7 @@ Authorization: Bearer <jwt_token>
 | Analytics | 1 year | Aggregate then delete |
 
 **Cookie/Tracking:**
+
 - Essential cookies only
 - No third-party tracking
 - Analytics opt-in
@@ -501,22 +524,22 @@ public class AuditLog
 {
     public Guid Id { get; set; }
     public DateTime Timestamp { get; set; }
-    
+
     // Who
     public Guid? UserId { get; set; }
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
-    
+
     // What
     public string Action { get; set; }          // CREATE, UPDATE, DELETE, LOGIN, etc.
     public string EntityType { get; set; }      // User, TimeBlock, etc.
     public string? EntityId { get; set; }
-    
+
     // Details
     public string? OldValues { get; set; }      // JSON
     public string? NewValues { get; set; }      // JSON
     public string? AdditionalData { get; set; } // JSON
-    
+
     // Result
     public bool Success { get; set; }
     public string? FailureReason { get; set; }
@@ -526,6 +549,7 @@ public class AuditLog
 ### Security Monitoring
 
 **Alerts:**
+
 - Failed login spike (>10/min from same IP)
 - Privilege escalation attempts
 - Unusual data access patterns
@@ -533,12 +557,14 @@ public class AuditLog
 - Integration token usage anomalies
 
 **Regular Reviews:**
+
 - Weekly: Access log review
 - Monthly: Permission audit
 - Quarterly: Penetration testing
 - Annually: SOC2 Type II audit
 
 ### OAuth Security
+
 - State parameter validation
 - PKCE for mobile OAuth (required)
 - Token scope minimization
@@ -549,32 +575,32 @@ public class AuditLog
 
 ## Caching Strategy
 
-| Data | Cache Location | TTL | Invalidation |
-|------|----------------|-----|--------------|
-| User session | Redis | 15 min | On logout |
-| User profile | Redis | 5 min | On update |
-| Today's blocks | Client | 1 min | On mutation |
-| Categories | Client | 1 hour | On change |
-| Stats | Redis | 5 min | On block complete |
-| Integration tokens | Redis | Until expiry | On refresh |
+| Data               | Cache Location | TTL          | Invalidation      |
+| ------------------ | -------------- | ------------ | ----------------- |
+| User session       | Redis          | 15 min       | On logout         |
+| User profile       | Redis          | 5 min        | On update         |
+| Today's blocks     | Client         | 1 min        | On mutation       |
+| Categories         | Client         | 1 hour       | On change         |
+| Stats              | Redis          | 5 min        | On block complete |
+| Integration tokens | Redis          | Until expiry | On refresh        |
 
 ---
 
 ## Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| AUTH_INVALID_CREDENTIALS | 401 | Wrong email/password |
-| AUTH_TOKEN_EXPIRED | 401 | JWT expired |
-| AUTH_TOKEN_INVALID | 401 | JWT malformed |
-| AUTH_SESSION_EXPIRED | 401 | Session expired |
-| AUTH_UNAUTHORIZED | 403 | No permission |
-| VALIDATION_ERROR | 400 | Input validation failed |
-| NOT_FOUND | 404 | Resource not found |
-| CONFLICT | 409 | Resource already exists |
-| RATE_LIMITED | 429 | Too many requests |
-| INTEGRATION_ERROR | 502 | External service failed |
-| INTERNAL_ERROR | 500 | Server error |
+| Code                     | HTTP Status | Description             |
+| ------------------------ | ----------- | ----------------------- |
+| AUTH_INVALID_CREDENTIALS | 401         | Wrong email/password    |
+| AUTH_TOKEN_EXPIRED       | 401         | JWT expired             |
+| AUTH_TOKEN_INVALID       | 401         | JWT malformed           |
+| AUTH_SESSION_EXPIRED     | 401         | Session expired         |
+| AUTH_UNAUTHORIZED        | 403         | No permission           |
+| VALIDATION_ERROR         | 400         | Input validation failed |
+| NOT_FOUND                | 404         | Resource not found      |
+| CONFLICT                 | 409         | Resource already exists |
+| RATE_LIMITED             | 429         | Too many requests       |
+| INTEGRATION_ERROR        | 502         | External service failed |
+| INTERNAL_ERROR           | 500         | Server error            |
 
 ---
 
@@ -610,17 +636,19 @@ public class AuditLog
 ```
 
 ### Environments
-| Environment | Purpose | URL |
-|-------------|---------|-----|
-| Development | Local dev | localhost:5000 |
-| Staging | Testing | api-staging.tymblok.app |
-| Production | Live | api.tymblok.app |
+
+| Environment | Purpose   | URL                     |
+| ----------- | --------- | ----------------------- |
+| Development | Local dev | localhost:5000          |
+| Staging     | Testing   | api-staging.tymblok.app |
+| Production  | Live      | api.tymblok.app         |
 
 ---
 
 ## Monitoring & Observability
 
 ### Metrics
+
 - Request rate, latency, error rate
 - Database query performance
 - Cache hit/miss ratio
@@ -628,12 +656,14 @@ public class AuditLog
 - Integration sync success rate
 
 ### Logging
+
 - Structured logging with Serilog
 - Log levels: Debug (dev), Info (staging), Warning (prod)
 - Request correlation IDs
 - PII redaction in logs
 
 ### Alerting
+
 - Error rate > 1% (5 min window)
 - P95 latency > 500ms
 - Database connections > 80%
@@ -641,4 +671,4 @@ public class AuditLog
 
 ---
 
-*Last updated: January 2026*
+_Last updated: January 2026_

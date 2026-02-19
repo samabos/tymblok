@@ -75,9 +75,7 @@ export function RecurrencePicker({ value, onChange }: RecurrencePickerProps) {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Ionicons name="repeat-outline" size={20} color={themeColors.textMuted} />
-          <Text style={{ fontSize: 16, color: themeColors.text }}>
-            {getRecurrenceLabel()}
-          </Text>
+          <Text style={{ fontSize: 16, color: themeColors.text }}>{getRecurrenceLabel()}</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={themeColors.textMuted} />
       </TouchableOpacity>
@@ -155,7 +153,7 @@ interface RecurrenceOptionProps {
   label: string;
   selected: boolean;
   onPress: () => void;
-  themeColors: any;
+  themeColors: Record<string, string>;
 }
 
 function RecurrenceOption({ label, selected, onPress, themeColors }: RecurrenceOptionProps) {

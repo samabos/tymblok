@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,16 +11,19 @@ namespace Tymblok.Api.Controllers;
 [ApiController]
 [Route("api/blocks")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class BlocksController : ControllerBase
+public class BlocksController : BaseApiController
 {
     private readonly IBlockService _blockService;
+    private readonly ICurrentUser _currentUser;
     private readonly ILogger<BlocksController> _logger;
 
     public BlocksController(
         IBlockService blockService,
+        ICurrentUser currentUser,
         ILogger<BlocksController> logger)
     {
         _blockService = blockService;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -35,7 +37,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateBlockRequest request, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -49,6 +51,7 @@ public class BlocksController : ControllerBase
                 request.IsUrgent,
                 request.ExternalId,
                 request.ExternalUrl,
+                request.ExternalSource,
                 request.IsRecurring,
                 request.RecurrenceType,
                 request.RecurrenceInterval,
@@ -82,7 +85,7 @@ public class BlocksController : ControllerBase
         [FromQuery] DateOnly? endDate = null,
         CancellationToken ct = default)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         IList<TimeBlock> blocks;
 
@@ -116,7 +119,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var result = await _blockService.GetByIdAsync(id, userId, ct);
 
         if (result == null)
@@ -138,7 +141,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBlockRequest request, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -181,7 +184,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Complete(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -213,7 +216,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Start(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -249,7 +252,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Pause(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -285,7 +288,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Resume(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -321,7 +324,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -353,7 +356,7 @@ public class BlocksController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Restore(Guid id, CancellationToken ct)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -378,26 +381,27 @@ public class BlocksController : ControllerBase
         }
     }
 
-    private Guid GetUserId()
+    /// <summary>
+    /// Carry over uncompleted tasks from past dates to today
+    /// </summary>
+    [HttpPost("carry-over")]
+    [ProducesResponseType(typeof(ApiResponse<CarryOverResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> CarryOver(CancellationToken ct)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
-    }
+        var userId = _currentUser.UserId;
 
-    private ApiResponse<T> WrapResponse<T>(T data)
-    {
-        return new ApiResponse<T>(
-            data,
-            new ApiMeta(DateTime.UtcNow.ToString("o"), HttpContext.TraceIdentifier)
-        );
-    }
+        var carriedOver = await _blockService.CarryOverAsync(userId, ct);
+        var blockDtos = carriedOver.Select(b => MapToDto(b)).ToList();
 
-    private ApiError CreateErrorResponse(string code, string message)
-    {
-        return new ApiError(
-            new ErrorDetails(code, message),
-            new ApiMeta(DateTime.UtcNow.ToString("o"), HttpContext.TraceIdentifier)
-        );
+        if (carriedOver.Count > 0)
+        {
+            _logger.LogInformation(
+                "Blocks carried over | UserId: {UserId} | Count: {Count}",
+                userId, carriedOver.Count);
+        }
+
+        return Ok(WrapResponse(new CarryOverResponse(blockDtos, carriedOver.Count)));
     }
 
     private static BlockDto MapToDto(TimeBlock block, CategoryData? categoryData = null)
@@ -459,6 +463,7 @@ public class BlocksController : ControllerBase
             block.SortOrder,
             block.ExternalId,
             block.ExternalUrl,
+            block.ExternalSource,
             block.CreatedAt,
             block.CompletedAt,
             block.TimerState,

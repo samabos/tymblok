@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTheme, Card } from '@tymblok/ui';
@@ -34,7 +42,13 @@ function ChangePasswordContent() {
 
   const passwordsMatch = !confirmPassword || newPassword.trim() === confirmPassword.trim();
   const passwordLongEnough = !newPassword || newPassword.trim().length >= 8;
-  const isDisabled = !currentPassword || !newPassword || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
+  const isDisabled =
+    !currentPassword ||
+    !newPassword ||
+    !confirmPassword ||
+    !passwordsMatch ||
+    !passwordLongEnough ||
+    isLoading;
 
   const handleChangePassword = async () => {
     setError(null);
@@ -186,7 +200,9 @@ function ChangePasswordContent() {
               </View>
               <Text
                 className="text-xs mt-2"
-                style={{ color: !passwordLongEnough ? colors.status.urgent : themeColors.textFaint }}
+                style={{
+                  color: !passwordLongEnough ? colors.status.urgent : themeColors.textFaint,
+                }}
               >
                 Must be at least 8 characters
               </Text>
@@ -232,7 +248,15 @@ function ChangePasswordContent() {
             </Card>
 
             {error && (
-              <Card variant="default" padding="md" style={{ backgroundColor: `${colors.status.urgent}15`, borderWidth: 1, borderColor: `${colors.status.urgent}30` }}>
+              <Card
+                variant="default"
+                padding="md"
+                style={{
+                  backgroundColor: `${colors.status.urgent}15`,
+                  borderWidth: 1,
+                  borderColor: `${colors.status.urgent}30`,
+                }}
+              >
                 <Text className="text-sm text-center" style={{ color: colors.status.urgent }}>
                   {error}
                 </Text>
