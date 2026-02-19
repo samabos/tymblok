@@ -318,6 +318,9 @@ importers:
       '@gorhom/bottom-sheet':
         specifier: ^4.6.0
         version: 4.6.4(@types/react-native@0.73.0)(@types/react@18.2.79)(react-native-gesture-handler@2.20.2)(react-native-reanimated@3.16.7)(react-native@0.76.0)(react@18.3.1)
+      '@react-native-community/datetimepicker':
+        specifier: '>=7.0.0'
+        version: 8.2.0(expo@52.0.48)(react-native@0.76.0)(react@18.3.1)
       '@tymblok/theme':
         specifier: workspace:*
         version: link:../theme
