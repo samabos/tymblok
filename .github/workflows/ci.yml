@@ -98,7 +98,6 @@ jobs:
     name: Build & Push Image
     needs: [test-api]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
       packages: write
@@ -125,7 +124,6 @@ jobs:
     name: Deploy to Azure
     needs: [build-and-push]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     steps:
       - name: Login to Azure
