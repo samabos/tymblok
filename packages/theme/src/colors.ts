@@ -29,6 +29,7 @@ export const colors = {
     meeting: '#a855f7', // purple-500 - calendar events
     calendar: '#a855f7', // purple-500 - alias for meeting
     focus: '#f59e0b', // amber-500 - deep work
+    break: '#10b981', // emerald-500 - breaks/lunch
     slack: '#ec4899', // pink-500 - messages
     googleDrive: '#f59e0b', // amber-500 - documents
     linear: '#6366f1', // indigo-500 - issues
@@ -91,19 +92,19 @@ export const colors = {
     overlay: 'rgba(0, 0, 0, 0.7)',
   },
 
-  // Light Theme Palette
+  // Light Theme Palette (Samsung Health-inspired)
   light: {
-    bg: '#f8fafc', // slate-50
-    bgSubtle: '#f1f5f9', // slate-100
-    card: '#ffffff',
+    bg: '#f8fafc', // slate-50 (subtle gray so white cards pop)
+    bgSubtle: '#f1f5f9', // slate-100 (sections/headers)
+    card: '#ffffff', // pure white cards float on gray bg
     cardHover: '#f8fafc', // slate-50
-    border: '#e2e8f0', // slate-200
-    borderSubtle: '#cbd5e1', // slate-300
-    text: '#0f172a', // slate-900
-    textMuted: '#475569', // slate-600
-    textFaint: '#94a3b8', // slate-400
-    input: '#f1f5f9', // slate-100
-    inputFocus: '#e2e8f0', // slate-200
+    border: '#f1f5f9', // slate-100 (very subtle, prefer shadows)
+    borderSubtle: '#e2e8f0', // slate-200
+    text: '#0f172a', // slate-900 (strong readable text)
+    textMuted: '#64748b', // slate-500 (clear secondary)
+    textFaint: '#94a3b8', // slate-400 (hints/placeholders)
+    input: '#ffffff', // white (shadow-based separation)
+    inputFocus: '#ffffff', // white
     overlay: 'rgba(0, 0, 0, 0.5)',
   },
 
@@ -144,16 +145,18 @@ export function getLabelColor(label: string, fallback = colors.indigo[500]): str
 
   // Handle common aliases
   const aliasMap: Record<string, LabelColor> = {
-    'googledrive': 'googleDrive',
+    googledrive: 'googleDrive',
     'google-drive': 'googleDrive',
-    'pr': 'github',
-    'pullrequest': 'github',
-    'issue': 'jira',
-    'ticket': 'jira',
-    'event': 'meeting',
-    'call': 'meeting',
-    'deepwork': 'focus',
-    'work': 'focus',
+    pr: 'github',
+    pullrequest: 'github',
+    issue: 'jira',
+    ticket: 'jira',
+    event: 'meeting',
+    call: 'meeting',
+    deepwork: 'focus',
+    work: 'focus',
+    lunch: 'break',
+    rest: 'break',
   };
 
   const mappedLabel = aliasMap[normalizedLabel] || normalizedLabel;

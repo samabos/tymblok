@@ -18,12 +18,7 @@ export type {
 
 // Typography
 export { typography, textStyles } from './typography';
-export type {
-  Typography,
-  TextStyles,
-  FontSize,
-  FontWeight,
-} from './typography';
+export type { Typography, TextStyles, FontSize, FontWeight } from './typography';
 
 // Spacing
 export { spacing, borderRadius, layout, zIndex, shadows } from './spacing';
@@ -38,13 +33,7 @@ export type {
 } from './spacing';
 
 // Animations
-export {
-  duration,
-  easing,
-  springConfig,
-  animationPresets,
-  keyframes,
-} from './animations';
+export { duration, easing, springConfig, animationPresets, keyframes } from './animations';
 export type {
   Duration,
   Easing,

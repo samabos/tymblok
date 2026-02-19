@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Tymblok.Core.Entities;
 using Tymblok.Core.Interfaces;
+using Tymblok.Core.Services;
 using Tymblok.Infrastructure.Data;
 using Tymblok.Infrastructure.Email;
 using Tymblok.Infrastructure.Repositories;
@@ -83,12 +84,38 @@ public static class DependencyInjection
 
         // Repositories
         services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IInboxRepository, InboxRepository>();
+        services.AddScoped<IBlockRepository, BlockRepository>();
+        services.AddScoped<IRecurrenceRuleRepository, RecurrenceRuleRepository>();
+        services.AddScoped<IIntegrationRepository, IntegrationRepository>();
+        services.AddScoped<ISupportContentRepository, SupportContentRepository>();
 
         // Services
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IInboxService, InboxService>();
+        services.AddScoped<IBlockService, BlockService>();
+        services.AddScoped<IStatsService, StatsService>();
+        services.AddScoped<IRecurrenceService, RecurrenceService>();
+        services.AddScoped<ISupportContentService, SupportContentService>();
+
+        // Integration infrastructure
+        services.AddScoped<ITokenEncryptionService, TokenEncryptionService>();
+        services.AddSingleton<IOAuthStateService, OAuthStateService>();
+        services.AddScoped<IIntegrationService, IntegrationService>();
+
+        // Integration providers (unified OAuth — same credentials as auth login)
+        services.Configure<GitHubSettings>(configuration.GetSection("OAuth:GitHub"));
+        services.AddScoped<IIntegrationProviderService, GitHubProviderService>();
+        services.Configure<GoogleCalendarSettings>(configuration.GetSection("OAuth:Google"));
+        services.AddScoped<IIntegrationProviderService, GoogleCalendarProviderService>();
+
+        // Integration sync background worker
+        services.AddHostedService<IntegrationSyncWorker>();
 
         return services;
     }

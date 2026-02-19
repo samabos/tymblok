@@ -31,9 +31,7 @@ export function Avatar({ name, imageUrl, size = 'md', color, style }: AvatarProp
 
   return (
     <View style={[styles.base, sizeStyles.container, { backgroundColor }, style]}>
-      <Text style={[styles.text, sizeStyles.text, { color: colors.white }]}>
-        {initials}
-      </Text>
+      <Text style={[styles.text, sizeStyles.text, { color: colors.white }]}>{initials}</Text>
     </View>
   );
 }

@@ -49,7 +49,14 @@ export function TymblokLogo({ size = 'md', animated = true, style }: TymblokLogo
     <Animated.View style={[styles.wrapper, animatedStyle, style]}>
       <Svg width={boxSize} height={boxSize} viewBox="0 0 512 512">
         <Defs>
-          <SvgGradient id="bg-gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+          <SvgGradient
+            id="bg-gradient"
+            x1="0"
+            y1="0"
+            x2="512"
+            y2="512"
+            gradientUnits="userSpaceOnUse"
+          >
             <Stop stopColor="#6366f1" />
             <Stop offset="1" stopColor="#a855f7" />
           </SvgGradient>

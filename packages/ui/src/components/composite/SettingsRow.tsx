@@ -1,10 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ViewStyle } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, borderRadius, typography, springConfig } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -75,8 +71,8 @@ export function SettingsRow({
   const textColor = danger
     ? colors.status.urgent
     : disabled
-    ? themeColors.textFaint
-    : themeColors.text;
+      ? themeColors.textFaint
+      : themeColors.text;
 
   return (
     <AnimatedPressable
@@ -100,9 +96,7 @@ export function SettingsRow({
       <View style={styles.content}>
         <Text style={[styles.title, { color: textColor }]}>{title}</Text>
         {subtitle && (
-          <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
-            {subtitle}
-          </Text>
+          <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>{subtitle}</Text>
         )}
       </View>
 
@@ -137,14 +131,8 @@ export function SettingsSection({
 
   return (
     <View style={[styles.section, style]}>
-      <Text style={[styles.sectionTitle, { color: themeColors.textFaint }]}>
-        {title}
-      </Text>
-      <View
-        style={[styles.sectionContent, { backgroundColor: themeColors.card }]}
-      >
-        {children}
-      </View>
+      <Text style={[styles.sectionTitle, { color: themeColors.textFaint }]}>{title}</Text>
+      <View style={[styles.sectionContent, { backgroundColor: themeColors.card }]}>{children}</View>
     </View>
   );
 }
@@ -175,9 +163,7 @@ export function SettingsGroup({
         <>
           {child}
           {index < React.Children.count(children) - 1 && (
-            <View
-              style={[styles.divider, { backgroundColor: themeColors.border }]}
-            />
+            <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
           )}
         </>
       ))}

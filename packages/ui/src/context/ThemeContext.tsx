@@ -34,7 +34,7 @@ export function ThemeProvider({ children, defaultMode = 'system' }: ThemeProvide
   const theme = useMemo(() => getTheme(isDark), [isDark]);
 
   const toggleTheme = useCallback(() => {
-    setThemeMode((current) => {
+    setThemeMode(current => {
       if (current === 'light') return 'dark';
       if (current === 'dark') return 'light';
       // If system, switch to opposite of current system preference

@@ -78,6 +78,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @tymblok/shared build
       - run: pnpm --filter @tymblok/theme build
+      - run: pnpm --filter @tymblok/api-client build
+      - run: pnpm --filter @tymblok/ui build
       - run: pnpm --filter @tymblok/mobile typecheck
       - run: pnpm --filter @tymblok/mobile test
 

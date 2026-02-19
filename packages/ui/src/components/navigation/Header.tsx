@@ -47,18 +47,12 @@ export function Header({
           {centerElement || (
             <>
               {title && (
-                <Text
-                  style={[styles.title, { color: themeColors.text }]}
-                  numberOfLines={1}
-                >
+                <Text style={[styles.title, { color: themeColors.text }]} numberOfLines={1}>
                   {title}
                 </Text>
               )}
               {subtitle && (
-                <Text
-                  style={[styles.subtitle, { color: themeColors.textMuted }]}
-                  numberOfLines={1}
-                >
+                <Text style={[styles.subtitle, { color: themeColors.textMuted }]} numberOfLines={1}>
                   {subtitle}
                 </Text>
               )}
@@ -108,14 +102,8 @@ export function CollapsibleHeader({
         <View style={styles.titleRow}>
           {leftElement && <View style={styles.leftIcon}>{leftElement}</View>}
           <View style={styles.titleContainer}>
-            <Text style={[styles.collapsibleTitle, { color: themeColors.text }]}>
-              {title}
-            </Text>
-            {date && (
-              <Text style={[styles.date, { color: themeColors.textMuted }]}>
-                {date}
-              </Text>
-            )}
+            <Text style={[styles.collapsibleTitle, { color: themeColors.text }]}>{title}</Text>
+            {date && <Text style={[styles.date, { color: themeColors.textMuted }]}>{date}</Text>}
           </View>
         </View>
         {rightElement && <View style={styles.rightActions}>{rightElement}</View>}

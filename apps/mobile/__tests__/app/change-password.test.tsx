@@ -220,7 +220,7 @@ describe('ChangePasswordScreen', () => {
   });
 
   it('should show loading state while updating', async () => {
-    mockChangePassword.mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    mockChangePassword.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
 
     render(<ChangePasswordScreen />);
 

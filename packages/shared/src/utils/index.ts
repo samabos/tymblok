@@ -59,7 +59,8 @@ export function calculateTaskScore(task: Task, now: Date = new Date()): number {
     score += Math.floor(ageHours / 24) * 10;
 
     // Large PRs get slight priority
-    const linesChanged = (task.source_metadata.additions || 0) + (task.source_metadata.deletions || 0);
+    const linesChanged =
+      (task.source_metadata.additions || 0) + (task.source_metadata.deletions || 0);
     if (linesChanged > 500) score += 5;
   }
 
@@ -89,7 +90,8 @@ export function estimateTaskDuration(task: Task): number {
 
   // Estimate based on source
   if (task.source === 'github_pr' && task.source_metadata) {
-    const linesChanged = (task.source_metadata.additions || 0) + (task.source_metadata.deletions || 0);
+    const linesChanged =
+      (task.source_metadata.additions || 0) + (task.source_metadata.deletions || 0);
     // Base 10 min + 1 min per 50 lines
     return Math.min(120, 10 + Math.ceil(linesChanged / 50));
   }

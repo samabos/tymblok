@@ -1,11 +1,7 @@
 import React from 'react';
 import { View, Pressable, Text, StyleSheet, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, layout, typography, springConfig } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
@@ -30,13 +26,7 @@ export interface BottomNavProps {
   style?: ViewStyle;
 }
 
-export function BottomNav({
-  tabs,
-  activeTab,
-  onTabPress,
-  onAddPress,
-  style,
-}: BottomNavProps) {
+export function BottomNav({ tabs, activeTab, onTabPress, onAddPress, style }: BottomNavProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const themeColors = theme.colors;
@@ -55,7 +45,7 @@ export function BottomNav({
         style,
       ]}
     >
-      {tabs.map((tab) => {
+      {tabs.map(tab => {
         if (tab.key === 'add') {
           return (
             <AddButton
@@ -130,19 +120,11 @@ function TabButton({ tab, isActive, onPress, themeColors }: TabButtonProps) {
           : null}
         {tab.badge !== undefined && tab.badge > 0 && (
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {tab.badge > 99 ? '99+' : tab.badge}
-            </Text>
+            <Text style={styles.badgeText}>{tab.badge > 99 ? '99+' : tab.badge}</Text>
           </View>
         )}
       </View>
-      <Text
-        style={[
-          styles.label,
-          { color: labelColor },
-          isActive && styles.labelActive,
-        ]}
-      >
+      <Text style={[styles.label, { color: labelColor }, isActive && styles.labelActive]}>
         {tab.label}
       </Text>
     </AnimatedPressable>

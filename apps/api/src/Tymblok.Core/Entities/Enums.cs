@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace Tymblok.Core.Entities;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum Theme
 {
     Light,
@@ -7,6 +10,7 @@ public enum Theme
     System
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TextSize
 {
     Small,
@@ -14,6 +18,7 @@ public enum TextSize
     Large
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum IntegrationProvider
 {
     GitHub,
@@ -24,6 +29,7 @@ public enum IntegrationProvider
     Linear
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum InboxSource
 {
     Manual,
@@ -34,6 +40,7 @@ public enum InboxSource
     GoogleDrive
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum InboxItemType
 {
     Task,
@@ -42,8 +49,28 @@ public enum InboxItemType
     Event
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum InboxPriority
 {
-    Normal,
-    High
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum TimerState
+{
+    NotStarted,
+    Running,
+    Paused,
+    Completed
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum SupportContentType
+{
+    HelpFaq,
+    PrivacyPolicy,
+    TermsOfService
 }

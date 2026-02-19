@@ -48,15 +48,11 @@ export function IntegrationCard({
       <View style={styles.header}>
         <View style={styles.iconRow}>
           {icon ? (
-            <View
-              style={[styles.iconContainer, { backgroundColor: integrationColor + '20' }]}
-            >
+            <View style={[styles.iconContainer, { backgroundColor: integrationColor + '20' }]}>
               {icon}
             </View>
           ) : (
-            <View
-              style={[styles.iconContainer, { backgroundColor: integrationColor + '20' }]}
-            >
+            <View style={[styles.iconContainer, { backgroundColor: integrationColor + '20' }]}>
               <Text style={styles.iconEmoji}>{getIntegrationEmoji(type)}</Text>
             </View>
           )}
@@ -74,9 +70,7 @@ export function IntegrationCard({
           </View>
         </View>
 
-        <Text style={[styles.description, { color: themeColors.textMuted }]}>
-          {description}
-        </Text>
+        <Text style={[styles.description, { color: themeColors.textMuted }]}>{description}</Text>
       </View>
 
       {connected && lastSync && (
@@ -139,12 +133,7 @@ export interface ApiKeyCardProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function ApiKeyCard({
-  apiKey,
-  onCopy,
-  onRegenerate,
-  style,
-}: ApiKeyCardProps) {
+export function ApiKeyCard({ apiKey, onCopy, onRegenerate, style }: ApiKeyCardProps) {
   const { theme } = useTheme();
   const themeColors = theme.colors;
 
@@ -152,14 +141,10 @@ export function ApiKeyCard({
 
   return (
     <Card variant="outlined" padding="md" style={style}>
-      <Text style={[styles.apiKeyLabel, { color: themeColors.textMuted }]}>
-        API Key
-      </Text>
+      <Text style={[styles.apiKeyLabel, { color: themeColors.textMuted }]}>API Key</Text>
 
       <View style={styles.apiKeyRow}>
-        <View
-          style={[styles.apiKeyContainer, { backgroundColor: themeColors.input }]}
-        >
+        <View style={[styles.apiKeyContainer, { backgroundColor: themeColors.input }]}>
           <Text
             style={[
               styles.apiKeyText,
@@ -171,12 +156,7 @@ export function ApiKeyCard({
         </View>
 
         {onCopy && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onPress={onCopy}
-            style={{ marginLeft: spacing[2] }}
-          >
+          <Button variant="secondary" size="sm" onPress={onCopy} style={{ marginLeft: spacing[2] }}>
             Copy
           </Button>
         )}

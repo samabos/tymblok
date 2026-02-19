@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
-import { View, Text, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { useAuthStore } from '../../stores/authStore';
+import { useInboxItems } from '../../services/apiHooks';
 
 export default function TabLayout() {
   const { theme, isDark } = useTheme();
@@ -25,6 +26,10 @@ export default function TabLayout() {
     }
   }, [isAuthenticated, isLoading, user]);
 
+  // Fetch inbox items to show badge count (undismissed items)
+  const { data: inboxItems } = useInboxItems();
+  const inboxBadgeCount = inboxItems?.filter(item => !item.isDismissed).length ?? 0;
+
   // Don't render tabs while checking auth, if not authenticated, or email not verified
   if (isLoading || !isAuthenticated || (user && !user.email_verified)) {
     return null;
@@ -33,13 +38,14 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.indigo[400],
+        tabBarActiveTintColor: colors.indigo[500],
         tabBarInactiveTintColor: themeColors.textFaint,
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-          borderTopWidth: 0,
+          borderTopWidth: isDark ? 0 : 1,
+          borderTopColor: themeColors.border,
           height: Platform.OS === 'ios' ? 88 : 70,
           paddingTop: 8,
           paddingBottom: Platform.OS === 'ios' ? 28 : 12,
@@ -52,6 +58,20 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
+        name="inbox"
+        options={{
+          title: 'Inbox',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              name="file-tray-outline"
+              color={color}
+              focused={focused}
+              badge={inboxBadgeCount}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="today"
         options={{
           title: 'Today',
@@ -63,28 +83,6 @@ export default function TabLayout() {
           tabPress: () => {
             // Navigate with reset param to trigger date reset
             router.setParams({ reset: Date.now().toString() });
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="inbox"
-        options={{
-          title: 'Inbox',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="file-tray-outline" color={color} focused={focused} badge={5} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="add"
-        options={{
-          title: 'Add',
-          tabBarButton: () => <AddButton />,
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            router.push('/add-task');
           },
         }}
       />
@@ -131,37 +129,6 @@ function TabIcon({ name, color, focused: _focused, badge }: TabIconProps) {
           </View>
         )}
       </View>
-    </View>
-  );
-}
-
-function AddButton() {
-  const handlePress = () => {
-    router.push('/add-task');
-  };
-
-  return (
-    <View className="flex-1 items-center justify-center" style={{ marginTop: -10 }}>
-      <TouchableOpacity
-        onPress={handlePress}
-        className="w-12 h-12 rounded-2xl items-center justify-center"
-        style={{
-          backgroundColor: colors.indigo[500],
-          shadowColor: colors.indigo[500],
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
-        }}
-      >
-        <Ionicons name="add" size={24} color={colors.white} />
-      </TouchableOpacity>
-      <Text
-        className="text-[10px] font-medium mt-1"
-        style={{ color: colors.indigo[400] }}
-      >
-        Add
-      </Text>
     </View>
   );
 }

@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { useAuthStore } from '../stores/authStore';
 
 // Android emulator uses 10.0.2.2 to reach host machine's localhost
 const getDefaultApiUrl = () => {
@@ -37,64 +37,24 @@ export interface ApiErrorResponse {
   };
 }
 
-// Storage helpers for web compatibility
-const getStorageItem = async (key: string): Promise<string | null> => {
-  if (Platform.OS === 'web') {
-    return localStorage.getItem(key);
-  }
-  return SecureStore.getItemAsync(key);
-};
-
-const setStorageItem = async (key: string, value: string): Promise<void> => {
-  if (Platform.OS === 'web') {
-    localStorage.setItem(key, value);
-    return;
-  }
-  return SecureStore.setItemAsync(key, value);
-};
-
-const deleteStorageItem = async (key: string): Promise<void> => {
-  if (Platform.OS === 'web') {
-    localStorage.removeItem(key);
-    return;
-  }
-  return SecureStore.deleteItemAsync(key);
-};
-
 // Token refresh state
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
-async function getAccessToken(): Promise<string | null> {
-  const authData = await getStorageItem('tymblok-auth');
-  if (!authData) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(authData);
-    return parsed?.state?.tokens?.access_token || null;
-  } catch {
-    return null;
-  }
+function getAccessToken(): string | null {
+  const { tokens } = useAuthStore.getState();
+  return tokens?.access_token || null;
 }
 
-async function getRefreshToken(): Promise<string | null> {
-  const authData = await getStorageItem('tymblok-auth');
-  if (!authData) return null;
-
-  try {
-    const { state } = JSON.parse(authData);
-    return state?.tokens?.refresh_token || null;
-  } catch {
-    return null;
-  }
+function getRefreshToken(): string | null {
+  const { tokens } = useAuthStore.getState();
+  return tokens?.refresh_token || null;
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = await getRefreshToken();
+  const refreshToken = getRefreshToken();
   if (!refreshToken) {
-    await deleteStorageItem('tymblok-auth');
+    useAuthStore.getState().clearAuth();
     return null;
   }
 
@@ -106,32 +66,24 @@ async function refreshAccessToken(): Promise<string | null> {
     });
 
     if (!response.ok) {
-      await deleteStorageItem('tymblok-auth');
+      useAuthStore.getState().clearAuth();
       return null;
     }
 
     const data = await response.json();
     const { accessToken, refreshToken: newRefreshToken, expiresIn } = data.data;
 
-    // Update stored tokens
-    const authData = await getStorageItem('tymblok-auth');
-    if (authData) {
-      const { state } = JSON.parse(authData);
-      const newState = {
-        ...state,
-        tokens: {
-          access_token: accessToken,
-          refresh_token: newRefreshToken,
-          expires_in: expiresIn,
-          token_type: 'Bearer',
-        },
-      };
-      await setStorageItem('tymblok-auth', JSON.stringify({ state: newState }));
-    }
+    // Update tokens in the Zustand store (persisted automatically via middleware)
+    useAuthStore.getState().updateTokens({
+      access_token: accessToken,
+      refresh_token: newRefreshToken,
+      expires_in: expiresIn,
+      token_type: 'Bearer',
+    });
 
     return accessToken;
   } catch {
-    await deleteStorageItem('tymblok-auth');
+    useAuthStore.getState().clearAuth();
     return null;
   }
 }
@@ -337,6 +289,5 @@ export const api = {
   delete: <T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>) =>
     request<T>(endpoint, { ...options, method: 'DELETE' }),
 
-  uploadFile: <T>(endpoint: string, formData: FormData) =>
-    uploadFile<T>(endpoint, formData),
+  uploadFile: <T>(endpoint: string, formData: FormData) => uploadFile<T>(endpoint, formData),
 };

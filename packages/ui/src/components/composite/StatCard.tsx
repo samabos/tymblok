@@ -22,9 +22,7 @@ export function StatCard({ title, value, change, icon, style }: StatCardProps) {
   return (
     <Card variant="default" padding="md" style={[styles.container, style]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: themeColors.textMuted }]}>
-          {title}
-        </Text>
+        <Text style={[styles.title, { color: themeColors.textMuted }]}>{title}</Text>
         {icon && <View style={styles.icon}>{icon}</View>}
       </View>
 
@@ -94,20 +92,13 @@ export function FocusScoreCard({ score, style }: FocusScoreCardProps) {
   return (
     <Card variant="default" padding="md" style={[styles.focusContainer, style]}>
       <View style={styles.focusHeader}>
-        <Text style={[styles.focusTitle, { color: themeColors.text }]}>
-          Focus Score
-        </Text>
-        <Text style={[styles.focusScore, { color: getScoreColor() }]}>
-          {score}
-        </Text>
+        <Text style={[styles.focusTitle, { color: themeColors.text }]}>Focus Score</Text>
+        <Text style={[styles.focusScore, { color: getScoreColor() }]}>{score}</Text>
       </View>
 
       <View style={[styles.focusBar, { backgroundColor: themeColors.input }]}>
         <View
-          style={[
-            styles.focusFill,
-            { width: `${score}%`, backgroundColor: getScoreColor() },
-          ]}
+          style={[styles.focusFill, { width: `${score}%`, backgroundColor: getScoreColor() }]}
         />
       </View>
     </Card>
@@ -138,9 +129,7 @@ export function CategoryBreakdown({ categories, style }: CategoryBreakdownProps)
 
   return (
     <Card variant="default" padding="md" style={style}>
-      <Text style={[styles.categoryTitle, { color: themeColors.text }]}>
-        Time by Category
-      </Text>
+      <Text style={[styles.categoryTitle, { color: themeColors.text }]}>Time by Category</Text>
 
       {categories.map((category, index) => (
         <View key={category.name} style={styles.categoryRow}>
@@ -148,18 +137,16 @@ export function CategoryBreakdown({ categories, style }: CategoryBreakdownProps)
             <View
               style={[
                 styles.categoryDot,
-                { backgroundColor: category.color || categoryColors[index % categoryColors.length] },
+                {
+                  backgroundColor: category.color || categoryColors[index % categoryColors.length],
+                },
               ]}
             />
-            <Text style={[styles.categoryName, { color: themeColors.text }]}>
-              {category.name}
-            </Text>
+            <Text style={[styles.categoryName, { color: themeColors.text }]}>{category.name}</Text>
           </View>
 
           <View style={styles.categoryBarContainer}>
-            <View
-              style={[styles.categoryBar, { backgroundColor: themeColors.input }]}
-            >
+            <View style={[styles.categoryBar, { backgroundColor: themeColors.input }]}>
               <View
                 style={[
                   styles.categoryFill,

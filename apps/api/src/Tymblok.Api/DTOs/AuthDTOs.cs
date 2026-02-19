@@ -53,6 +53,17 @@ public record UpdateProfileRequest(
     [Required][MinLength(1)][MaxLength(100)] string Name
 );
 
+public record UpdateSettingsRequest(
+    string? Timezone = null,
+    string? WorkingHoursStart = null,
+    string? WorkingHoursEnd = null,
+    string? LunchStart = null,
+    int? LunchDurationMinutes = null,
+    bool? NotificationBlockReminder = null,
+    int? NotificationReminderMinutes = null,
+    bool? NotificationDailySummary = null
+);
+
 public record AvatarResponse(
     string AvatarUrl
 );
@@ -70,6 +81,16 @@ public record UserDto(
     bool HasPassword,
     IList<string> Roles,
     DateTime CreatedAt,
+    // Working hours
+    string Timezone,
+    string WorkingHoursStart,
+    string WorkingHoursEnd,
+    string LunchStart,
+    int LunchDurationMinutes,
+    // Notification preferences
+    bool NotificationBlockReminder,
+    int NotificationReminderMinutes,
+    bool NotificationDailySummary,
     IList<string>? LinkedProviders = null
 );
 

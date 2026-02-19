@@ -63,7 +63,7 @@ export const layout = {
 
   // Task card
   taskCardMinHeight: 80,
-  taskCardBorderRadius: borderRadius.xl, // 12
+  taskCardBorderRadius: borderRadius['2xl'], // 16
   taskCardIconSize: 16,
 
   // Time grid

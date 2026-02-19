@@ -48,6 +48,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Secrets & credentials
+google-services.json
+*.keystore
+*.jks
+appsettings.Local.json
+
 # Misc
 .cache/
 tmp/

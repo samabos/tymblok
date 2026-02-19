@@ -7,12 +7,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider, useTheme } from '@tymblok/ui';
 import { verifyInstallation } from 'nativewind';
+import { ToastProvider } from '../components/ToastProvider';
+import { AlertProvider } from '../components/AlertProvider';
+import { useAutoSync } from '../hooks/useAutoSync';
 
 const queryClient = new QueryClient();
 
 function RootNavigator() {
   const { theme, isDark } = useTheme();
   const bgColor = theme.colors.bg;
+
+  // Auto-sync integrations on app foreground
+  useAutoSync();
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
@@ -43,13 +49,6 @@ function RootNavigator() {
           }}
         />
         <Stack.Screen
-          name="add-task"
-          options={{
-            animation: 'slide_from_right',
-            contentStyle: { backgroundColor: bgColor },
-          }}
-        />
-        <Stack.Screen
           name="task/[id]"
           options={{
             animation: 'slide_from_right',
@@ -68,6 +67,8 @@ function RootNavigator() {
             headerShown: false,
           }}
         />
+        <Stack.Screen name="(settings)" />
+        <Stack.Screen name="(inbox)" />
       </Stack>
     </GestureHandlerRootView>
   );
@@ -82,7 +83,11 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultMode="dark">
-        <RootNavigator />
+        <AlertProvider>
+          <ToastProvider>
+            <RootNavigator />
+          </ToastProvider>
+        </AlertProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

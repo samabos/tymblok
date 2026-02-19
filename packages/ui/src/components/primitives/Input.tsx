@@ -114,16 +114,23 @@ export const Input = forwardRef<TextInput, InputProps>(
 
     return (
       <View style={[styles.container, containerStyle]}>
-        {label && (
-          <Text style={[styles.label, { color: themeColors.text }]}>{label}</Text>
-        )}
+        {label && <Text style={[styles.label, { color: themeColors.text }]}>{label}</Text>}
 
         <AnimatedView
           style={[
             styles.inputContainer,
             {
               backgroundColor: themeColors.input,
-              borderWidth: 1,
+              borderWidth: theme.isDark ? 1 : 0,
+              ...(theme.isDark
+                ? {}
+                : {
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }),
             },
             animatedBorderStyle,
             disabled && styles.disabled,
@@ -146,7 +153,7 @@ export const Input = forwardRef<TextInput, InputProps>(
                 color: themeColors.text,
               },
               leftIcon ? styles.inputWithLeftIcon : undefined,
-              (rightIcon || isPassword) ? styles.inputWithRightIcon : undefined,
+              rightIcon || isPassword ? styles.inputWithRightIcon : undefined,
               inputStyle,
             ]}
             placeholderTextColor={themeColors.textFaint}

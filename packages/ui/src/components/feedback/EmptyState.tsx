@@ -31,17 +31,13 @@ export function EmptyState({
   return (
     <View style={[styles.container, style]}>
       {icon && (
-        <View style={[styles.iconContainer, { backgroundColor: themeColors.input }]}>
-          {icon}
-        </View>
+        <View style={[styles.iconContainer, { backgroundColor: themeColors.input }]}>{icon}</View>
       )}
 
       <Text style={[styles.title, { color: themeColors.text }]}>{title}</Text>
 
       {description && (
-        <Text style={[styles.description, { color: themeColors.textMuted }]}>
-          {description}
-        </Text>
+        <Text style={[styles.description, { color: themeColors.textMuted }]}>{description}</Text>
       )}
 
       {(action || secondaryAction) && (

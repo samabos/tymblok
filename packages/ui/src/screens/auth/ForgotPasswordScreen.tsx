@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, typography } from '@tymblok/theme';
@@ -73,9 +67,7 @@ export function ForgotPasswordScreen({
           style={[
             styles.gradient,
             {
-              backgroundColor: isDark
-                ? 'rgba(99, 102, 241, 0.15)'
-                : 'rgba(99, 102, 241, 0.1)',
+              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)',
             },
           ]}
         />
@@ -97,9 +89,7 @@ export function ForgotPasswordScreen({
               </View>
             </View>
 
-            <Text style={[styles.title, { color: themeColors.text }]}>
-              Forgot password?
-            </Text>
+            <Text style={[styles.title, { color: themeColors.text }]}>Forgot password?</Text>
             <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
               No worries, we'll send you reset instructions.
             </Text>
@@ -131,11 +121,7 @@ export function ForgotPasswordScreen({
               </Button>
             </View>
 
-            <Button
-              variant="ghost"
-              onPress={onBack}
-              style={styles.backButton}
-            >
+            <Button variant="ghost" onPress={onBack} style={styles.backButton}>
               Back to login
             </Button>
           </>
@@ -148,9 +134,7 @@ export function ForgotPasswordScreen({
               </View>
             </View>
 
-            <Text style={[styles.title, { color: themeColors.text }]}>
-              Check your email
-            </Text>
+            <Text style={[styles.title, { color: themeColors.text }]}>Check your email</Text>
             <Text style={[styles.subtitle, { color: themeColors.textMuted }]}>
               We've sent a password reset link to{'\n'}
               <Text style={{ color: themeColors.text, fontWeight: typography.weights.medium }}>
@@ -172,12 +156,7 @@ export function ForgotPasswordScreen({
               <Text style={[styles.resendText, { color: themeColors.textMuted }]}>
                 Didn't receive the email?{' '}
               </Text>
-              <Button
-                variant="ghost"
-                size="sm"
-                onPress={handleResend}
-                loading={isLoading}
-              >
+              <Button variant="ghost" size="sm" onPress={handleResend} loading={isLoading}>
                 Click to resend
               </Button>
             </View>

@@ -32,7 +32,7 @@ jest.mock('../../services/authService', () => ({
 // Mock authStore - required for AuthGuard to render content
 const mockUpdateUser = jest.fn();
 jest.mock('../../stores/authStore', () => ({
-  useAuthStore: jest.fn((selector) => {
+  useAuthStore: jest.fn(selector => {
     const state = {
       isAuthenticated: true,
       isLoading: false,
@@ -189,8 +189,9 @@ describe('SetPasswordScreen', () => {
     fireEvent.changeText(confirmInput, 'short');
 
     // Button should be disabled (opacity 0.5)
-    expect(setButton.props.accessibilityState?.disabled ||
-           setButton.parent?.parent?.props?.disabled).toBeTruthy;
+    expect(
+      setButton.props.accessibilityState?.disabled || setButton.parent?.parent?.props?.disabled
+    ).toBeTruthy;
   });
 
   it('should navigate back when Done is pressed on success screen', async () => {

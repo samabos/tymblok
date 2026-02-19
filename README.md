@@ -15,13 +15,13 @@ Unlike generic scheduling apps, Tymblok treats PR review age, sprint deadlines, 
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| **Mobile/Web** | React Native + Expo 52, Expo Router, Zustand, NativeWind |
-| **Backend** | ASP.NET Core 10, Entity Framework Core 10, PostgreSQL 16 |
-| **Desktop** | Tauri 2.0 + React + Vite (Phase 2) |
-| **Infrastructure** | Azure App Service, Redis, GitHub Actions |
-| **Monorepo** | Turborepo + pnpm |
+| Layer              | Technology                                               |
+| ------------------ | -------------------------------------------------------- |
+| **Mobile/Web**     | React Native + Expo 52, Expo Router, Zustand, NativeWind |
+| **Backend**        | ASP.NET Core 10, Entity Framework Core 10, PostgreSQL 16 |
+| **Desktop**        | Tauri 2.0 + React + Vite (Phase 2)                       |
+| **Infrastructure** | Azure App Service, Redis, GitHub Actions                 |
+| **Monorepo**       | Turborepo + pnpm                                         |
 
 ## Getting Started
 
@@ -75,6 +75,20 @@ pnpm dev:desktop  # Tauri dev window
 
 To run on web, press `w` in the Expo dev server.
 
+Install ngrok
+If you don't have ngrok installed:
+
+# Using Chocolatey (Windows)
+
+choco install ngrok
+
+# Or download from https://ngrok.com/download
+
+Once api is running start ngrok tunnel
+To map localhost:5000 to, open a new terminal and run:
+
+ngrok http 5000
+
 ## Project Structure
 
 ```
@@ -103,19 +117,19 @@ tymblok/
 
 ## Scripts
 
-| Script | Description |
-|--------|-------------|
-| `pnpm dev` | Start all apps in parallel |
-| `pnpm dev:api` | Start backend server |
-| `pnpm dev:mobile` | Start Expo dev server |
-| `pnpm build` | Build all packages |
-| `pnpm build:shared` | Build shared package |
-| `pnpm test` | Run all tests |
-| `pnpm lint` | Lint all code |
-| `pnpm lint:fix` | Auto-fix lint issues |
-| `pnpm typecheck` | Type check all TypeScript |
-| `pnpm format` | Format with Prettier |
-| `pnpm clean` | Clean all build artifacts |
+| Script              | Description                |
+| ------------------- | -------------------------- |
+| `pnpm dev`          | Start all apps in parallel |
+| `pnpm dev:api`      | Start backend server       |
+| `pnpm dev:mobile`   | Start Expo dev server      |
+| `pnpm build`        | Build all packages         |
+| `pnpm build:shared` | Build shared package       |
+| `pnpm test`         | Run all tests              |
+| `pnpm lint`         | Lint all code              |
+| `pnpm lint:fix`     | Auto-fix lint issues       |
+| `pnpm typecheck`    | Type check all TypeScript  |
+| `pnpm format`       | Format with Prettier       |
+| `pnpm clean`        | Clean all build artifacts  |
 
 ## Documentation
 
@@ -125,6 +139,7 @@ tymblok/
 ## Current Status
 
 ### Completed
+
 - Monorepo setup with Turborepo
 - `@tymblok/shared` — types and utils package
 - `@tymblok/theme` — design tokens (colors, typography, spacing, animations)
@@ -134,6 +149,7 @@ tymblok/
 - Health endpoint
 
 ### In Progress (Phase 1)
+
 - Authentication (Google/GitHub OAuth)
 - Calendar UI with drag-and-drop
 - Tasks CRUD

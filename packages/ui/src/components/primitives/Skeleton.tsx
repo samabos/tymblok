@@ -32,11 +32,7 @@ export function Skeleton({
 
   useEffect(() => {
     if (animate) {
-      shimmer.value = withRepeat(
-        withTiming(1, { duration: 1500 }),
-        -1,
-        true
-      );
+      shimmer.value = withRepeat(withTiming(1, { duration: 1500 }), -1, true);
     }
   }, [animate]);
 

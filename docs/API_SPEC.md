@@ -226,7 +226,13 @@ export interface UpdateCategoryRequest {
 
 ```typescript
 // Inbox
-export type InboxSource = 'manual' | 'github' | 'jira' | 'google-calendar' | 'slack' | 'google-drive';
+export type InboxSource =
+  | 'manual'
+  | 'github'
+  | 'jira'
+  | 'google-calendar'
+  | 'slack'
+  | 'google-drive';
 export type InboxItemType = 'task' | 'update' | 'reminder' | 'event';
 export type InboxPriority = 'normal' | 'high';
 
@@ -267,7 +273,13 @@ export interface InboxQueryParams {
 
 ```typescript
 // Integration
-export type IntegrationProvider = 'github' | 'jira' | 'google-calendar' | 'slack' | 'notion' | 'linear';
+export type IntegrationProvider =
+  | 'github'
+  | 'jira'
+  | 'google-calendar'
+  | 'slack'
+  | 'notion'
+  | 'linear';
 
 export interface IntegrationDto {
   id: string;
@@ -347,10 +359,10 @@ export type PlanId = 'free' | 'pro_monthly' | 'pro_yearly';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing';
 
 export interface PlanFeaturesDto {
-  blocksPerDay: number;      // -1 = unlimited
-  integrations: number;       // -1 = unlimited
-  statsHistoryDays: number;   // -1 = unlimited
-  customCategories: number;   // -1 = unlimited
+  blocksPerDay: number; // -1 = unlimited
+  integrations: number; // -1 = unlimited
+  statsHistoryDays: number; // -1 = unlimited
+  customCategories: number; // -1 = unlimited
   exportData: boolean;
   prioritySupport: boolean;
 }
@@ -358,7 +370,7 @@ export interface PlanFeaturesDto {
 export interface PlanDto {
   id: PlanId;
   name: string;
-  price: number;             // cents
+  price: number; // cents
   interval: 'month' | 'year' | null;
   stripePriceId?: string;
   features: PlanFeaturesDto;
@@ -406,9 +418,11 @@ export interface InvoiceDto {
 ### Authentication
 
 #### POST /auth/register
+
 Create a new account.
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -418,6 +432,7 @@ Create a new account.
 ```
 
 **Response (201):**
+
 ```json
 {
   "data": {
@@ -442,15 +457,18 @@ Create a new account.
 ```
 
 **Errors:**
+
 - `400 VALIDATION_ERROR` - Invalid input
 - `409 CONFLICT` - Email already exists
 
 ---
 
 #### POST /auth/login
+
 Authenticate and get tokens.
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -461,15 +479,18 @@ Authenticate and get tokens.
 **Response (200):** Same as register
 
 **Errors:**
+
 - `401 AUTH_INVALID_CREDENTIALS` - Wrong email/password
 - `429 RATE_LIMITED` - Too many attempts
 
 ---
 
 #### POST /auth/refresh
+
 Refresh access token.
 
 **Request:**
+
 ```json
 {
   "refreshToken": "dGhpcyBpcyBhIHJlZnJl..."
@@ -477,6 +498,7 @@ Refresh access token.
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -488,15 +510,18 @@ Refresh access token.
 ```
 
 **Errors:**
+
 - `401 AUTH_SESSION_EXPIRED` - Session expired
 - `401 AUTH_TOKEN_INVALID` - Invalid token
 
 ---
 
 #### POST /auth/forgot-password
+
 Request password reset email.
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com"
@@ -504,6 +529,7 @@ Request password reset email.
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -515,9 +541,11 @@ Request password reset email.
 ---
 
 #### POST /auth/reset-password
+
 Reset password with token.
 
 **Request:**
+
 ```json
 {
   "token": "reset_token_from_email",
@@ -526,6 +554,7 @@ Reset password with token.
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -535,16 +564,19 @@ Reset password with token.
 ```
 
 **Errors:**
+
 - `400 AUTH_TOKEN_INVALID` - Invalid/expired reset token
 
 ---
 
 #### GET /auth/oauth/{provider}
+
 Start OAuth flow. Redirects to provider.
 
 **Providers:** `github`, `google`
 
 **Query Params:**
+
 - `redirect_uri` - Where to redirect after auth
 
 **Response:** Redirect to OAuth provider
@@ -552,9 +584,11 @@ Start OAuth flow. Redirects to provider.
 ---
 
 #### POST /auth/oauth/{provider}/callback
+
 Complete OAuth flow.
 
 **Request:**
+
 ```json
 {
   "code": "oauth_code_from_provider",
@@ -569,9 +603,11 @@ Complete OAuth flow.
 ### Users
 
 #### GET /users/me
+
 Get current user profile.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -592,9 +628,11 @@ Get current user profile.
 ---
 
 #### PATCH /users/me
+
 Update user profile.
 
 **Request:**
+
 ```json
 {
   "name": "John Smith"
@@ -606,9 +644,11 @@ Update user profile.
 ---
 
 #### DELETE /users/me
+
 Delete account (soft delete, 30-day grace).
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -621,9 +661,11 @@ Delete account (soft delete, 30-day grace).
 ---
 
 #### PUT /users/me/password
+
 Change password.
 
 **Request:**
+
 ```json
 {
   "currentPassword": "OldPass123!",
@@ -632,6 +674,7 @@ Change password.
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -641,6 +684,7 @@ Change password.
 ```
 
 **Errors:**
+
 - `401 AUTH_INVALID_CREDENTIALS` - Wrong current password
 
 ---
@@ -648,9 +692,11 @@ Change password.
 ### Settings
 
 #### GET /settings
+
 Get user settings.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -670,9 +716,11 @@ Get user settings.
 ---
 
 #### PATCH /settings
+
 Update settings.
 
 **Request:**
+
 ```json
 {
   "theme": "light",
@@ -687,15 +735,18 @@ Update settings.
 ### Time Blocks
 
 #### GET /blocks
+
 List time blocks.
 
 **Query Params:**
+
 - `date` - Single date (YYYY-MM-DD)
 - `startDate` - Range start
 - `endDate` - Range end
 - `completed` - Filter by completion
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -734,9 +785,11 @@ List time blocks.
 ---
 
 #### POST /blocks
+
 Create a time block.
 
 **Request:**
+
 ```json
 {
   "categoryId": "cat-uuid",
@@ -754,6 +807,7 @@ Create a time block.
 ---
 
 #### GET /blocks/{id}
+
 Get single block.
 
 **Response (200):** Block object
@@ -761,9 +815,11 @@ Get single block.
 ---
 
 #### PATCH /blocks/{id}
+
 Update a block.
 
 **Request:**
+
 ```json
 {
   "title": "Updated Title",
@@ -776,6 +832,7 @@ Update a block.
 ---
 
 #### DELETE /blocks/{id}
+
 Delete a block.
 
 **Response (204):** No content
@@ -783,9 +840,11 @@ Delete a block.
 ---
 
 #### POST /blocks/{id}/complete
+
 Mark block as complete.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -799,9 +858,11 @@ Mark block as complete.
 ---
 
 #### PUT /blocks/reorder
+
 Reorder blocks for a date.
 
 **Request:**
+
 ```json
 {
   "date": "2026-01-31",
@@ -810,6 +871,7 @@ Reorder blocks for a date.
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -823,9 +885,11 @@ Reorder blocks for a date.
 ### Categories
 
 #### GET /categories
+
 List all categories.
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -850,9 +914,11 @@ List all categories.
 ---
 
 #### POST /categories
+
 Create custom category.
 
 **Request:**
+
 ```json
 {
   "name": "Learning",
@@ -866,21 +932,25 @@ Create custom category.
 ---
 
 #### PATCH /categories/{id}
+
 Update category.
 
 **Response (200):** Updated category
 
 **Errors:**
+
 - `403 FORBIDDEN` - Cannot edit system categories
 
 ---
 
 #### DELETE /categories/{id}
+
 Delete category.
 
 **Response (204):** No content
 
 **Errors:**
+
 - `403 FORBIDDEN` - Cannot delete system categories
 - `409 CONFLICT` - Category has blocks (reassign first)
 
@@ -889,14 +959,17 @@ Delete category.
 ### Inbox
 
 #### GET /inbox
+
 List inbox items.
 
 **Query Params:**
+
 - `source` - Filter by source
 - `type` - Filter by type
 - `includeDismissed` - Include dismissed (default: false)
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -918,9 +991,11 @@ List inbox items.
 ---
 
 #### POST /inbox
+
 Create manual inbox item.
 
 **Request:**
+
 ```json
 {
   "title": "Research caching strategies",
@@ -934,6 +1009,7 @@ Create manual inbox item.
 ---
 
 #### DELETE /inbox/{id}
+
 Dismiss inbox item.
 
 **Response (204):** No content
@@ -941,9 +1017,11 @@ Dismiss inbox item.
 ---
 
 #### POST /inbox/{id}/schedule
+
 Schedule inbox item as block.
 
 **Request:**
+
 ```json
 {
   "date": "2026-01-31",
@@ -960,9 +1038,11 @@ Schedule inbox item as block.
 ### Integrations
 
 #### GET /integrations
+
 List connected integrations.
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -982,9 +1062,11 @@ List connected integrations.
 ---
 
 #### POST /integrations/{provider}/connect
+
 Start OAuth flow for integration.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -997,6 +1079,7 @@ Start OAuth flow for integration.
 ---
 
 #### DELETE /integrations/{provider}
+
 Disconnect integration.
 
 **Response (204):** No content
@@ -1004,9 +1087,11 @@ Disconnect integration.
 ---
 
 #### POST /integrations/{provider}/sync
+
 Trigger manual sync.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -1021,12 +1106,15 @@ Trigger manual sync.
 ### Stats
 
 #### GET /stats/summary
+
 Get summary statistics.
 
 **Query Params:**
+
 - `period` - day, week, month (default: week)
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -1048,13 +1136,16 @@ Get summary statistics.
 ---
 
 #### GET /stats/daily
+
 Get daily breakdown.
 
 **Query Params:**
+
 - `startDate` - Range start (default: 7 days ago)
 - `endDate` - Range end (default: today)
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1068,12 +1159,15 @@ Get daily breakdown.
 ---
 
 #### GET /stats/categories
+
 Get category breakdown.
 
 **Query Params:**
+
 - `startDate`, `endDate`
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1091,9 +1185,11 @@ Get category breakdown.
 ---
 
 #### GET /stats/streak
+
 Get streak information.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -1107,9 +1203,11 @@ Get streak information.
 ---
 
 #### GET /stats/focus-score
+
 Get focus score.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -1152,28 +1250,30 @@ Get focus score.
 
 ### Error Codes
 
-| Code | HTTP | Description |
-|------|------|-------------|
-| VALIDATION_ERROR | 400 | Input validation failed |
-| AUTH_INVALID_CREDENTIALS | 401 | Wrong email/password |
-| AUTH_TOKEN_EXPIRED | 401 | JWT has expired |
-| AUTH_TOKEN_INVALID | 401 | JWT is malformed |
-| AUTH_SESSION_EXPIRED | 401 | Session expired |
-| UNAUTHORIZED | 403 | No permission for action |
-| NOT_FOUND | 404 | Resource not found |
-| CONFLICT | 409 | Resource conflict (duplicate) |
-| RATE_LIMITED | 429 | Too many requests |
-| INTEGRATION_ERROR | 502 | External service failed |
-| INTERNAL_ERROR | 500 | Server error |
+| Code                     | HTTP | Description                   |
+| ------------------------ | ---- | ----------------------------- |
+| VALIDATION_ERROR         | 400  | Input validation failed       |
+| AUTH_INVALID_CREDENTIALS | 401  | Wrong email/password          |
+| AUTH_TOKEN_EXPIRED       | 401  | JWT has expired               |
+| AUTH_TOKEN_INVALID       | 401  | JWT is malformed              |
+| AUTH_SESSION_EXPIRED     | 401  | Session expired               |
+| UNAUTHORIZED             | 403  | No permission for action      |
+| NOT_FOUND                | 404  | Resource not found            |
+| CONFLICT                 | 409  | Resource conflict (duplicate) |
+| RATE_LIMITED             | 429  | Too many requests             |
+| INTEGRATION_ERROR        | 502  | External service failed       |
+| INTERNAL_ERROR           | 500  | Server error                  |
 
 ---
 
 ### Subscriptions
 
 #### GET /subscriptions/plans
+
 List available subscription plans.
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1212,7 +1312,7 @@ List available subscription plans.
       "price": 6800,
       "interval": "year",
       "stripePriceId": "price_yyy",
-      "features": { }
+      "features": {}
     }
   ]
 }
@@ -1221,9 +1321,11 @@ List available subscription plans.
 ---
 
 #### GET /subscriptions/current
+
 Get current user's subscription.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -1241,9 +1343,11 @@ Get current user's subscription.
 ---
 
 #### POST /subscriptions/checkout
+
 Create Stripe checkout session.
 
 **Request:**
+
 ```json
 {
   "priceId": "pro_monthly",
@@ -1253,6 +1357,7 @@ Create Stripe checkout session.
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -1265,9 +1370,11 @@ Create Stripe checkout session.
 ---
 
 #### POST /subscriptions/portal
+
 Create Stripe customer portal session.
 
 **Response (200):**
+
 ```json
 {
   "data": {
@@ -1279,9 +1386,11 @@ Create Stripe customer portal session.
 ---
 
 #### POST /subscriptions/webhook
+
 Stripe webhook handler (internal).
 
 **Events handled:**
+
 - `checkout.session.completed`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
@@ -1290,9 +1399,11 @@ Stripe webhook handler (internal).
 ---
 
 #### GET /subscriptions/invoices
+
 List billing history.
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -1312,12 +1423,13 @@ List billing history.
 
 ## Rate Limits
 
-| Endpoint | Limit |
-|----------|-------|
-| POST /auth/* | 10/min per IP |
-| All other | 100/min per user |
+| Endpoint      | Limit            |
+| ------------- | ---------------- |
+| POST /auth/\* | 10/min per IP    |
+| All other     | 100/min per user |
 
 Headers returned:
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -1326,4 +1438,4 @@ X-RateLimit-Reset: 1706698800
 
 ---
 
-*Last updated: January 2026*
+_Last updated: January 2026_

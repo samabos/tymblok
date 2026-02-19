@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -10,6 +10,7 @@ import { authService, OAuthProvider } from '../../services/authService';
 import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthGuard } from '../../components/AuthGuard';
+import { useAlert } from '../../components/AlertProvider';
 
 // Needed for web browser to properly close
 WebBrowser.maybeCompleteAuthSession();
@@ -51,6 +52,7 @@ function LinkedAccountsContent() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
   const { authenticateForSensitiveAction } = useBiometricAuth();
+  const { alert, error: showError, confirm } = useAlert();
 
   const [linkedProviders, setLinkedProviders] = useState<string[]>([]);
   const [hasPassword, setHasPassword] = useState(false);
@@ -92,59 +94,53 @@ function LinkedAccountsContent() {
           // OAuth completed successfully, refresh the providers list
           await loadData();
         } else if (queryParams?.error) {
-          Alert.alert('Error', (queryParams.message as string) || `Failed to link ${provider}.`);
+          showError('Error', (queryParams.message as string) || `Failed to link ${provider}.`);
         }
       }
     } catch {
       console.error(`[LinkedAccounts] Failed to link ${provider}`);
-      Alert.alert('Error', `Failed to link ${provider}. Please try again.`);
+      showError('Error', `Failed to link ${provider}. Please try again.`);
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleUnlink = async (provider: OAuthProvider) => {
-    // Check if this is the only sign-in method
     const isOnlyMethod = linkedProviders.length === 1 && !hasPassword;
 
     if (isOnlyMethod) {
-      Alert.alert(
+      alert(
         'Cannot Unlink',
-        'This is your only sign-in method. Please add a password or link another account first.',
-        [{ text: 'OK' }]
+        'This is your only sign-in method. Please add a password or link another account first.'
       );
       return;
     }
 
-    // Require biometric authentication if enabled
     const authenticated = await authenticateForSensitiveAction('unlink account');
     if (!authenticated) {
-      Alert.alert('Authentication Required', 'Biometric authentication is required to unlink an account.');
+      alert(
+        'Authentication Required',
+        'Biometric authentication is required to unlink an account.'
+      );
       return;
     }
 
-    Alert.alert(
+    confirm(
       `Unlink ${provider.charAt(0).toUpperCase() + provider.slice(1)}?`,
       `You won't be able to sign in with ${provider} after unlinking.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unlink',
-          style: 'destructive',
-          onPress: async () => {
-            setActionLoading(provider);
-            try {
-              await authService.unlinkProvider(provider);
-              await loadData();
-            } catch {
-              console.error(`[LinkedAccounts] Failed to unlink ${provider}`);
-              Alert.alert('Error', `Failed to unlink ${provider}. Please try again.`);
-            } finally {
-              setActionLoading(null);
-            }
-          },
-        },
-      ]
+      async () => {
+        setActionLoading(provider);
+        try {
+          await authService.unlinkProvider(provider);
+          await loadData();
+        } catch {
+          console.error(`[LinkedAccounts] Failed to unlink ${provider}`);
+          showError('Error', `Failed to unlink ${provider}. Please try again.`);
+        } finally {
+          setActionLoading(null);
+        }
+      },
+      'Unlink'
     );
   };
 
@@ -194,12 +190,13 @@ function LinkedAccountsContent() {
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         <Text className="text-sm mb-4" style={{ color: themeColors.textMuted }}>
-          Link your accounts to sign in faster. You can unlink accounts as long as you have another way to sign in.
+          Link your accounts to sign in faster. You can unlink accounts as long as you have another
+          way to sign in.
         </Text>
 
         {/* Provider List */}
         <View className="gap-3">
-          {PROVIDERS.map((provider) => {
+          {PROVIDERS.map(provider => {
             const linked = isLinked(provider.id);
             const loading = actionLoading === provider.id;
 
@@ -269,7 +266,11 @@ function LinkedAccountsContent() {
           <View className="flex-row items-center gap-4">
             <View
               className="w-12 h-12 rounded-xl items-center justify-center"
-              style={{ backgroundColor: hasPassword ? `${colors.status.done}26` : `${colors.status.pending}26` }}
+              style={{
+                backgroundColor: hasPassword
+                  ? `${colors.status.done}26`
+                  : `${colors.status.pending}26`,
+              }}
             >
               <Ionicons
                 name={hasPassword ? 'key' : 'key-outline'}
@@ -287,10 +288,7 @@ function LinkedAccountsContent() {
                     className="px-2 py-0.5 rounded"
                     style={{ backgroundColor: `${colors.status.done}26` }}
                   >
-                    <Text
-                      className="text-[10px] font-medium"
-                      style={{ color: colors.status.done }}
-                    >
+                    <Text className="text-[10px] font-medium" style={{ color: colors.status.done }}>
                       Set
                     </Text>
                   </View>

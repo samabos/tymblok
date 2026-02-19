@@ -1,10 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, ViewStyle } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { borderRadius, springConfig } from '@tymblok/theme';
@@ -19,12 +15,7 @@ export interface BackButtonProps {
   hapticFeedback?: boolean;
 }
 
-export function BackButton({
-  onPress,
-  icon,
-  style,
-  hapticFeedback = true,
-}: BackButtonProps) {
+export function BackButton({ onPress, icon, style, hapticFeedback = true }: BackButtonProps) {
   const { theme } = useTheme();
   const themeColors = theme.colors;
   const scale = useSharedValue(1);
@@ -49,9 +40,7 @@ export function BackButton({
   };
 
   // Default back arrow icon
-  const defaultIcon = (
-    <Ionicons name="arrow-back" size={24} color={themeColors.text} />
-  );
+  const defaultIcon = <Ionicons name="arrow-back" size={24} color={themeColors.text} />;
 
   return (
     <AnimatedPressable

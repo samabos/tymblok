@@ -15,21 +15,24 @@ namespace Tymblok.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController : ControllerBase
+public class AuthController : BaseApiController
 {
     private readonly IAuthService _authService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ICurrentUser _currentUser;
     private readonly ILogger<AuthController> _logger;
     private readonly IConfiguration _configuration;
 
     public AuthController(
         IAuthService authService,
         UserManager<ApplicationUser> userManager,
+        ICurrentUser currentUser,
         ILogger<AuthController> logger,
         IConfiguration configuration)
     {
         _authService = authService;
         _userManager = userManager;
+        _currentUser = currentUser;
         _logger = logger;
         _configuration = configuration;
     }
@@ -178,7 +181,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         var ipAddress = GetIpAddress();
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -201,7 +204,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
     {
         var ipAddress = GetIpAddress();
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         try
         {
@@ -228,7 +231,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
     {
         var ipAddress = GetIpAddress();
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
@@ -257,6 +260,95 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Update user settings (working hours, notification preferences)
+    /// </summary>
+    [HttpPatch("settings")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateSettings([FromBody] UpdateSettingsRequest request)
+    {
+        var ipAddress = GetIpAddress();
+        var userId = _currentUser.UserId;
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return NotFound(CreateErrorResponse("USER_NOT_FOUND", "User not found"));
+        }
+
+        // Working hours
+        if (request.Timezone != null)
+            user.Timezone = request.Timezone;
+
+        if (request.WorkingHoursStart != null)
+        {
+            if (TimeOnly.TryParse(request.WorkingHoursStart, out var start))
+                user.WorkingHoursStart = start;
+            else
+                return BadRequest(CreateErrorResponse("INVALID_TIME", "Invalid working hours start time format. Use HH:mm."));
+        }
+
+        if (request.WorkingHoursEnd != null)
+        {
+            if (TimeOnly.TryParse(request.WorkingHoursEnd, out var end))
+                user.WorkingHoursEnd = end;
+            else
+                return BadRequest(CreateErrorResponse("INVALID_TIME", "Invalid working hours end time format. Use HH:mm."));
+        }
+
+        if (request.LunchStart != null)
+        {
+            if (TimeOnly.TryParse(request.LunchStart, out var lunch))
+                user.LunchStart = lunch;
+            else
+                return BadRequest(CreateErrorResponse("INVALID_TIME", "Invalid lunch start time format. Use HH:mm."));
+        }
+
+        if (request.LunchDurationMinutes.HasValue)
+        {
+            if (request.LunchDurationMinutes.Value is >= 0 and <= 180)
+                user.LunchDurationMinutes = request.LunchDurationMinutes.Value;
+            else
+                return BadRequest(CreateErrorResponse("INVALID_DURATION", "Lunch duration must be between 0 and 180 minutes."));
+        }
+
+        // Notification preferences
+        if (request.NotificationBlockReminder.HasValue)
+            user.NotificationBlockReminder = request.NotificationBlockReminder.Value;
+
+        if (request.NotificationReminderMinutes.HasValue)
+        {
+            if (request.NotificationReminderMinutes.Value is >= 1 and <= 60)
+                user.NotificationReminderMinutes = request.NotificationReminderMinutes.Value;
+            else
+                return BadRequest(CreateErrorResponse("INVALID_REMINDER", "Reminder minutes must be between 1 and 60."));
+        }
+
+        if (request.NotificationDailySummary.HasValue)
+            user.NotificationDailySummary = request.NotificationDailySummary.Value;
+
+        var result = await _userManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            _logger.LogWarning("Settings update failed | UserId: {UserId} | Errors: {Errors} | IP: {IpAddress}",
+                userId, errors, ipAddress);
+            return BadRequest(CreateErrorResponse("UPDATE_FAILED", errors));
+        }
+
+        _logger.LogInformation("Settings updated | UserId: {UserId} | IP: {IpAddress}", userId, ipAddress);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        var userDto = MapToUserDto(user, roles, hasPassword);
+
+        return Ok(WrapResponse(userDto));
+    }
+
+    /// <summary>
     /// Upload user avatar image (stored as base64 data URL in database)
     /// </summary>
     [HttpPost("avatar")]
@@ -268,7 +360,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> UploadAvatar(IFormFile file)
     {
         var ipAddress = GetIpAddress();
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         // Validate file
         if (file == null || file.Length == 0)
@@ -337,7 +429,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> DeleteAvatar()
     {
         var ipAddress = GetIpAddress();
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
 
         var user = await _userManager.FindByIdAsync(userId.ToString());
         if (user == null)
@@ -578,7 +670,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UnlinkExternalProvider(string provider)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var ipAddress = GetIpAddress();
 
         try
@@ -604,7 +696,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IList<string>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLinkedProviders()
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var providers = await _authService.GetLinkedProvidersAsync(userId);
         return Ok(WrapResponse(providers));
     }
@@ -617,7 +709,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> HasPassword()
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var hasPassword = await _authService.HasPasswordAsync(userId);
         return Ok(WrapResponse(hasPassword));
     }
@@ -630,7 +722,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<SessionsResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSessions()
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var sessions = await _authService.GetSessionsAsync(userId);
 
         var sessionDtos = sessions.Select(s => new SessionDto(
@@ -656,7 +748,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RevokeSession(Guid sessionId)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var ipAddress = GetIpAddress();
 
         try
@@ -680,7 +772,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<MessageResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RevokeAllSessions([FromQuery] Guid? exceptSessionId = null)
     {
-        var userId = GetUserId();
+        var userId = _currentUser.UserId;
         var ipAddress = GetIpAddress();
 
         await _authService.RevokeAllSessionsAsync(userId, exceptSessionId);
@@ -724,12 +816,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    private Guid GetUserId()
-    {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
-    }
-
     private static AuthResponse CreateAuthResponse(AuthResult result, IList<string> roles, bool hasPassword)
     {
         var userDto = MapToUserDto(result.User, roles, hasPassword);
@@ -750,23 +836,15 @@ public class AuthController : ControllerBase
             user.EmailConfirmed,
             hasPassword,
             roles,
-            user.CreatedAt
-        );
-    }
-
-    private ApiResponse<T> WrapResponse<T>(T data)
-    {
-        return new ApiResponse<T>(
-            data,
-            new ApiMeta(DateTime.UtcNow.ToString("o"), HttpContext.TraceIdentifier)
-        );
-    }
-
-    private ApiError CreateErrorResponse(string code, string message)
-    {
-        return new ApiError(
-            new ErrorDetails(code, message),
-            new ApiMeta(DateTime.UtcNow.ToString("o"), HttpContext.TraceIdentifier)
+            user.CreatedAt,
+            user.Timezone,
+            user.WorkingHoursStart.ToString("HH:mm"),
+            user.WorkingHoursEnd.ToString("HH:mm"),
+            user.LunchStart.ToString("HH:mm"),
+            user.LunchDurationMinutes,
+            user.NotificationBlockReminder,
+            user.NotificationReminderMinutes,
+            user.NotificationDailySummary
         );
     }
 

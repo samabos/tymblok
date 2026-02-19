@@ -164,8 +164,12 @@ export function useSlideAnimation(
   direction: 'up' | 'down' | 'left' | 'right' = 'up',
   distance: number = 100
 ) {
-  const translateX = useSharedValue(direction === 'left' ? -distance : direction === 'right' ? distance : 0);
-  const translateY = useSharedValue(direction === 'up' ? distance : direction === 'down' ? -distance : 0);
+  const translateX = useSharedValue(
+    direction === 'left' ? -distance : direction === 'right' ? distance : 0
+  );
+  const translateY = useSharedValue(
+    direction === 'up' ? distance : direction === 'down' ? -distance : 0
+  );
 
   const slideIn = useCallback(() => {
     translateX.value = withSpring(0, springConfig.gentle);

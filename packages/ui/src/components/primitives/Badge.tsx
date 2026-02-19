@@ -48,10 +48,7 @@ export function Badge({
   React.useEffect(() => {
     if (pulse) {
       opacity.value = withRepeat(
-        withSequence(
-          withTiming(0.5, { duration: 1000 }),
-          withTiming(1, { duration: 1000 })
-        ),
+        withSequence(withTiming(0.5, { duration: 1000 }), withTiming(1, { duration: 1000 })),
         -1,
         false
       );

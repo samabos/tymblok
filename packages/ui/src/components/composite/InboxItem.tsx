@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,19 +9,22 @@ import Animated, {
   Layout,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, typography, springConfig, getLabelColor } from '@tymblok/theme';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  colors,
+  spacing,
+  borderRadius,
+  typography,
+  layout,
+  springConfig,
+  getLabelColor,
+} from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Badge } from '../primitives/Badge';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
-export type InboxSource =
-  | 'google-drive'
-  | 'jira'
-  | 'calendar'
-  | 'github'
-  | 'slack'
-  | 'manual';
+export type InboxSource = 'google-drive' | 'jira' | 'calendar' | 'github' | 'slack' | 'manual';
 export type InboxItemType = 'task' | 'update' | 'reminder';
 export type InboxPriority = 'high' | 'normal';
 
@@ -43,13 +46,7 @@ export interface InboxItemProps {
   style?: ViewStyle;
 }
 
-export function InboxItem({
-  item,
-  onAdd,
-  onDismiss,
-  onPress,
-  style,
-}: InboxItemProps) {
+export function InboxItem({ item, onAdd, onDismiss, onPress, style }: InboxItemProps) {
   const { isDark, theme } = useTheme();
   const themeColors = theme.colors;
   const scale = useSharedValue(1);
@@ -75,20 +72,31 @@ export function InboxItem({
     transform: [{ scale: scale.value }],
   }));
 
+  // Light: shadow elevation, no border. Dark: subtle border.
+  const cardShadowStyle = isDark
+    ? {}
+    : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+      };
+
   return (
-    <AnimatedPressable
+    <AnimatedTouchable
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
+      activeOpacity={0.7}
       style={[
         styles.container,
         {
-          backgroundColor: isDark
-            ? 'rgba(15, 23, 42, 0.5)'
-            : 'rgba(248, 250, 252, 0.6)',
+          backgroundColor: themeColors.card,
           borderColor: themeColors.border,
-          opacity: 0.75,
+          borderWidth: isDark ? 1 : 0,
         },
+        cardShadowStyle,
         animatedStyle,
         style,
       ]}
@@ -96,78 +104,81 @@ export function InboxItem({
       exiting={FadeOut.duration(200)}
       layout={Layout.springify()}
     >
-      {/* Source indicator */}
-      <View style={[styles.sourceIndicator, { backgroundColor: sourceColor }]} />
-
-      {/* Content */}
       <View style={styles.content}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text
-            style={[styles.title, { color: themeColors.textMuted }]}
-            numberOfLines={1}
-          >
+          <Text style={[styles.title, { color: themeColors.text }]} numberOfLines={1}>
             {item.title}
           </Text>
-          {item.priority === 'high' && (
-            <Badge variant="urgent" size="sm" label="High" />
-          )}
+          {item.priority === 'high' && <Badge variant="urgent" size="sm" label="High" />}
         </View>
 
         <View style={styles.meta}>
-          <Text style={[styles.source, { color: themeColors.textFaint }]}>
-            {sourceLabel}
-          </Text>
-          <Text style={[styles.separator, { color: themeColors.textFaint }]}>
-            ·
-          </Text>
-          <Text style={[styles.time, { color: themeColors.textFaint }]}>
-            {item.time}
-          </Text>
+          {item.source === 'calendar' && (
+            <Ionicons
+              name="logo-google"
+              size={12}
+              color={themeColors.textFaint}
+              style={{ marginRight: 4 }}
+              accessibilityLabel="Google Calendar"
+            />
+          )}
+          {item.source === 'github' && (
+            <Ionicons
+              name="logo-github"
+              size={12}
+              color={themeColors.textFaint}
+              style={{ marginRight: 4 }}
+              accessibilityLabel="GitHub"
+            />
+          )}
+          <Text style={[styles.source, { color: themeColors.textFaint }]}>{sourceLabel}</Text>
+          <Text style={[styles.separator, { color: themeColors.textFaint }]}>·</Text>
+          <Text style={[styles.time, { color: themeColors.textFaint }]}>{item.time}</Text>
         </View>
 
         {item.description && (
-          <Text
-            style={[styles.description, { color: themeColors.textFaint }]}
-            numberOfLines={2}
-          >
+          <Text style={[styles.description, { color: themeColors.textFaint }]} numberOfLines={2}>
             {item.description}
           </Text>
         )}
-      </View>
 
-      {/* Actions */}
-      <View style={styles.actions}>
-        {onAdd && (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              onAdd();
-            }}
-            style={[styles.actionButton, { backgroundColor: colors.indigo[600] }]}
-            hitSlop={4}
-          >
-            <Text style={styles.actionIcon}>+</Text>
-          </Pressable>
-        )}
-        {onDismiss && (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onDismiss();
-            }}
-            style={[
-              styles.actionButton,
-              { backgroundColor: themeColors.input, marginTop: spacing[1] },
-            ]}
-            hitSlop={4}
-          >
-            <Text style={[styles.actionIcon, { color: themeColors.textMuted }]}>
-              ×
-            </Text>
-          </Pressable>
+        {/* Actions */}
+        {(onAdd || onDismiss) && (
+          <View style={styles.actions}>
+            {onDismiss && (
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onDismiss();
+                }}
+                activeOpacity={0.7}
+                style={[
+                  styles.actionButton,
+                  { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle },
+                ]}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              >
+                <Text style={[styles.actionIcon, { color: themeColors.textMuted }]}>×</Text>
+              </TouchableOpacity>
+            )}
+            {onAdd && (
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  onAdd();
+                }}
+                activeOpacity={0.7}
+                style={[styles.actionButton, { backgroundColor: colors.indigo[500] }]}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              >
+                <Text style={styles.actionIcon}>+</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
-    </AnimatedPressable>
+    </AnimatedTouchable>
   );
 }
 
@@ -190,13 +201,8 @@ function getSourceLabel(source: InboxSource): string {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
+    borderRadius: layout.taskCardBorderRadius,
     overflow: 'hidden',
-  },
-  sourceIndicator: {
-    width: 4,
   },
   content: {
     flex: 1,
@@ -234,14 +240,16 @@ const styles = StyleSheet.create({
     lineHeight: typography.sizes.sm * 1.4,
   },
   actions: {
-    padding: spacing[3],
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    gap: spacing[2],
+    marginTop: spacing[3],
   },
   actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: borderRadius.lg,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },

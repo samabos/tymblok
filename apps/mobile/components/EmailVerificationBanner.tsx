@@ -13,7 +13,7 @@ interface EmailVerificationBannerProps {
 export function EmailVerificationBanner({ onDismiss }: EmailVerificationBannerProps) {
   const { theme } = useTheme();
   const themeColors = theme.colors;
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore(state => state.user);
 
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);

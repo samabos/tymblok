@@ -1,9 +1,27 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
 import ProfileScreen from '../../../app/(auth)/profile';
 import { authService } from '../../../services/authService';
+
+// Mock AlertProvider's useAlert hook
+const mockAlert = jest.fn();
+const mockConfirm = jest.fn();
+const mockShowError = jest.fn();
+const mockSuccess = jest.fn();
+jest.mock('../../../components/AlertProvider', () => ({
+  useAlert: () => ({
+    alert: mockAlert,
+    confirm: mockConfirm,
+    error: mockShowError,
+    success: mockSuccess,
+  }),
+}));
+
+// Mock AuthGuard to just render children
+jest.mock('../../../components/AuthGuard', () => ({
+  AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 // Mock @tymblok/ui
 jest.mock('@tymblok/ui', () => ({
@@ -22,12 +40,29 @@ jest.mock('@tymblok/ui', () => ({
   }),
   Avatar: ({ name }: { name: string }) => <>{name}</>,
   Card: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  Input: ({ value, onChangeText, label }: { value: string; onChangeText: (text: string) => void; label: string }) => (
+  Input: ({
+    value,
+    onChangeText,
+    label,
+  }: {
+    value: string;
+    onChangeText: (text: string) => void;
+    label: string;
+  }) => (
     <>
       <>{label}</>
-      <input value={value} onChange={(e) => onChangeText(e.target.value)} />
+      <input value={value} onChange={e => onChangeText(e.target.value)} />
     </>
   ),
+}));
+
+// Mock @tymblok/theme
+jest.mock('@tymblok/theme', () => ({
+  colors: {
+    indigo: { 500: '#6366f1' },
+    status: { urgent: '#ef4444', done: '#22c55e' },
+    white: '#ffffff',
+  },
 }));
 
 // Mock authService
@@ -78,13 +113,10 @@ jest.mock('expo-image-manipulator', () => ({
   SaveFormat: { JPEG: 'jpeg' },
 }));
 
-// Spy on Alert
-jest.spyOn(Alert, 'alert');
-
 describe('ProfileScreen', () => {
   const mockUpdateProfile = authService.updateProfile as jest.Mock;
-  const mockUploadAvatar = authService.uploadAvatar as jest.Mock;
-  const mockDeleteAvatar = authService.deleteAvatar as jest.Mock;
+  const _mockUploadAvatar = authService.uploadAvatar as jest.Mock;
+  const _mockDeleteAvatar = authService.deleteAvatar as jest.Mock;
   const mockLogout = authService.logout as jest.Mock;
 
   beforeEach(() => {
@@ -166,8 +198,7 @@ describe('ProfileScreen', () => {
     render(<ProfileScreen />);
 
     // The camera button is near the avatar
-    // We'll test that the Alert.alert is called with avatar options
-    // Find a touchable element near the avatar area
+    // We'll test that the component renders correctly
     const profileHeader = screen.getByText('Profile');
     expect(profileHeader).toBeTruthy();
     // Since the camera button is hard to locate, we test that the component renders
@@ -179,10 +210,12 @@ describe('ProfileScreen', () => {
     const signOutButton = screen.getByText('Sign Out');
     fireEvent.press(signOutButton);
 
-    expect(Alert.alert).toHaveBeenCalledWith(
+    // The screen now uses useAlert().confirm instead of Alert.alert
+    expect(mockConfirm).toHaveBeenCalledWith(
       'Sign Out',
       'Are you sure you want to sign out?',
-      expect.any(Array)
+      expect.any(Function),
+      'Sign Out'
     );
   });
 
@@ -194,13 +227,12 @@ describe('ProfileScreen', () => {
     const signOutButton = screen.getByText('Sign Out');
     fireEvent.press(signOutButton);
 
-    // Get the Alert callback and call it
-    const alertCalls = (Alert.alert as jest.Mock).mock.calls;
-    const lastCall = alertCalls[alertCalls.length - 1];
-    const buttons = lastCall[2];
-    const signOutCallback = buttons.find((b: { text: string }) => b.text === 'Sign Out');
+    // Get the confirm callback and call it
+    const confirmCalls = mockConfirm.mock.calls;
+    const lastCall = confirmCalls[confirmCalls.length - 1];
+    const onConfirmCallback = lastCall[2]; // 3rd argument is the onConfirm callback
 
-    await signOutCallback.onPress();
+    await onConfirmCallback();
 
     expect(mockLogout).toHaveBeenCalledWith('test-refresh-token');
     expect(mockClearAuth).toHaveBeenCalled();
@@ -219,10 +251,12 @@ describe('ProfileScreen', () => {
     const deleteButton = screen.getByText('Delete Account');
     fireEvent.press(deleteButton);
 
-    expect(Alert.alert).toHaveBeenCalledWith(
+    // The screen now uses useAlert().confirm instead of Alert.alert
+    expect(mockConfirm).toHaveBeenCalledWith(
       'Delete Account',
       expect.stringContaining('cannot be undone'),
-      expect.any(Array)
+      expect.any(Function),
+      'Delete'
     );
   });
 
@@ -240,7 +274,8 @@ describe('ProfileScreen', () => {
     fireEvent.press(doneButton);
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith('Error', 'Update failed');
+      // The screen now uses useAlert().error (aliased as showError) instead of Alert.alert
+      expect(mockShowError).toHaveBeenCalledWith('Error', 'Update failed');
     });
   });
 });

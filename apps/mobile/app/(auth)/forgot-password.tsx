@@ -57,15 +57,11 @@ export default function ForgotPasswordPage() {
             <View className="w-20 h-20 rounded-3xl items-center justify-center mb-4 bg-green-500">
               <Ionicons name="checkmark" size={40} color="#fff" />
             </View>
-            <Text className="text-2xl font-bold text-white text-center">
-              Check your email
-            </Text>
+            <Text className="text-2xl font-bold text-white text-center">Check your email</Text>
             <Text className="text-base text-slate-400 text-center mt-2">
               {"We've sent a password reset link to"}
             </Text>
-            <Text className="text-base text-white font-medium text-center mt-1">
-              {email}
-            </Text>
+            <Text className="text-base text-white font-medium text-center mt-1">{email}</Text>
           </View>
 
           <TouchableOpacity
@@ -93,9 +89,7 @@ export default function ForgotPasswordPage() {
       <View className="flex-1 justify-center p-6">
         <View className="items-center mb-6">
           <TymblokLogo size="md" style={{ marginBottom: 12 }} />
-          <Text className="text-2xl font-bold text-white text-center">
-            Forgot password?
-          </Text>
+          <Text className="text-2xl font-bold text-white text-center">Forgot password?</Text>
           <Text className="text-base text-slate-400 text-center mt-2">
             {"No worries, we'll send you reset instructions."}
           </Text>

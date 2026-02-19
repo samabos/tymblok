@@ -1,10 +1,28 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SessionsScreen from '../../../app/(auth)/sessions';
 import { authService, SessionDto } from '../../../services/authService';
+
+// Mock AlertProvider's useAlert hook
+const mockAlert = jest.fn();
+const mockConfirm = jest.fn();
+const mockShowError = jest.fn();
+const mockSuccess = jest.fn();
+jest.mock('../../../components/AlertProvider', () => ({
+  useAlert: () => ({
+    alert: mockAlert,
+    confirm: mockConfirm,
+    error: mockShowError,
+    success: mockSuccess,
+  }),
+}));
+
+// Mock AuthGuard to just render children
+jest.mock('../../../components/AuthGuard', () => ({
+  AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 // Mock @tymblok/ui
 jest.mock('@tymblok/ui', () => ({
@@ -22,6 +40,15 @@ jest.mock('@tymblok/ui', () => ({
     },
   }),
   Card: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+// Mock @tymblok/theme
+jest.mock('@tymblok/theme', () => ({
+  colors: {
+    indigo: { 500: '#6366f1' },
+    status: { urgent: '#ef4444', done: '#22c55e' },
+    white: '#ffffff',
+  },
 }));
 
 // Mock authService
@@ -47,9 +74,6 @@ jest.mock('../../../stores/authStore', () => ({
   })),
 }));
 
-// Spy on Alert
-jest.spyOn(Alert, 'alert');
-
 // Helper to wrap component with QueryClientProvider
 const createTestQueryClient = () =>
   new QueryClient({
@@ -62,16 +86,12 @@ const createTestQueryClient = () =>
 
 const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 };
 
 describe('SessionsScreen', () => {
   const mockGetSessions = authService.getSessions as jest.Mock;
-  const mockRevokeSession = authService.revokeSession as jest.Mock;
+  const _mockRevokeSession = authService.revokeSession as jest.Mock;
   const mockRevokeAllSessions = authService.revokeAllSessions as jest.Mock;
 
   const mockCurrentSession: SessionDto = {
@@ -232,10 +252,12 @@ describe('SessionsScreen', () => {
     const signOutAllButton = screen.getByText('Sign Out All Other Devices');
     fireEvent.press(signOutAllButton);
 
-    expect(Alert.alert).toHaveBeenCalledWith(
+    // The screen now uses useAlert().confirm instead of Alert.alert
+    expect(mockConfirm).toHaveBeenCalledWith(
       'Sign Out All Devices',
       expect.stringContaining('sign out all other devices'),
-      expect.any(Array)
+      expect.any(Function),
+      'Sign Out All'
     );
   });
 
@@ -252,15 +274,16 @@ describe('SessionsScreen', () => {
     const signOutAllButton = screen.getByText('Sign Out All Other Devices');
     fireEvent.press(signOutAllButton);
 
-    // Get the Alert callback and confirm
-    const alertCalls = (Alert.alert as jest.Mock).mock.calls;
-    const lastCall = alertCalls[alertCalls.length - 1];
-    const buttons = lastCall[2];
-    const signOutAllCallback = buttons.find((b: { text: string }) => b.text === 'Sign Out All');
+    // Get the confirm callback and call it
+    const confirmCalls = mockConfirm.mock.calls;
+    const lastCall = confirmCalls[confirmCalls.length - 1];
+    const onConfirmCallback = lastCall[2]; // 3rd argument is the onConfirm callback
 
-    await signOutAllCallback.onPress();
+    onConfirmCallback();
 
-    expect(mockRevokeAllSessions).toHaveBeenCalledWith('session-1'); // Except current session
+    await waitFor(() => {
+      expect(mockRevokeAllSessions).toHaveBeenCalledWith('session-1'); // Except current session
+    });
   });
 
   it('should display device info text', async () => {

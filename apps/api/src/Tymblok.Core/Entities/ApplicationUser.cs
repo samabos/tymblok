@@ -24,6 +24,11 @@ public class ApplicationUser : IdentityUser<Guid>
     public TimeOnly LunchStart { get; set; } = new(12, 0);
     public int LunchDurationMinutes { get; set; } = 60;
 
+    // Notification preferences
+    public bool NotificationBlockReminder { get; set; } = true;
+    public int NotificationReminderMinutes { get; set; } = 5;
+    public bool NotificationDailySummary { get; set; } = true;
+
     // Account status (some overlap with Identity but we keep for backwards compatibility)
     public DateTime? LastLoginAt { get; set; }
     public DateTime? DeletedAt { get; set; } // Soft delete

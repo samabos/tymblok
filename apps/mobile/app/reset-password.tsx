@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@tymblok/ui';
@@ -20,7 +27,8 @@ export default function ResetPasswordScreen() {
 
   const passwordsMatch = !confirmPassword || password === confirmPassword;
   const passwordLongEnough = !password || password.length >= 8;
-  const isDisabled = !password || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
+  const isDisabled =
+    !password || !confirmPassword || !passwordsMatch || !passwordLongEnough || isLoading;
 
   const handleReset = async () => {
     if (!params.token || !params.email) {
@@ -51,7 +59,10 @@ export default function ResetPasswordScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
         <View className="flex-1 items-center justify-center p-6">
-          <View className="w-20 h-20 rounded-3xl items-center justify-center mb-6" style={{ backgroundColor: colors.status.urgent + '20' }}>
+          <View
+            className="w-20 h-20 rounded-3xl items-center justify-center mb-6"
+            style={{ backgroundColor: colors.status.urgent + '20' }}
+          >
             <Ionicons name="alert-circle" size={40} color={colors.status.urgent} />
           </View>
           <Text className="text-2xl font-bold text-center mb-2" style={{ color: themeColors.text }}>
@@ -75,7 +86,10 @@ export default function ResetPasswordScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
         <View className="flex-1 items-center justify-center p-6">
-          <View className="w-20 h-20 rounded-3xl items-center justify-center mb-6" style={{ backgroundColor: colors.status.done + '20' }}>
+          <View
+            className="w-20 h-20 rounded-3xl items-center justify-center mb-6"
+            style={{ backgroundColor: colors.status.done + '20' }}
+          >
             <Ionicons name="checkmark-circle" size={40} color={colors.status.done} />
           </View>
           <Text className="text-2xl font-bold text-center mb-2" style={{ color: themeColors.text }}>
@@ -104,7 +118,10 @@ export default function ResetPasswordScreen() {
         <View className="flex-1 justify-center p-6">
           {/* Icon */}
           <View className="items-center mb-6">
-            <View className="w-20 h-20 rounded-3xl items-center justify-center mb-4" style={{ backgroundColor: colors.indigo[600] }}>
+            <View
+              className="w-20 h-20 rounded-3xl items-center justify-center mb-4"
+              style={{ backgroundColor: colors.indigo[600] }}
+            >
               <Ionicons name="key" size={36} color="#fff" />
             </View>
             <Text className="text-2xl font-bold text-center" style={{ color: themeColors.text }}>
@@ -136,7 +153,12 @@ export default function ResetPasswordScreen() {
                 secureTextEntry
                 editable={!isLoading}
               />
-              <Text className={`text-xs ${!passwordLongEnough ? 'text-red-500' : ''}`} style={{ color: !passwordLongEnough ? colors.status.urgent : themeColors.textFaint }}>
+              <Text
+                className={`text-xs ${!passwordLongEnough ? 'text-red-500' : ''}`}
+                style={{
+                  color: !passwordLongEnough ? colors.status.urgent : themeColors.textFaint,
+                }}
+              >
                 Must be at least 8 characters
               </Text>
             </View>
@@ -169,7 +191,14 @@ export default function ResetPasswordScreen() {
             </View>
 
             {error && (
-              <View className="rounded-xl p-3" style={{ backgroundColor: colors.status.urgent + '15', borderWidth: 1, borderColor: colors.status.urgent + '30' }}>
+              <View
+                className="rounded-xl p-3"
+                style={{
+                  backgroundColor: colors.status.urgent + '15',
+                  borderWidth: 1,
+                  borderColor: colors.status.urgent + '30',
+                }}
+              >
                 <Text className="text-sm text-center" style={{ color: colors.status.urgent }}>
                   {error}
                 </Text>
