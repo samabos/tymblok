@@ -8,14 +8,12 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: tymblok-api
-  AZURE_RG: tymblok-dev
-  AZURE_LOCATION: uksouth
-  AZURE_PLAN: tymblok-plan
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/tymblok-api
 
 jobs:
+  # --- CI Jobs (always run) ---
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -92,13 +90,13 @@ jobs:
       - run: pnpm --filter @tymblok/mobile typecheck
       - run: pnpm --filter @tymblok/mobile test
 
-  # --- Deploy jobs (only on main push) ---
+  # --- Build Docker Image (after API tests pass) ---
 
   build-and-push:
     name: Build & Push Image
     needs: [test-api]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     permissions:
       contents: read
       packages: write
@@ -118,15 +116,21 @@ jobs:
           context: ./apps/api
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'latest' || 'staging' }}
 
-  deploy:
-    name: Deploy to Azure
+  # --- Staging Deploy (PRs → tymblok-dev) ---
+
+  deploy-staging:
+    name: Deploy Staging
     needs: [build-and-push]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
+    if: github.event_name == 'pull_request'
+    environment: staging
+    env:
+      AZURE_RG: tymblok-dev
+      AZURE_PLAN: tymblok-plan
+      AZURE_WEBAPP_NAME: tymblok-api-staging
     steps:
       - name: Login to Azure
         uses: azure/login@v2
@@ -135,28 +139,23 @@ jobs:
 
       - name: Ensure App Service exists
         run: |
-          # Create App Service Plan if it doesn't exist
           if ! az appservice plan show --name ${{ env.AZURE_PLAN }} --resource-group ${{ env.AZURE_RG }} &>/dev/null; then
             echo "Creating App Service Plan..."
             az appservice plan create \
               --name ${{ env.AZURE_PLAN }} \
               --resource-group ${{ env.AZURE_RG }} \
+              --location uksouth \
               --sku B1 \
               --is-linux
-          else
-            echo "App Service Plan already exists"
           fi
 
-          # Create Web App if it doesn't exist
           if ! az webapp show --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RG }} &>/dev/null; then
             echo "Creating Web App..."
             az webapp create \
               --name ${{ env.AZURE_WEBAPP_NAME }} \
               --resource-group ${{ env.AZURE_RG }} \
               --plan ${{ env.AZURE_PLAN }} \
-              --deployment-container-image-name ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          else
-            echo "Web App already exists"
+              --deployment-container-image-name ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
           fi
 
       - name: Deploy to Azure Web App
@@ -189,3 +188,129 @@ jobs:
               { "name": "Email__FromName", "value": "Tymblok", "slotSetting": false },
               { "name": "Email__AppBaseUrl", "value": "${{ vars.APP_BASE_URL }}", "slotSetting": false }
             ]
+
+  # --- Production Deploy (main push → tymblok-prod) ---
+
+  deploy-production:
+    name: Deploy Production
+    needs: [build-and-push]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    env:
+      AZURE_RG: tymblok-prod
+      AZURE_PLAN: tymblok-prod-plan
+      AZURE_WEBAPP_NAME: tymblok-api
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure App Service exists
+        run: |
+          # Create resource group if it doesn't exist
+          if ! az group show --name ${{ env.AZURE_RG }} &>/dev/null; then
+            echo "Creating Resource Group..."
+            az group create --name ${{ env.AZURE_RG }} --location uksouth
+          fi
+
+          if ! az appservice plan show --name ${{ env.AZURE_PLAN }} --resource-group ${{ env.AZURE_RG }} &>/dev/null; then
+            echo "Creating App Service Plan..."
+            az appservice plan create \
+              --name ${{ env.AZURE_PLAN }} \
+              --resource-group ${{ env.AZURE_RG }} \
+              --location uksouth \
+              --sku B1 \
+              --is-linux
+          fi
+
+          if ! az webapp show --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RG }} &>/dev/null; then
+            echo "Creating Web App..."
+            az webapp create \
+              --name ${{ env.AZURE_WEBAPP_NAME }} \
+              --resource-group ${{ env.AZURE_RG }} \
+              --plan ${{ env.AZURE_PLAN }} \
+              --deployment-container-image-name ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          fi
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          resource-group-name: ${{ env.AZURE_RG }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Set App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          app-settings-json: |
+            [
+              { "name": "ConnectionStrings__DefaultConnection", "value": "${{ secrets.PROD_DATABASE_URL }}", "slotSetting": false },
+              { "name": "Jwt__Secret", "value": "${{ secrets.PROD_JWT_SECRET }}", "slotSetting": false },
+              { "name": "OAuth__Google__ClientId", "value": "${{ secrets.GOOGLE_CLIENT_ID }}", "slotSetting": false },
+              { "name": "OAuth__Google__ClientSecret", "value": "${{ secrets.GOOGLE_CLIENT_SECRET }}", "slotSetting": false },
+              { "name": "OAuth__GitHub__ClientId", "value": "${{ secrets.GITHUB_OAUTH_CLIENT_ID }}", "slotSetting": false },
+              { "name": "OAuth__GitHub__ClientSecret", "value": "${{ secrets.GITHUB_OAUTH_CLIENT_SECRET }}", "slotSetting": false },
+              { "name": "OAuth__WebCallbackUrl", "value": "${{ vars.PROD_WEB_CALLBACK_URL }}", "slotSetting": false },
+              { "name": "Integrations__EncryptionKey", "value": "${{ secrets.PROD_INTEGRATION_ENCRYPTION_KEY }}", "slotSetting": false },
+              { "name": "Email__SmtpHost", "value": "${{ vars.SMTP_HOST }}", "slotSetting": false },
+              { "name": "Email__SmtpPort", "value": "${{ vars.SMTP_PORT }}", "slotSetting": false },
+              { "name": "Email__SmtpUsername", "value": "${{ vars.SMTP_USERNAME }}", "slotSetting": false },
+              { "name": "Email__SmtpPassword", "value": "${{ secrets.SMTP_PASSWORD }}", "slotSetting": false },
+              { "name": "Email__UseSsl", "value": "true", "slotSetting": false },
+              { "name": "Email__UseStartTls", "value": "false", "slotSetting": false },
+              { "name": "Email__FromEmail", "value": "noreply@tymblok.app", "slotSetting": false },
+              { "name": "Email__FromName", "value": "Tymblok", "slotSetting": false },
+              { "name": "Email__AppBaseUrl", "value": "${{ vars.PROD_APP_BASE_URL }}", "slotSetting": false }
+            ]
+
+      - name: Configure Custom Domain
+        run: |
+          # Add custom domain if not already configured
+          DOMAINS=$(az webapp config hostname list --webapp-name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RG }} --query "[].name" -o tsv)
+          if ! echo "$DOMAINS" | grep -q "api.tymblok.app"; then
+            echo "Custom domain not yet configured. Add a CNAME record pointing api.tymblok.app to ${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net, then run:"
+            echo "  az webapp config hostname add --webapp-name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RG }} --hostname api.tymblok.app"
+          else
+            echo "Custom domain already configured"
+          fi
+
+  # --- EAS Build (mobile) ---
+
+  build-mobile:
+    name: Build Mobile (Android)
+    needs: [test-mobile]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: |
+          pnpm --filter @tymblok/shared build
+          pnpm --filter @tymblok/theme build
+          pnpm --filter @tymblok/api-client build
+          pnpm --filter @tymblok/ui build
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android APK (preview)
+        working-directory: apps/mobile
+        run: eas build --platform android --profile preview --non-interactive
