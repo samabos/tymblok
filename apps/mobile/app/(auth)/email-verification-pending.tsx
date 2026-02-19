@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function EmailVerificationPendingScreen() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
-  const { user, clearAuth, updateUser } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
 
   const [isResending, setIsResending] = useState(false);
   const [isChecking, setIsChecking] = useState(false);

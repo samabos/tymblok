@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
-import { useTheme, InboxItem, type InboxItemData } from '@tymblok/ui';
+import { useTheme, InboxItem } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import {
   useInboxItems,
@@ -21,7 +21,7 @@ export default function InboxScreen() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
   const [filter, setFilter] = useState<FilterType>('all');
-  const { alert, success, error: showError, confirm } = useAlert();
+  const { success, error: showError, confirm } = useAlert();
 
   const { data: inboxItems, isLoading, error, refetch } = useInboxItems();
   const { data: categories } = useCategories();

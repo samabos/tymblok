@@ -166,7 +166,10 @@ public class InboxRecurrenceTests : IDisposable
     [Fact]
     public async Task GetByDateAsync_InboxItemWithEndDate_StopsGeneratingAfterEndDate()
     {
-        // Arrange - Create recurring inbox item ending Feb 18
+        // Arrange - Create recurring inbox item ending tomorrow
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var endDate = today.AddDays(1);
+
         var createData = new CreateInboxItemData(
             Title: "Limited Task",
             Description: null,
@@ -177,17 +180,16 @@ public class InboxRecurrenceTests : IDisposable
             IsRecurring: true,
             RecurrenceType: RecurrenceType.Daily,
             RecurrenceInterval: 1,
-            RecurrenceEndDate: new DateOnly(2026, 2, 18)
+            RecurrenceEndDate: endDate
         );
 
         await _inboxService.CreateAsync(createData, _userId);
 
-        // Act - Query for Feb 18 (should generate)
-        var lastDay = new DateOnly(2026, 2, 18);
-        var blocksOnLastDay = await _blockService.GetByDateAsync(_userId, lastDay);
+        // Act - Query for end date (should generate)
+        var blocksOnLastDay = await _blockService.GetByDateAsync(_userId, endDate);
 
-        // Query for Feb 19 (after end date, should not generate)
-        var afterEndDate = new DateOnly(2026, 2, 19);
+        // Query for day after end date (should not generate)
+        var afterEndDate = endDate.AddDays(1);
         var blocksAfterEnd = await _blockService.GetByDateAsync(_userId, afterEndDate);
 
         // Assert

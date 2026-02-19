@@ -44,7 +44,7 @@ function TaskDetailContent() {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [duration, setDuration] = useState(60);
-  const [timerTick, setTimerTick] = useState(0);
+  const [, setTimerTick] = useState(0);
 
   useEffect(() => {
     if (task) {

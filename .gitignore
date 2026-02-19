@@ -52,6 +52,7 @@ yarn-error.log*
 google-services.json
 *.keystore
 *.jks
+appsettings.Local.json
 
 # Misc
 .cache/

@@ -111,7 +111,7 @@ function IntegrationsContent() {
   const syncMutation = useSyncIntegration();
   const [connectingProvider, setConnectingProvider] = useState<IntegrationProvider | null>(null);
   const [syncingProvider, setSyncingProvider] = useState<IntegrationProvider | null>(null);
-  const { alert, error: showError, success, confirm } = useAlert();
+  const { error: showError, success, confirm } = useAlert();
 
   const handleBack = () => {
     router.back();

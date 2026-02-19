@@ -19,6 +19,9 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    // Load local secrets (gitignored)
+    builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
     // Use Serilog
     builder.Host.UseSerilog();
 

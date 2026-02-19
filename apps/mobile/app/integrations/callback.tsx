@@ -10,7 +10,7 @@ import { colors } from '@tymblok/theme';
  * This route catches it and navigates back to the integrations screen.
  */
 export default function IntegrationCallbackScreen() {
-  const params = useLocalSearchParams<{ success?: string; error?: string; provider?: string }>();
+  useLocalSearchParams<{ success?: string; error?: string; provider?: string }>();
 
   useEffect(() => {
     // Navigate back to integrations — the parent screen's
