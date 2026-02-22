@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#7C3AED"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -24,7 +24,7 @@
       "package": "io.tymblok.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#7C3AED"
       }
     },
     "web": {
