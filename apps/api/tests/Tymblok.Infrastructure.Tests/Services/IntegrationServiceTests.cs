@@ -132,8 +132,12 @@ public class IntegrationServiceTests
     {
         var integration = new Integration
         {
-            Id = Guid.NewGuid(), UserId = _userId, Provider = IntegrationProvider.GitHub,
-            AccessToken = "enc", ExternalUserId = "123", ExternalUsername = "user"
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            Provider = IntegrationProvider.GitHub,
+            AccessToken = "enc",
+            ExternalUserId = "123",
+            ExternalUsername = "user"
         };
         _repoMock.Setup(r => r.GetByProviderAsync(_userId, IntegrationProvider.GitHub))
             .ReturnsAsync(integration);
@@ -160,8 +164,11 @@ public class IntegrationServiceTests
     {
         var integration = new Integration
         {
-            Id = Guid.NewGuid(), UserId = _userId, Provider = IntegrationProvider.GitHub,
-            AccessToken = "enc", ExternalUserId = "123"
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            Provider = IntegrationProvider.GitHub,
+            AccessToken = "enc",
+            ExternalUserId = "123"
         };
         _repoMock.Setup(r => r.GetByProviderAsync(_userId, IntegrationProvider.GitHub))
             .ReturnsAsync(integration);
@@ -179,8 +186,11 @@ public class IntegrationServiceTests
     {
         var integration = new Integration
         {
-            Id = Guid.NewGuid(), UserId = _userId, Provider = IntegrationProvider.GitHub,
-            AccessToken = "enc", ExternalUserId = "123"
+            Id = Guid.NewGuid(),
+            UserId = _userId,
+            Provider = IntegrationProvider.GitHub,
+            AccessToken = "enc",
+            ExternalUserId = "123"
         };
         _repoMock.Setup(r => r.GetByProviderAsync(_userId, IntegrationProvider.GitHub))
             .ReturnsAsync(integration);

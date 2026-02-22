@@ -492,6 +492,11 @@ public class AuthController : BaseApiController
         {
             return NotFound(CreateErrorResponse(ex.Code, ex.Message));
         }
+        catch (AuthException ex) when (ex.Code == "EMAIL_COOLDOWN")
+        {
+            return StatusCode(StatusCodes.Status429TooManyRequests,
+                CreateErrorResponse(ex.Code, ex.Message));
+        }
     }
 
     /// <summary>
