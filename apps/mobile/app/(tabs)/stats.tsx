@@ -1,5 +1,6 @@
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import {
   useTheme,
   StatCard,
@@ -14,7 +15,7 @@ import { useStats } from '../../services/apiHooks';
 export default function StatsScreen() {
   const { theme } = useTheme();
   const themeColors = theme.colors;
-  const { data: stats, isLoading } = useStats();
+  const { data: stats, isLoading, error, refetch } = useStats();
 
   if (isLoading) {
     return (
@@ -29,6 +30,37 @@ export default function StatsScreen() {
         </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={colors.indigo[500]} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
+        <View className="px-5 pt-4 pb-2">
+          <Text className="text-2xl font-bold" style={{ color: themeColors.text }}>
+            Stats
+          </Text>
+          <Text className="text-sm mt-1" style={{ color: themeColors.textMuted }}>
+            Your productivity insights
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.status.urgent} />
+          <Text className="text-base font-medium mt-3 text-center" style={{ color: themeColors.text }}>
+            Failed to load stats
+          </Text>
+          <Text className="text-sm mt-1 text-center" style={{ color: themeColors.textMuted }}>
+            {error.message}
+          </Text>
+          <TouchableOpacity
+            onPress={() => refetch()}
+            className="mt-4 px-6 py-2 rounded-lg"
+            style={{ backgroundColor: colors.indigo[500] }}
+          >
+            <Text className="text-white font-medium">Try Again</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );

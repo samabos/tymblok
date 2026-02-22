@@ -11,7 +11,25 @@ import { ToastProvider } from '../components/ToastProvider';
 import { AlertProvider } from '../components/AlertProvider';
 import { useAutoSync } from '../hooks/useAutoSync';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        // Don't retry network errors (server unreachable) or auth errors
+        if (error && 'status' in error) {
+          const status = (error as { status: number }).status;
+          if (status === 0 || status === 401 || status === 403) return false;
+        }
+        // Retry server errors up to 2 times
+        return failureCount < 2;
+      },
+      staleTime: 30_000,
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+});
 
 function RootNavigator() {
   const { theme, isDark } = useTheme();
