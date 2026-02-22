@@ -664,6 +664,11 @@ public class AuthController : BaseApiController
             _logger.LogWarning("External login failed | Code: {Code} | IP: {IpAddress}", ex.Code, ipAddress);
             return RedirectWithError(ex.Code, ex.Message, isMobile, returnUrl);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "External login unexpected error | IP: {IpAddress}", ipAddress);
+            return RedirectWithError("INTERNAL_ERROR", "Something went wrong during login. Please try again.", isMobile, returnUrl);
+        }
     }
 
     /// <summary>
