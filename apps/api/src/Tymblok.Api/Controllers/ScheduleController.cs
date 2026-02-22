@@ -125,22 +125,8 @@ public class ScheduleController : BaseApiController
                 // Mark inbox item as scheduled if linked
                 if (accepted.InboxItemId.HasValue)
                 {
-                    var inboxItem = await _inboxService.GetByIdAsync(accepted.InboxItemId.Value, userId, ct);
-                    if (inboxItem != null)
-                    {
-                        await _inboxService.UpdateAsync(
-                            accepted.InboxItemId.Value,
-                            new UpdateInboxItemData(
-                                inboxItem.Title,
-                                inboxItem.Description,
-                                inboxItem.Priority,
-                                IsDismissed: null),
-                            userId, ct);
-
-                        // Directly set scheduling fields
-                        inboxItem.IsScheduled = true;
-                        inboxItem.ScheduledBlockId = result.Block.Id;
-                    }
+                    await _inboxService.MarkAsScheduledAsync(
+                        accepted.InboxItemId.Value, result.Block.Id, userId, ct);
                 }
 
                 createdBlocks.Add(MapBlockToDto(result.Block, result.Category));

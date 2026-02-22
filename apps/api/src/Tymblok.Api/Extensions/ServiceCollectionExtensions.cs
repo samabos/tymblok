@@ -86,11 +86,10 @@ public static class ServiceCollectionExtensions
             }
         }
 
-        // Data Protection — persist keys to the user's home directory
-        // The Dockerfile creates /home/tymblok/.aspnet/DataProtection-Keys with correct ownership
-        // On Azure App Service, /home is a persistent volume mount
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var keysDir = Path.Combine(home, ".aspnet", "DataProtection-Keys");
+        // Data Protection — persist keys alongside the application
+        // On Azure App Service, /home is an Azure-mounted volume that the non-root user can't write to.
+        // Instead, use the app's base directory (/app) which the tymblok user owns.
+        var keysDir = Path.Combine(AppContext.BaseDirectory, "DataProtection-Keys");
         Directory.CreateDirectory(keysDir);
         services.AddDataProtection()
             .SetApplicationName("tymblok")

@@ -26,12 +26,14 @@ RUN dotnet publish src/Tymblok.Api/Tymblok.Api.csproj -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Create non-root user with home directory for Data Protection key storage
-RUN groupadd -r tymblok && useradd -r -g tymblok -m tymblok \
-    && mkdir -p /home/tymblok/.aspnet/DataProtection-Keys \
-    && chown -R tymblok:tymblok /home/tymblok
+# Create non-root user
+RUN groupadd -r tymblok && useradd -r -g tymblok tymblok
 
 COPY --from=build /app/publish .
+
+# Create DataProtection-Keys directory writable by the app user
+# This MUST happen after COPY (so /app exists with content) and before USER switch
+RUN mkdir -p /app/DataProtection-Keys && chown tymblok:tymblok /app/DataProtection-Keys
 
 # Set environment
 ENV ASPNETCORE_URLS=http://+:8080
