@@ -1,4 +1,4 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
 import {
   View,
   TextInput,
@@ -10,16 +10,8 @@ import {
   TextStyle,
   StyleProp,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolateColor,
-} from 'react-native-reanimated';
-import { colors, spacing, layout, typography, duration } from '@tymblok/theme';
+import { colors, spacing, layout, typography } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
-
-const AnimatedView = Animated.createAnimatedComponent(View);
 
 export type InputType = 'text' | 'email' | 'password' | 'time' | 'number';
 
@@ -51,40 +43,65 @@ export const Input = forwardRef<TextInput, InputProps>(
       disabled = false,
       onFocus,
       onBlur,
+      value,
+      placeholder,
+      autoFocus,
+      onChangeText,
       ...props
     },
     ref
   ) => {
     const { theme } = useTheme();
-    const [, setIsFocused] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-    const focusAnimation = useSharedValue(0);
+
+    // --- Fabric / new-arch workaround ---
+    // On Fabric, TextInput's controlled `value` prop uses `dispatchCommand`
+    // which crashes. We use an uncontrolled TextInput (defaultValue only)
+    // and force-remount via key when the parent pushes a new value externally.
+    const internalText = useRef(value ?? '');
+    const [remountKey, setRemountKey] = useState(0);
+
+    useEffect(() => {
+      // If the external value changed and it wasn't from the user typing,
+      // force-remount the TextInput so defaultValue picks up the new value.
+      if (value !== undefined && value !== internalText.current) {
+        internalText.current = value;
+        setRemountKey(k => k + 1);
+      }
+    }, [value]);
+
+    const handleChangeText = useCallback(
+      (text: string) => {
+        internalText.current = text;
+        onChangeText?.(text);
+      },
+      [onChangeText]
+    );
 
     const themeColors = theme.colors;
 
-    const handleFocus = (e: any) => {
-      setIsFocused(true);
-      focusAnimation.value = withTiming(1, { duration: duration.normal });
-      onFocus?.(e);
-    };
+    const handleFocus = useCallback(
+      (e: any) => {
+        setIsFocused(true);
+        onFocus?.(e);
+      },
+      [onFocus]
+    );
 
-    const handleBlur = (e: any) => {
-      setIsFocused(false);
-      focusAnimation.value = withTiming(0, { duration: duration.normal });
-      onBlur?.(e);
-    };
+    const handleBlur = useCallback(
+      (e: any) => {
+        setIsFocused(false);
+        onBlur?.(e);
+      },
+      [onBlur]
+    );
 
-    const animatedBorderStyle = useAnimatedStyle(() => {
-      const borderColor = interpolateColor(
-        focusAnimation.value,
-        [0, 1],
-        [
-          error ? colors.status.urgent : themeColors.border,
-          error ? colors.status.urgent : colors.indigo[500],
-        ]
-      );
-      return { borderColor };
-    });
+    const borderColor = error
+      ? colors.status.urgent
+      : isFocused
+        ? colors.indigo[500]
+        : themeColors.border;
 
     const isPassword = type === 'password';
     const showPassword = isPassword && isPasswordVisible;
@@ -116,12 +133,13 @@ export const Input = forwardRef<TextInput, InputProps>(
       <View style={[styles.container, containerStyle]}>
         {label && <Text style={[styles.label, { color: themeColors.text }]}>{label}</Text>}
 
-        <AnimatedView
+        <View
           style={[
             styles.inputContainer,
             {
               backgroundColor: themeColors.input,
               borderWidth: theme.isDark ? 1 : 0,
+              borderColor,
               ...(theme.isDark
                 ? {}
                 : {
@@ -132,15 +150,19 @@ export const Input = forwardRef<TextInput, InputProps>(
                     elevation: 2,
                   }),
             },
-            animatedBorderStyle,
             disabled && styles.disabled,
           ]}
         >
           {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
 
           <TextInput
+            key={remountKey}
             ref={ref}
             {...props}
+            defaultValue={internalText.current}
+            onChangeText={handleChangeText}
+            placeholder={placeholder}
+            autoFocus={autoFocus}
             editable={!disabled}
             secureTextEntry={isPassword && !showPassword}
             keyboardType={getKeyboardType()}
@@ -170,7 +192,7 @@ export const Input = forwardRef<TextInput, InputProps>(
               )}
             </View>
           )}
-        </AnimatedView>
+        </View>
 
         {(error || hint) && (
           <Text

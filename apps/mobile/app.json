@@ -3,6 +3,7 @@
     "name": "Tymblok",
     "slug": "tymblok",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "scheme": "tymblok",
     "icon": "./assets/icon.png",

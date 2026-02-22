@@ -17,7 +17,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://tymblok-api.azurewebsites.net"
+        "EXPO_PUBLIC_API_URL": "https://tymblok-api-staging.azurewebsites.net"
       }
     },
     "production": {

@@ -95,6 +95,9 @@ export type {
   ApiKeyCardProps,
 } from './components/composite';
 
+// Portal (replaces react-native Modal which is broken on new architecture)
+export { PortalProvider, Portal } from './components/Portal';
+
 // Modal components
 export { BottomSheet, AddTaskModal, TaskDetailModal } from './components/modals';
 export type {

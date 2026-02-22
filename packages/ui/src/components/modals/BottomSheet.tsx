@@ -7,7 +7,7 @@ import {
   Dimensions,
   Platform,
   ViewStyle,
-  Modal,
+  StatusBar,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { spacing, borderRadius, springConfig, duration } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
+import { Portal } from '../Portal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 88 : 70;
@@ -129,7 +130,7 @@ export function BottomSheet({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+    <Portal>
       <GestureHandlerRootView style={styles.overlay}>
         {/* Backdrop */}
         <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
@@ -179,7 +180,7 @@ export function BottomSheet({
           <View style={styles.content}>{children}</View>
         </Animated.View>
       </GestureHandlerRootView>
-    </Modal>
+    </Portal>
   );
 }
 
