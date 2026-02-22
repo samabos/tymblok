@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -84,6 +85,16 @@ public static class ServiceCollectionExtensions
                 healthChecks.AddNpgSql(connectionString, name: "postgresql");
             }
         }
+
+        // Data Protection — persist keys to the user's home directory
+        // The Dockerfile creates /home/tymblok/.aspnet/DataProtection-Keys with correct ownership
+        // On Azure App Service, /home is a persistent volume mount
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var keysDir = Path.Combine(home, ".aspnet", "DataProtection-Keys");
+        Directory.CreateDirectory(keysDir);
+        services.AddDataProtection()
+            .SetApplicationName("tymblok")
+            .PersistKeysToFileSystem(new DirectoryInfo(keysDir));
 
         // JWT Authentication
         var jwtSettings = configuration.GetSection("Jwt");
