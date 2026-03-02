@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Tymblok.Api.DTOs;
 using Tymblok.Core.Entities;
 using Tymblok.Core.Exceptions;
 using Tymblok.Core.Interfaces;
+using Tymblok.Infrastructure.Data;
 
 namespace Tymblok.Api.Controllers;
 
@@ -17,17 +19,20 @@ public class IntegrationsController : BaseApiController
     private readonly ICurrentUser _currentUser;
     private readonly IConfiguration _configuration;
     private readonly ILogger<IntegrationsController> _logger;
+    private readonly TymblokDbContext _context;
 
     public IntegrationsController(
         IIntegrationService integrationService,
         ICurrentUser currentUser,
         IConfiguration configuration,
-        ILogger<IntegrationsController> logger)
+        ILogger<IntegrationsController> logger,
+        TymblokDbContext context)
     {
         _integrationService = integrationService;
         _currentUser = currentUser;
         _configuration = configuration;
         _logger = logger;
+        _context = context;
     }
 
     /// <summary>
@@ -261,6 +266,61 @@ public class IntegrationsController : BaseApiController
         var userId = _currentUser.UserId;
         var result = await _integrationService.SyncAllAsync(userId, ct: ct);
         return Ok(WrapResponse(new SyncAllResponse(result.TotalItemsSynced, result.IntegrationsSynced, result.SyncedAt)));
+    }
+
+    /// <summary>
+    /// Sync GitHub PRs from a VS Code extension into the user's inbox.
+    /// Deduplicates by ExternalId (e.g. "github:owner/repo#123").
+    /// </summary>
+    [HttpPost("vscode/sync-prs")]
+    [ProducesResponseType(typeof(ApiResponse<SyncPRsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SyncPRs(
+        [FromBody] SyncPRsRequest request,
+        CancellationToken ct)
+    {
+        var userId = _currentUser.UserId;
+        int created = 0, updated = 0;
+
+        foreach (var pr in request.PullRequests)
+        {
+            var existing = await _context.InboxItems
+                .FirstOrDefaultAsync(
+                    i => i.UserId == userId && i.ExternalId == pr.ExternalId, ct);
+
+            if (existing != null)
+            {
+                existing.Title = pr.Title;
+                existing.Description = pr.Subtitle;
+                existing.ExternalUrl = pr.Url;
+                updated++;
+            }
+            else
+            {
+                Enum.TryParse<InboxPriority>(pr.Priority, true, out var priority);
+
+                _context.InboxItems.Add(new InboxItem
+                {
+                    UserId = userId,
+                    Title = pr.Title,
+                    Description = pr.Subtitle,
+                    Source = InboxSource.GitHub,
+                    Type = InboxItemType.Task,
+                    Priority = priority,
+                    ExternalId = pr.ExternalId,
+                    ExternalUrl = pr.Url,
+                });
+                created++;
+            }
+        }
+
+        await _context.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "VS Code PR sync: {Created} created, {Updated} updated for user {UserId}",
+            created, updated, userId);
+
+        return Ok(WrapResponse(new SyncPRsResponse(created, updated)));
     }
 
 }

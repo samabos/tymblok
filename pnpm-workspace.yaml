@@ -2,3 +2,4 @@ packages:
   - 'packages/*'
   - 'apps/mobile'
   - 'apps/desktop'
+  - 'apps/extensions/*'

@@ -1,0 +1,97 @@
+{
+  "name": "tymblok-vscode",
+  "displayName": "Tymblok",
+  "description": "Time-blocking for developers — track blocks, coding stats, and GitHub PRs",
+  "version": "0.1.0",
+  "publisher": "tymblok",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "tymblok.login", "title": "Tymblok: Login" },
+      { "command": "tymblok.logout", "title": "Tymblok: Logout" },
+      { "command": "tymblok.startBlock", "title": "Tymblok: Start Current Block" },
+      { "command": "tymblok.pauseBlock", "title": "Tymblok: Pause Current Block" },
+      { "command": "tymblok.completeBlock", "title": "Tymblok: Complete Current Block" },
+      { "command": "tymblok.syncPRs", "title": "Tymblok: Sync GitHub PRs" },
+      { "command": "tymblok.refreshBlocks", "title": "Tymblok: Refresh Blocks" },
+      { "command": "tymblok.quickPick", "title": "Tymblok: Quick Actions" },
+      { "command": "tymblok.setActiveBlock", "title": "Tymblok: Set Active Block" }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "tymblok.startBlock",
+          "when": "view == tymblok.blocks && viewItem == not_started || viewItem == paused",
+          "group": "inline"
+        },
+        {
+          "command": "tymblok.pauseBlock",
+          "when": "view == tymblok.blocks && viewItem == running",
+          "group": "inline"
+        },
+        {
+          "command": "tymblok.completeBlock",
+          "when": "view == tymblok.blocks && viewItem != completed && viewItem != info",
+          "group": "inline"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tymblok",
+          "title": "Tymblok",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "tymblok": [
+        { "id": "tymblok.blocks", "name": "Today's Blocks" },
+        { "id": "tymblok.prs", "name": "PRs to Review" }
+      ]
+    },
+    "configuration": {
+      "title": "Tymblok",
+      "properties": {
+        "tymblok.apiUrl": {
+          "type": "string",
+          "default": "https://tymblok-api.azurewebsites.net",
+          "description": "Tymblok API base URL"
+        },
+        "tymblok.statsEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable coding stats collection (time, lines, languages — no code content)"
+        },
+        "tymblok.idleTimeout": {
+          "type": "number",
+          "default": 300,
+          "description": "Idle timeout in seconds before auto-pausing timer"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "package": "vsce package",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tymblok/ide-core": "workspace:*",
+    "@tymblok/shared": "workspace:*",
+    "@tymblok/api-client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  }
+}

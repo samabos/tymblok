@@ -46,4 +46,5 @@ public class ApplicationUser : IdentityUser<Guid>
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     public ICollection<UserStats> Stats { get; set; } = new List<UserStats>();
     public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
+    public ICollection<CodingSession> CodingSessions { get; set; } = new List<CodingSession>();
 }

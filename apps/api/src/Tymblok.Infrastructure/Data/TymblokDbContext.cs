@@ -21,6 +21,7 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<RecurrenceRule> RecurrenceRules => Set<RecurrenceRule>();
     public DbSet<SupportContent> SupportContents => Set<SupportContent>();
+    public DbSet<CodingSession> CodingSessions => Set<CodingSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +42,7 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
         ConfigureUserSession(modelBuilder);
         ConfigureRecurrenceRule(modelBuilder);
         ConfigureSupportContent(modelBuilder);
+        ConfigureCodingSession(modelBuilder);
 
         // Global query filter for soft deletes
         modelBuilder.Entity<ApplicationUser>()
@@ -120,6 +122,11 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasMany(u => u.Sessions)
+                .WithOne(s => s.User)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(u => u.CodingSessions)
                 .WithOne(s => s.User)
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -511,6 +518,37 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
                     UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                 }
             );
+        });
+    }
+
+    private static void ConfigureCodingSession(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CodingSession>(entity =>
+        {
+            entity.ToTable("coding_sessions");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Languages)
+                .HasMaxLength(4000); // JSON: {"typescript": 1200, "csharp": 600}
+
+            entity.Property(e => e.Source)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            // Indexes
+            entity.HasIndex(e => new { e.UserId, e.StartedAt });
+            entity.HasIndex(e => e.BlockId);
+
+            // Relationships
+            entity.HasOne(s => s.User)
+                .WithMany(u => u.CodingSessions)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(s => s.Block)
+                .WithMany()
+                .HasForeignKey(s => s.BlockId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 
