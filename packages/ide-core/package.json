@@ -21,6 +21,7 @@
   "dependencies": {
     "@tymblok/shared": "workspace:*",
     "@tymblok/api-client": "workspace:*",
+    "@microsoft/signalr": "^8.0.7",
     "axios": "^1.7.9",
     "octokit": "^4.1.2"
   },

@@ -50,6 +50,7 @@ public class BlockServiceRecurrenceTests : IDisposable
             inboxRepo,
             recurrenceService,
             auditService,
+            new FakeBlockNotifier(),
             _context
         );
     }
@@ -217,6 +218,12 @@ public class BlockServiceRecurrenceTests : IDisposable
     {
         _context.Database.EnsureDeleted();
         _context.Dispose();
+    }
+
+    private class FakeBlockNotifier : IBlockNotifier
+    {
+        public Task NotifyBlockUpdatedAsync(Guid userId, Guid blockId, string timerState, CancellationToken ct = default)
+            => Task.CompletedTask;
     }
 
     private class FakeAuditService : IAuditService

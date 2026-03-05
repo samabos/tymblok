@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
+using Tymblok.Api.Hubs;
 using Tymblok.Api.Services;
 using Tymblok.Core.Interfaces;
 
@@ -20,6 +21,10 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration,
         bool skipDatabaseHealthCheck = false)
     {
+        // SignalR
+        services.AddSignalR();
+        services.AddSingleton<IBlockNotifier, BlockNotifier>();
+
         // Controllers & Swagger
         services.AddControllers()
             .AddJsonOptions(options =>
@@ -126,6 +131,17 @@ public static class ServiceCollectionExtensions
                 // Log JWT authentication failures for debugging
                 options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
                 {
+                    // Allow SignalR to pass token as query param (WebSocket can't set headers)
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    },
                     OnAuthenticationFailed = context =>
                     {
                         var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()

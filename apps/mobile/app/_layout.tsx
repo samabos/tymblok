@@ -1,6 +1,7 @@
 import '@expo/metro-runtime';
 import '../global.css';
 import '../nativewind-setup';
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -10,6 +11,8 @@ import { verifyInstallation } from 'nativewind';
 import { ToastProvider } from '../components/ToastProvider';
 import { AlertProvider } from '../components/AlertProvider';
 import { useAutoSync } from '../hooks/useAutoSync';
+import { useAuthStore } from '../stores/authStore';
+import { signalrService } from '../services/signalrService';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,9 +34,23 @@ const queryClient = new QueryClient({
   },
 });
 
+// Wire SignalR to the shared QueryClient (singleton, safe to call at module level)
+signalrService.setQueryClient(queryClient);
+
 function RootNavigator() {
   const { theme, isDark } = useTheme();
   const bgColor = theme.colors.bg;
+  const { isAuthenticated } = useAuthStore();
+
+  // Connect/disconnect SignalR with auth state
+  useEffect(() => {
+    if (isAuthenticated) {
+      signalrService.connect();
+    } else {
+      signalrService.disconnect();
+    }
+    return () => { signalrService.disconnect(); };
+  }, [isAuthenticated]);
 
   // Auto-sync integrations on app foreground
   useAutoSync();
