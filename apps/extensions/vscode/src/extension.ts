@@ -29,7 +29,7 @@ export async function activate(
   const config = vscode.workspace.getConfiguration('tymblok');
   const apiUrl = config.get<string>(
     'apiUrl',
-    'https://tymblok-api.azurewebsites.net',
+    'https://tymblok-api-staging.azurewebsites.net',
   );
   const statsEnabled = config.get<boolean>('statsEnabled', true);
   const idleTimeout = config.get<number>('idleTimeout', 300) * 1000;
