@@ -85,7 +85,7 @@
       "properties": {
         "tymblok.apiUrl": {
           "type": "string",
-          "default": "https://tymblok-api.azurewebsites.net",
+          "default": "https://tymblok-api-staging.azurewebsites.net",
           "description": "Tymblok API base URL"
         },
         "tymblok.statsEnabled": {
