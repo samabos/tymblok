@@ -9,7 +9,7 @@ export class VscodeGitHubTokenProvider implements IGitHubTokenProvider {
   async getToken(scopes: string[]): Promise<string | undefined> {
     try {
       const session = await vscode.authentication.getSession('github', scopes, {
-        createIfNone: false,
+        createIfNone: true,
       });
       return session?.accessToken;
     } catch {

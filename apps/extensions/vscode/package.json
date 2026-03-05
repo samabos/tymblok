@@ -17,27 +17,51 @@
       { "command": "tymblok.startBlock", "title": "Tymblok: Start Current Block" },
       { "command": "tymblok.pauseBlock", "title": "Tymblok: Pause Current Block" },
       { "command": "tymblok.completeBlock", "title": "Tymblok: Complete Current Block" },
-      { "command": "tymblok.syncPRs", "title": "Tymblok: Sync GitHub PRs" },
+      { "command": "tymblok.openBlockUrl", "title": "Open in Browser", "icon": "$(link-external)" },
+      { "command": "tymblok.blockActions", "title": "Tymblok: Block Actions" },
+      { "command": "tymblok.sync", "title": "Tymblok: Sync" },
       { "command": "tymblok.refreshBlocks", "title": "Tymblok: Refresh Blocks" },
       { "command": "tymblok.quickPick", "title": "Tymblok: Quick Actions" },
-      { "command": "tymblok.setActiveBlock", "title": "Tymblok: Set Active Block" }
+      { "command": "tymblok.setActiveBlock", "title": "Tymblok: Set Active Block" },
+      { "command": "tymblok.scheduleToToday", "title": "Schedule to Today", "icon": "$(add)" },
+      { "command": "tymblok.dismissInboxItem", "title": "Dismiss", "icon": "$(close)" }
     ],
     "menus": {
       "view/item/context": [
         {
           "command": "tymblok.startBlock",
-          "when": "view == tymblok.blocks && viewItem == not_started || viewItem == paused",
+          "when": "view == tymblok.blocks && viewItem =~ /^(not_started|paused)(_url)?$/",
           "group": "inline"
         },
         {
           "command": "tymblok.pauseBlock",
-          "when": "view == tymblok.blocks && viewItem == running",
+          "when": "view == tymblok.blocks && viewItem =~ /^running(_url)?$/",
           "group": "inline"
         },
         {
           "command": "tymblok.completeBlock",
-          "when": "view == tymblok.blocks && viewItem != completed && viewItem != info",
+          "when": "view == tymblok.blocks && viewItem =~ /^(not_started|running|paused)(_url)?$/",
           "group": "inline"
+        },
+        {
+          "command": "tymblok.openBlockUrl",
+          "when": "view == tymblok.blocks && viewItem =~ /_url$/",
+          "group": "inline"
+        },
+        {
+          "command": "tymblok.scheduleToToday",
+          "when": "view == tymblok.inbox && viewItem =~ /^inbox_item/",
+          "group": "inline"
+        },
+        {
+          "command": "tymblok.dismissInboxItem",
+          "when": "view == tymblok.inbox && viewItem =~ /^inbox_item/",
+          "group": "inline"
+        },
+        {
+          "command": "tymblok.openBlockUrl",
+          "when": "view == tymblok.inbox && viewItem == inbox_item_url",
+          "group": "context"
         }
       ]
     },
@@ -53,7 +77,7 @@
     "views": {
       "tymblok": [
         { "id": "tymblok.blocks", "name": "Today's Blocks" },
-        { "id": "tymblok.prs", "name": "PRs to Review" }
+        { "id": "tymblok.inbox", "name": "Inbox" }
       ]
     },
     "configuration": {

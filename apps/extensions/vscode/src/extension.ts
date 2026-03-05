@@ -13,7 +13,7 @@ import { VscodeGitHubTokenProvider } from './github-provider';
 import { StatusBar } from './status-bar';
 import { ActivityTracker } from './activity-tracker';
 import { BlocksProvider } from './sidebar/blocks-provider';
-import { PRsProvider } from './sidebar/prs-provider';
+import { InboxProvider } from './sidebar/inbox-provider';
 import { LoginPanel } from './webview/login-panel';
 import { registerCommands } from './commands';
 
@@ -72,14 +72,14 @@ export async function activate(
   context.subscriptions.push(statusBar);
 
   const blocksProvider = new BlocksProvider(api, timer);
-  const prsProvider = new PRsProvider();
+  const inboxProvider = new InboxProvider(api);
 
   // Register tree views
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider('tymblok.blocks', blocksProvider),
   );
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('tymblok.prs', prsProvider),
+    vscode.window.registerTreeDataProvider('tymblok.inbox', inboxProvider),
   );
 
   // Login panel
@@ -91,9 +91,10 @@ export async function activate(
     authManager,
     timer,
     githubService,
+    api,
     loginPanel,
     blocksProvider,
-    prsProvider,
+    inboxProvider,
     statusBar,
   });
 
@@ -101,16 +102,16 @@ export async function activate(
   context.subscriptions.push(
     authManager.onStateChange(async (state) => {
       if (state === 'authenticated') {
-        await blocksProvider.refresh();
+        await Promise.all([blocksProvider.refresh(), inboxProvider.refresh()]);
         const progress = blocksProvider.getProgress();
         statusBar.updateProgress(progress.completed, progress.total);
       }
     }),
   );
 
-  // Auto-refresh blocks if authenticated
+  // Auto-refresh on startup if authenticated
   if (authManager.isAuthenticated()) {
-    await blocksProvider.refresh();
+    await Promise.all([blocksProvider.refresh(), inboxProvider.refresh()]);
     const progress = blocksProvider.getProgress();
     statusBar.updateProgress(progress.completed, progress.total);
   }

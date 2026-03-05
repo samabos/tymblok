@@ -11,7 +11,7 @@ export class GitHubService {
 
   /** Get PRs where the user is requested as a reviewer */
   async getReviewRequests(): Promise<GitHubPR[]> {
-    const token = await this.tokenProvider.getToken(['repo', 'read:org', 'notifications']);
+    const token = await this.tokenProvider.getToken(['repo', 'read:org']);
     if (!token) return [];
 
     const octokit = new Octokit({ auth: token });
@@ -21,6 +21,7 @@ export class GitHubService {
       const { data: user } = await octokit.rest.users.getAuthenticated();
 
       // Search for PRs where the user is a requested reviewer
+      // eslint-disable-next-line deprecation/deprecation
       const { data: searchResult } = await octokit.rest.search.issuesAndPullRequests({
         q: `is:pr is:open review-requested:${user.login}`,
         per_page: 50,
@@ -61,26 +62,22 @@ export class GitHubService {
   ): Promise<{ created: number; updated: number }> {
     if (prs.length === 0) return { created: 0, updated: 0 };
 
-    try {
-      const response = await axios.post('/integrations/vscode/sync-prs', {
-        pullRequests: prs.map((pr) => ({
-          externalId: `github:${pr.owner}/${pr.repo}#${pr.number}`,
-          title: `Review: ${pr.title}`,
-          subtitle: `${pr.owner}/${pr.repo}#${pr.number} by ${pr.author}`,
-          url: pr.url,
-          source: 'github',
-          priority: 'high',
-          metadata: JSON.stringify({
-            repo: `${pr.owner}/${pr.repo}`,
-            number: pr.number,
-            author: pr.author,
-            isDraft: pr.isDraft,
-          }),
-        })),
-      });
-      return (response as { data: { created: number; updated: number } }).data || { created: 0, updated: 0 };
-    } catch {
-      return { created: 0, updated: 0 };
-    }
+    const response = await axios.post('/integrations/vscode/sync-prs', {
+      pullRequests: prs.map((pr) => ({
+        externalId: `github:${pr.owner}/${pr.repo}#${pr.number}`,
+        title: `Review: ${pr.title}`,
+        subtitle: `${pr.owner}/${pr.repo}#${pr.number} by ${pr.author}`,
+        url: pr.url,
+        source: 'github',
+        priority: 'high',
+        metadata: JSON.stringify({
+          repo: `${pr.owner}/${pr.repo}`,
+          number: pr.number,
+          author: pr.author,
+          isDraft: pr.isDraft,
+        }),
+      })),
+    });
+    return (response as { data: { created: number; updated: number } }).data || { created: 0, updated: 0 };
   }
 }

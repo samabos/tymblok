@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { createBlocksApi, createCategoriesApi } from '@tymblok/api-client';
+import { createBlocksApi, createCategoriesApi, createInboxApi } from '@tymblok/api-client';
 import type { ApiClient } from '@tymblok/api-client';
 import type { AuthManager } from './auth-manager';
 
@@ -11,6 +11,7 @@ export function createIdeApiClient(baseUrl: string, authManager: AuthManager): {
   client: ApiClient;
   blocks: ReturnType<typeof createBlocksApi>;
   categories: ReturnType<typeof createCategoriesApi>;
+  inbox: ReturnType<typeof createInboxApi>;
   axios: AxiosInstance;
 } {
   const instance = axios.create({
@@ -82,6 +83,7 @@ export function createIdeApiClient(baseUrl: string, authManager: AuthManager): {
     client,
     blocks: createBlocksApi(client),
     categories: createCategoriesApi(client),
+    inbox: createInboxApi(client),
     axios: instance,
   };
 }

@@ -11,6 +11,7 @@ interface BlockDto {
   elapsedSeconds?: number;
   status?: string;
   category?: { name: string; color: string } | null;
+  externalUrl?: string | null;
 }
 
 /**
@@ -94,10 +95,11 @@ export class BlocksProvider
         time,
         isActive,
         block.category,
+        block.externalUrl ?? undefined,
       );
 
-      // Set context value for inline actions
-      item.contextValue = state;
+      // context value drives inline buttons + context menu "when" clauses
+      item.contextValue = block.externalUrl ? `${state}_url` : state;
 
       return item;
     });
@@ -134,6 +136,7 @@ class BlockTreeItem extends vscode.TreeItem {
     public readonly timeRange?: string,
     public readonly isActive?: boolean,
     public readonly category?: { name: string; color: string } | null,
+    public readonly externalUrl?: string,
   ) {
     super(label, collapsibleState);
 
@@ -153,10 +156,10 @@ class BlockTreeItem extends vscode.TreeItem {
     // Tooltip
     this.tooltip = `${label}${category ? ` (${category.name})` : ''}\n${timeRange || ''}`;
 
-    // Click to set as active block
+    // Click opens quick pick with actions for this block
     this.command = {
-      command: 'tymblok.setActiveBlock',
-      title: 'Set Active Block',
+      command: 'tymblok.blockActions',
+      title: 'Block Actions',
       arguments: [this],
     };
   }
