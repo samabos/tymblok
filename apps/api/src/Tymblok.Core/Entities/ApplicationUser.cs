@@ -31,6 +31,7 @@ public class ApplicationUser : IdentityUser<Guid>
 
     // Account status (some overlap with Identity but we keep for backwards compatibility)
     public DateTime? LastLoginAt { get; set; }
+    public DateTime? LastVerificationEmailSentAt { get; set; }
     public DateTime? DeletedAt { get; set; } // Soft delete
 
     // Timestamps (Identity doesn't have these)
@@ -45,4 +46,5 @@ public class ApplicationUser : IdentityUser<Guid>
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     public ICollection<UserStats> Stats { get; set; } = new List<UserStats>();
     public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
+    public ICollection<CodingSession> CodingSessions { get; set; } = new List<CodingSession>();
 }

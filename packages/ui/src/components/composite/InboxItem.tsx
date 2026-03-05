@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,8 +21,6 @@ import {
 } from '@tymblok/theme';
 import { useTheme } from '../../context/ThemeContext';
 import { Badge } from '../primitives/Badge';
-
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export type InboxSource = 'google-drive' | 'jira' | 'calendar' | 'github' | 'slack' | 'manual';
 export type InboxItemType = 'task' | 'update' | 'reminder';
@@ -84,11 +82,10 @@ export function InboxItem({ item, onAdd, onDismiss, onPress, style }: InboxItemP
       };
 
   return (
-    <AnimatedTouchable
-      onPress={handlePress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      activeOpacity={0.7}
+    <Animated.View
+      entering={FadeIn.duration(300)}
+      exiting={FadeOut.duration(200)}
+      layout={Layout.springify()}
       style={[
         styles.container,
         {
@@ -100,11 +97,13 @@ export function InboxItem({ item, onAdd, onDismiss, onPress, style }: InboxItemP
         animatedStyle,
         style,
       ]}
-      entering={FadeIn.duration(300)}
-      exiting={FadeOut.duration(200)}
-      layout={Layout.springify()}
     >
-      <View style={styles.content}>
+      <Pressable
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.content}
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: themeColors.text }]} numberOfLines={1}>
@@ -147,12 +146,11 @@ export function InboxItem({ item, onAdd, onDismiss, onPress, style }: InboxItemP
         {(onAdd || onDismiss) && (
           <View style={styles.actions}>
             {onDismiss && (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onDismiss();
                 }}
-                activeOpacity={0.7}
                 style={[
                   styles.actionButton,
                   { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle },
@@ -160,25 +158,24 @@ export function InboxItem({ item, onAdd, onDismiss, onPress, style }: InboxItemP
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
                 <Text style={[styles.actionIcon, { color: themeColors.textMuted }]}>×</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
             {onAdd && (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   onAdd();
                 }}
-                activeOpacity={0.7}
                 style={[styles.actionButton, { backgroundColor: colors.indigo[500] }]}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
                 <Text style={styles.actionIcon}>+</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         )}
-      </View>
-    </AnimatedTouchable>
+      </Pressable>
+    </Animated.View>
   );
 }
 

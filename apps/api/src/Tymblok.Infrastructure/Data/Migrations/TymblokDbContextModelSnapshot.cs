@@ -196,6 +196,9 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("LastVerificationEmailSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
@@ -428,6 +431,63 @@ namespace Tymblok.Infrastructure.Data.Migrations
                             Name = "Focus",
                             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });
+                });
+
+            modelBuilder.Entity("Tymblok.Core.Entities.CodingSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ActiveSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("BlockId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Commits")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EndedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FilesEdited")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Languages")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int>("LinesAdded")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LinesRemoved")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BlockId");
+
+                    b.HasIndex("UserId", "StartedAt");
+
+                    b.ToTable("coding_sessions", (string)null);
                 });
 
             modelBuilder.Entity("Tymblok.Core.Entities.InboxItem", b =>
@@ -1004,6 +1064,24 @@ namespace Tymblok.Infrastructure.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Tymblok.Core.Entities.CodingSession", b =>
+                {
+                    b.HasOne("Tymblok.Core.Entities.TimeBlock", "Block")
+                        .WithMany()
+                        .HasForeignKey("BlockId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Tymblok.Core.Entities.ApplicationUser", "User")
+                        .WithMany("CodingSessions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Block");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Tymblok.Core.Entities.InboxItem", b =>
                 {
                     b.HasOne("Tymblok.Core.Entities.Integration", "Integration")
@@ -1110,6 +1188,8 @@ namespace Tymblok.Infrastructure.Data.Migrations
             modelBuilder.Entity("Tymblok.Core.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("Categories");
+
+                    b.Navigation("CodingSessions");
 
                     b.Navigation("InboxItems");
 

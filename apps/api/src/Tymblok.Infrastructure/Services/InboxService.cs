@@ -184,6 +184,35 @@ public class InboxService : IInboxService
         return item;
     }
 
+    public async Task<InboxItem> MarkAsScheduledAsync(Guid itemId, Guid blockId, Guid userId, CancellationToken ct = default)
+    {
+        var item = await _repository.GetByIdAsync(itemId);
+        if (item == null)
+        {
+            throw new NotFoundException("INBOX_ITEM_NOT_FOUND", "Inbox item not found");
+        }
+
+        if (item.UserId != userId)
+        {
+            throw new ForbiddenException("NOT_OWNER", "You do not have permission to update this inbox item");
+        }
+
+        item.IsScheduled = true;
+        item.ScheduledBlockId = blockId;
+
+        _repository.Update(item);
+        await _repository.SaveChangesAsync(ct);
+
+        await _auditService.LogAsync(
+            action: "MarkAsScheduled",
+            entityType: "InboxItem",
+            entityId: item.Id.ToString(),
+            userId: userId,
+            newValues: new { item.IsScheduled, item.ScheduledBlockId });
+
+        return item;
+    }
+
     public async Task DeleteAsync(Guid itemId, Guid userId, CancellationToken ct = default)
     {
         // Get item

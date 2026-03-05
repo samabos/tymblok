@@ -102,6 +102,8 @@ public static class DependencyInjection
         services.AddScoped<IStatsService, StatsService>();
         services.AddScoped<IRecurrenceService, RecurrenceService>();
         services.AddScoped<ISupportContentService, SupportContentService>();
+        services.AddScoped<ISchedulerService, SchedulerService>();
+        services.AddScoped<ICodingSessionService, CodingSessionService>();
 
         // Integration infrastructure
         services.AddScoped<ITokenEncryptionService, TokenEncryptionService>();

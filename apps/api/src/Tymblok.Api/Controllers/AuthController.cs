@@ -492,6 +492,11 @@ public class AuthController : BaseApiController
         {
             return NotFound(CreateErrorResponse(ex.Code, ex.Message));
         }
+        catch (AuthException ex) when (ex.Code == "EMAIL_COOLDOWN")
+        {
+            return StatusCode(StatusCodes.Status429TooManyRequests,
+                CreateErrorResponse(ex.Code, ex.Message));
+        }
     }
 
     /// <summary>
@@ -500,7 +505,7 @@ public class AuthController : BaseApiController
     [HttpGet("external/{provider}")]
     [ProducesResponseType(StatusCodes.Status302Found)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
-    public IActionResult ExternalLogin(
+    public async Task<IActionResult> ExternalLogin(
         string provider,
         [FromQuery] string? returnUrl = null,
         [FromQuery] bool mobile = false,
@@ -517,6 +522,18 @@ public class AuthController : BaseApiController
         {
             return BadRequest(CreateErrorResponse("INVALID_PROVIDER",
                 "Invalid OAuth provider. Supported: google, github"));
+        }
+
+        // Check if the scheme is actually registered (secrets may be missing in production)
+        var schemeProvider = HttpContext.RequestServices.GetRequiredService<IAuthenticationSchemeProvider>();
+        var scheme = await schemeProvider.GetSchemeAsync(normalizedProvider);
+        if (scheme == null)
+        {
+            _logger.LogWarning("OAuth provider {Provider} requested but not configured", provider);
+            var isMobile = mobile;
+            return isMobile
+                ? RedirectWithError("PROVIDER_NOT_CONFIGURED", $"{provider} login is not available", isMobile, returnUrl)
+                : BadRequest(CreateErrorResponse("PROVIDER_NOT_CONFIGURED", $"{provider} login is not configured on this server"));
         }
 
         // Build callback URL with state
@@ -548,25 +565,35 @@ public class AuthController : BaseApiController
 
         try
         {
-            // Try to authenticate with each provider
+            // Try to authenticate with each registered provider
             AuthenticateResult? authenticateResult = null;
             string? provider = null;
+            var schemeProvider = HttpContext.RequestServices.GetRequiredService<IAuthenticationSchemeProvider>();
 
-            // Try Google first
-            var googleResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
-            if (googleResult.Succeeded)
+            // Try Google if registered
+            var googleScheme = await schemeProvider.GetSchemeAsync(GoogleDefaults.AuthenticationScheme);
+            if (googleScheme != null)
             {
-                authenticateResult = googleResult;
-                provider = "google";
-            }
-            else
-            {
-                // Try GitHub
-                var githubResult = await HttpContext.AuthenticateAsync(GitHubAuthenticationDefaults.AuthenticationScheme);
-                if (githubResult.Succeeded)
+                var googleResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+                if (googleResult.Succeeded)
                 {
-                    authenticateResult = githubResult;
-                    provider = "github";
+                    authenticateResult = googleResult;
+                    provider = "google";
+                }
+            }
+
+            // Try GitHub if registered (and Google didn't succeed)
+            if (authenticateResult == null || !authenticateResult.Succeeded)
+            {
+                var githubScheme = await schemeProvider.GetSchemeAsync(GitHubAuthenticationDefaults.AuthenticationScheme);
+                if (githubScheme != null)
+                {
+                    var githubResult = await HttpContext.AuthenticateAsync(GitHubAuthenticationDefaults.AuthenticationScheme);
+                    if (githubResult.Succeeded)
+                    {
+                        authenticateResult = githubResult;
+                        provider = "github";
+                    }
                 }
             }
 
@@ -658,6 +685,11 @@ public class AuthController : BaseApiController
         {
             _logger.LogWarning("External login failed | Code: {Code} | IP: {IpAddress}", ex.Code, ipAddress);
             return RedirectWithError(ex.Code, ex.Message, isMobile, returnUrl);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "External login unexpected error | IP: {IpAddress}", ipAddress);
+            return RedirectWithError("INTERNAL_ERROR", "Something went wrong during login. Please try again.", isMobile, returnUrl);
         }
     }
 

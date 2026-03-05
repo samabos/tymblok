@@ -52,31 +52,28 @@ export default function TodayScreen() {
   // Day navigation
   const { currentDate, currentDateStr, formatDateHeader, daysCenteredOnToday, navigateDay } = useDayNavigation();
 
-  // Carry over uncompleted past blocks before fetching today's blocks
-  const [carryOverDone, setCarryOverDone] = useState(false);
+  // Carry over uncompleted past blocks (runs in background, doesn't block UI)
   const carryOverMutation = useCarryOver();
   const carryOverCalledRef = useRef(false);
+
+  // Fetch blocks immediately (TanStack Query caches previous data)
+  const { data: blocks, isLoading, error, refetch } = useBlocks(
+    { date: currentDateStr },
+  );
 
   useFocusEffect(
     useCallback(() => {
       if (!carryOverCalledRef.current) {
         carryOverCalledRef.current = true;
         carryOverMutation.mutate(undefined, {
-          onSuccess: () => setCarryOverDone(true),
-          onError: () => setCarryOverDone(true), // Don't block UI on failure
+          onSuccess: () => refetch(), // Refresh blocks after carryOver
+          onError: () => {},          // Silently ignore
         });
       }
       return () => {
         carryOverCalledRef.current = false;
-        setCarryOverDone(false);
       };
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  );
-
-  // Fetch blocks from API only after carryOver completes (prevents race condition)
-  const { data: blocks, isLoading, error, refetch } = useBlocks(
-    { date: currentDateStr },
-    { enabled: carryOverDone },
   );
   const updateBlockMutation = useUpdateBlock();
   const completeBlockMutation = useCompleteBlock();
@@ -242,7 +239,7 @@ export default function TodayScreen() {
     [expandedTaskId]
   );
 
-  if (!carryOverDone || isLoading) {
+  if (isLoading && !blocks) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.bg }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

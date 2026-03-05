@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@tymblok/ui';
+import { useTheme, Portal } from '@tymblok/ui';
 import { colors } from '@tymblok/theme';
 import { RecurrenceType } from '@tymblok/api-client';
 
@@ -80,71 +80,72 @@ export function RecurrencePicker({ value, onChange }: RecurrencePickerProps) {
         <Ionicons name="chevron-forward" size={20} color={themeColors.textMuted} />
       </TouchableOpacity>
 
-      <Modal
-        visible={showModal}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowModal(false)}
-      >
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View
-            style={{
-              backgroundColor: themeColors.bg,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              paddingBottom: 40,
-            }}
+      {showModal && (
+        <Portal>
+          <Pressable
+            style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
+            onPress={() => setShowModal(false)}
           >
-            {/* Header */}
-            <View
+            <Pressable
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingHorizontal: 20,
-                paddingVertical: 16,
-                borderBottomWidth: 1,
-                borderBottomColor: themeColors.border,
+                backgroundColor: themeColors.bg,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                paddingBottom: 40,
               }}
+              onPress={(e) => e.stopPropagation()}
             >
-              <Text style={{ fontSize: 18, fontWeight: '600', color: themeColors.text }}>
-                Repeat
-              </Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color={themeColors.textMuted} />
-              </TouchableOpacity>
-            </View>
+              {/* Header */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: 20,
+                  paddingVertical: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: themeColors.border,
+                }}
+              >
+                <Text style={{ fontSize: 18, fontWeight: '600', color: themeColors.text }}>
+                  Repeat
+                </Text>
+                <TouchableOpacity onPress={() => setShowModal(false)}>
+                  <Ionicons name="close" size={24} color={themeColors.textMuted} />
+                </TouchableOpacity>
+              </View>
 
-            {/* Options */}
-            <ScrollView style={{ maxHeight: 400 }}>
-              <RecurrenceOption
-                label="Does not repeat"
-                selected={!value.isRecurring}
-                onPress={() => handleSelectType(null)}
-                themeColors={themeColors}
-              />
-              <RecurrenceOption
-                label="Daily"
-                selected={value.isRecurring && value.recurrenceType === RecurrenceType.Daily}
-                onPress={() => handleSelectType(RecurrenceType.Daily)}
-                themeColors={themeColors}
-              />
-              <RecurrenceOption
-                label="Weekly"
-                selected={value.isRecurring && value.recurrenceType === RecurrenceType.Weekly}
-                onPress={() => handleSelectType(RecurrenceType.Weekly)}
-                themeColors={themeColors}
-              />
-              <RecurrenceOption
-                label="Monthly"
-                selected={value.isRecurring && value.recurrenceType === RecurrenceType.Monthly}
-                onPress={() => handleSelectType(RecurrenceType.Monthly)}
-                themeColors={themeColors}
-              />
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+              {/* Options */}
+              <ScrollView style={{ maxHeight: 400 }}>
+                <RecurrenceOption
+                  label="Does not repeat"
+                  selected={!value.isRecurring}
+                  onPress={() => handleSelectType(null)}
+                  themeColors={themeColors}
+                />
+                <RecurrenceOption
+                  label="Daily"
+                  selected={value.isRecurring && value.recurrenceType === RecurrenceType.Daily}
+                  onPress={() => handleSelectType(RecurrenceType.Daily)}
+                  themeColors={themeColors}
+                />
+                <RecurrenceOption
+                  label="Weekly"
+                  selected={value.isRecurring && value.recurrenceType === RecurrenceType.Weekly}
+                  onPress={() => handleSelectType(RecurrenceType.Weekly)}
+                  themeColors={themeColors}
+                />
+                <RecurrenceOption
+                  label="Monthly"
+                  selected={value.isRecurring && value.recurrenceType === RecurrenceType.Monthly}
+                  onPress={() => handleSelectType(RecurrenceType.Monthly)}
+                  themeColors={themeColors}
+                />
+              </ScrollView>
+            </Pressable>
+          </Pressable>
+        </Portal>
+      )}
     </>
   );
 }

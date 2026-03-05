@@ -58,6 +58,11 @@ public interface IInboxService
     Task<InboxItem> DismissAsync(Guid itemId, Guid userId, CancellationToken ct = default);
 
     /// <summary>
+    /// Mark an inbox item as scheduled and link it to a TimeBlock
+    /// </summary>
+    Task<InboxItem> MarkAsScheduledAsync(Guid itemId, Guid blockId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
     /// Delete an inbox item (must be owned by user)
     /// </summary>
     Task DeleteAsync(Guid itemId, Guid userId, CancellationToken ct = default);

@@ -304,11 +304,26 @@ public class AuthService : IAuthService
             return; // Already verified
         }
 
+        // Enforce 60-second cooldown between verification emails
+        if (user.LastVerificationEmailSentAt.HasValue)
+        {
+            var elapsed = DateTime.UtcNow - user.LastVerificationEmailSentAt.Value;
+            if (elapsed.TotalSeconds < 60)
+            {
+                throw new AuthException("EMAIL_COOLDOWN",
+                    $"Please wait {60 - (int)elapsed.TotalSeconds} seconds before requesting another verification email.");
+            }
+        }
+
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = Uri.EscapeDataString(token);
         var verificationLink = $"{_settings.AppBaseUrl}/verify-email?userId={userId}&token={encodedToken}";
 
         await _emailService.SendEmailVerificationAsync(user.Email!, user.Name, verificationLink);
+
+        // Track when the email was sent
+        user.LastVerificationEmailSentAt = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
     }
 
     public async Task<bool> VerifyEmailAsync(Guid userId, string token)

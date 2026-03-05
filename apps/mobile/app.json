@@ -3,11 +3,15 @@
     "name": "Tymblok",
     "slug": "tymblok",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "scheme": "tymblok",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#6366F1"
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#7C3AED"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,7 +22,10 @@
     },
     "android": {
       "package": "io.tymblok.app",
-      "usesCleartextTraffic": true
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#7C3AED"
+      }
     },
     "web": {
       "bundler": "metro"
@@ -30,6 +37,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "c1279be4-c834-4618-a44b-cbadea5ead55"
+      }
     }
   }
 }

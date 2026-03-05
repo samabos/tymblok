@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -156,7 +156,7 @@ function TaskDetailContent() {
           <Text style={{ color: themeColors.text, marginTop: 16, marginBottom: spacing[4] }}>
             Failed to load task
           </Text>
-          <TouchableOpacity
+          <Pressable
             onPress={() => router.back()}
             style={{
               paddingHorizontal: 24,
@@ -166,7 +166,7 @@ function TaskDetailContent() {
             }}
           >
             <Text style={{ color: colors.white, fontWeight: '500' }}>Go Back</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -187,7 +187,7 @@ function TaskDetailContent() {
           paddingVertical: spacing[3],
         }}
       >
-        <TouchableOpacity
+        <Pressable
           onPress={() => router.back()}
           style={{
             width: 36,
@@ -199,13 +199,13 @@ function TaskDetailContent() {
           }}
         >
           <Ionicons name="chevron-back" size={20} color={themeColors.text} />
-        </TouchableOpacity>
+        </Pressable>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={{ fontSize: typography.sizes.sm, color: themeColors.textMuted }}>
             {task.startTime} – {task.endTime}
           </Text>
         </View>
-        <TouchableOpacity
+        <Pressable
           onPress={handleDelete}
           style={{
             width: 36,
@@ -217,7 +217,7 @@ function TaskDetailContent() {
           }}
         >
           <Ionicons name="trash-outline" size={18} color={colors.status.urgent} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -289,54 +289,51 @@ function TaskDetailContent() {
               }}
             >
               {isRunning ? (
-                <TouchableOpacity
+                <Pressable
                   onPress={handlePause}
                   disabled={pauseMutation.isPending}
-                  activeOpacity={0.7}
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
                     backgroundColor: colors.label.focus,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Ionicons name="pause" size={24} color={colors.white} />
-                </TouchableOpacity>
+                  <Ionicons name="pause" size={20} color={colors.white} />
+                </Pressable>
               ) : (
-                <TouchableOpacity
+                <Pressable
                   onPress={isPaused ? handleResume : handleStart}
                   disabled={startMutation.isPending || resumeMutation.isPending}
-                  activeOpacity={0.7}
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
                     backgroundColor: colors.indigo[500],
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Ionicons name="play" size={24} color={colors.white} />
-                </TouchableOpacity>
+                  <Ionicons name="play" size={20} color={colors.white} />
+                </Pressable>
               )}
               {(isRunning || isPaused) && (
-                <TouchableOpacity
+                <Pressable
                   onPress={handleComplete}
                   disabled={completeMutation.isPending}
-                  activeOpacity={0.7}
                   style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
                     backgroundColor: colors.status.done,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Ionicons name="checkmark" size={24} color={colors.white} />
-                </TouchableOpacity>
+                  <Ionicons name="checkmark" size={20} color={colors.white} />
+                </Pressable>
               )}
             </View>
           )}
@@ -455,15 +452,14 @@ function TaskDetailContent() {
         </Text>
         <View style={{ flexDirection: 'row', gap: spacing[2] }}>
           {durations.map(d => (
-            <TouchableOpacity
+            <Pressable
               key={d.value}
               onPress={() => setDuration(d.value)}
-              activeOpacity={0.7}
               style={{
                 flex: 1,
                 paddingVertical: spacing[3],
                 borderRadius: 10,
-                alignItems: 'center',
+                alignItems: 'center' as const,
                 backgroundColor: duration === d.value ? colors.indigo[500] : themeColors.card,
                 borderWidth: duration === d.value ? 0 : isDark ? 1 : 0,
                 borderColor: themeColors.border,
@@ -487,7 +483,7 @@ function TaskDetailContent() {
               >
                 {d.label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
       </ScrollView>
@@ -510,21 +506,20 @@ function TaskDetailContent() {
               }),
         }}
       >
-        <TouchableOpacity
+        <Pressable
           onPress={handleSave}
           disabled={updateMutation.isPending}
-          activeOpacity={0.7}
           style={{
             paddingVertical: 14,
             borderRadius: 14,
-            alignItems: 'center',
+            alignItems: 'center' as const,
             backgroundColor: colors.indigo[500],
           }}
         >
           <Text style={{ color: colors.white, fontWeight: '600', fontSize: typography.sizes.base }}>
             {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

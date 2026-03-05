@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -84,6 +85,15 @@ public static class ServiceCollectionExtensions
                 healthChecks.AddNpgSql(connectionString, name: "postgresql");
             }
         }
+
+        // Data Protection — persist keys alongside the application
+        // On Azure App Service, /home is an Azure-mounted volume that the non-root user can't write to.
+        // Instead, use the app's base directory (/app) which the tymblok user owns.
+        var keysDir = Path.Combine(AppContext.BaseDirectory, "DataProtection-Keys");
+        Directory.CreateDirectory(keysDir);
+        services.AddDataProtection()
+            .SetApplicationName("tymblok")
+            .PersistKeysToFileSystem(new DirectoryInfo(keysDir));
 
         // JWT Authentication
         var jwtSettings = configuration.GetSection("Jwt");

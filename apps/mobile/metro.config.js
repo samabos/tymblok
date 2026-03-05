@@ -9,13 +9,12 @@ const monorepoRoot = path.resolve(projectRoot, '../..');
 module.exports = (async () => {
   const config = await getDefaultConfig(projectRoot);
 
-  // Monorepo support
-  config.watchFolders = [monorepoRoot];
+  // Monorepo support — keep Expo defaults and add monorepo root
+  config.watchFolders = [...(config.watchFolders || []), monorepoRoot];
   config.resolver.nodeModulesPaths = [
     path.resolve(projectRoot, 'node_modules'),
     path.resolve(monorepoRoot, 'node_modules'),
   ];
-  config.resolver.disableHierarchicalLookup = true;
 
   return withNativeWind(config, { input: './global.css' });
 })();

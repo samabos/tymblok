@@ -206,14 +206,54 @@ export interface UpdateBlockRequest {
 
 export interface AutoPlanRequest {
   date: string;
-  task_ids?: string[];
-  respect_existing?: boolean;
+  inbox_item_ids?: string[];
 }
 
-export interface AutoPlanResponse {
-  proposed_blocks: ScheduledBlock[];
+export interface ReplanRequest {
+  date: string;
+  keep_block_ids?: string[];
+}
+
+export interface AcceptPlanRequest {
+  blocks: AcceptedBlock[];
+}
+
+export interface AcceptedBlock {
+  title: string;
+  subtitle?: string;
+  category_id: string;
+  date: string;
+  start_time: string;
+  duration_minutes: number;
+  is_urgent?: boolean;
+  inbox_item_id?: string;
+}
+
+export interface ProposedBlock {
+  title: string;
+  subtitle: string | null;
+  category_id: string;
+  category_name: string;
+  category_color: string;
+  category_icon: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  is_urgent: boolean;
+  inbox_item_id: string | null;
+  zone: 'focus' | 'batch' | 'flex';
+}
+
+export interface ScheduleProposalResponse {
+  proposed_blocks: ProposedBlock[];
   score: ScheduleScore;
   warnings: string[];
+}
+
+export interface AcceptPlanResponse {
+  created_blocks: ScheduledBlock[];
+  count: number;
 }
 
 // API Response Wrappers

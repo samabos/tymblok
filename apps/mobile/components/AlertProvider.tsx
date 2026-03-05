@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@tymblok/ui';
 import { spacing, borderRadius, typography, colors } from '@tymblok/theme';
@@ -139,9 +139,8 @@ function AlertOverlay({
   return (
     <View style={styles.overlay}>
       {/* Backdrop */}
-      <TouchableOpacity
+      <Pressable
         style={styles.backdrop}
-        activeOpacity={1}
         onPress={handleBackdrop}
       />
 
@@ -163,11 +162,10 @@ function AlertOverlay({
             const isDestructive = btn.style === 'destructive';
 
             return (
-              <TouchableOpacity
+              <Pressable
                 key={i}
                 onPress={() => handlePress(btn)}
-                activeOpacity={0.8}
-                style={[
+                style={({ pressed }) => [
                   styles.button,
                   buttons.length === 1 && styles.buttonFull,
                   {
@@ -176,6 +174,7 @@ function AlertOverlay({
                       : isDestructive
                         ? colors.status.urgent
                         : colors.indigo[500],
+                    opacity: pressed ? 0.8 : 1,
                   },
                 ]}
               >
@@ -187,7 +186,7 @@ function AlertOverlay({
                 >
                   {btn.text}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </View>

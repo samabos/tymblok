@@ -31,7 +31,8 @@ export default function VerifyEmailScreen() {
       try {
         await authService.verifyEmail(params.userId, params.token);
         // Update local auth store if user is logged in
-        if (user) {
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
           updateUser({ email_verified: true });
         }
         setScreenState('success');
@@ -43,7 +44,10 @@ export default function VerifyEmailScreen() {
     };
 
     verifyEmail();
-  }, [params.userId, params.token, updateUser, user]);
+    // Only re-run when URL params change — reading user from getState() to avoid
+    // the dependency loop where updateUser changes user which re-triggers this effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.userId, params.token]);
 
   const handleContinue = () => {
     if (user) {

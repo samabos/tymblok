@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -169,19 +169,18 @@ export function TaskCard({
 
             {/* Start/Pause button */}
             {!task.completed && timerState !== 'Running' && onStart && (
-              <TouchableOpacity
+              <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   onStart();
                 }}
-                activeOpacity={0.7}
-                style={[styles.timerButton, { backgroundColor: colors.indigo[500] }]}
+                style={({ pressed }) => [styles.timerButton, { backgroundColor: colors.indigo[500], opacity: pressed ? 0.7 : 1 }]}
                 accessibilityLabel="Start task"
                 accessibilityRole="button"
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="play" size={14} color={colors.white} />
-              </TouchableOpacity>
+              </Pressable>
             )}
             {!task.completed && timerState === 'Running' && (
               <View style={styles.runningTimerRow}>
@@ -194,19 +193,18 @@ export function TaskCard({
                   {formatElapsed(task.elapsedSeconds || 0)}
                 </Text>
                 {onPause && (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                       onPause();
                     }}
-                    activeOpacity={0.7}
-                    style={[styles.timerButton, { backgroundColor: colors.label.focus }]}
+                    style={({ pressed }) => [styles.timerButton, { backgroundColor: colors.label.focus, opacity: pressed ? 0.7 : 1 }]}
                     accessibilityLabel="Pause task"
                     accessibilityRole="button"
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Ionicons name="pause" size={14} color={colors.white} />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
             )}
@@ -297,59 +295,56 @@ export function TaskCard({
               {/* Left side - expand/more button */}
               <View style={styles.actionsLeft}>
                 {!task.completed && onExpand && (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       onExpand();
                     }}
-                    activeOpacity={0.7}
-                    style={[
+                    style={({ pressed }) => [
                       styles.circleButton,
-                      { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle },
+                      { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle, opacity: pressed ? 0.7 : 1 },
                     ]}
                     accessibilityLabel="Open task details"
                     accessibilityRole="button"
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
                     <Ionicons name="expand-outline" size={16} color={themeColors.text} />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
 
               {/* Right side - complete/undo buttons */}
               <View style={styles.actionsRight}>
                 {!task.completed && onComplete && (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                       onComplete();
                     }}
-                    activeOpacity={0.7}
-                    style={[styles.circleButton, { backgroundColor: colors.indigo[500] }]}
+                    style={({ pressed }) => [styles.circleButton, { backgroundColor: colors.indigo[500], opacity: pressed ? 0.7 : 1 }]}
                     accessibilityLabel="Mark task as complete"
                     accessibilityRole="button"
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
                     <Ionicons name="checkmark" size={16} color={colors.white} />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
                 {task.completed && onUndoComplete && (
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       onUndoComplete();
                     }}
-                    activeOpacity={0.7}
-                    style={[
+                    style={({ pressed }) => [
                       styles.circleButton,
-                      { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle },
+                      { backgroundColor: isDark ? themeColors.input : themeColors.bgSubtle, opacity: pressed ? 0.7 : 1 },
                     ]}
                     accessibilityLabel="Undo completion"
                     accessibilityRole="button"
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
                     <Ionicons name="arrow-undo" size={16} color={themeColors.text} />
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </View>
             </View>

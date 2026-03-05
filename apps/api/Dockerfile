@@ -31,6 +31,10 @@ RUN groupadd -r tymblok && useradd -r -g tymblok tymblok
 
 COPY --from=build /app/publish .
 
+# Create DataProtection-Keys directory writable by the app user
+# This MUST happen after COPY (so /app exists with content) and before USER switch
+RUN mkdir -p /app/DataProtection-Keys && chown tymblok:tymblok /app/DataProtection-Keys
+
 # Set environment
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
