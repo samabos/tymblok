@@ -273,7 +273,7 @@ jobs:
     name: Deploy Web
     needs: [lint]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     environment: production
     env:
       AZURE_RG: tymblok-prod
@@ -293,11 +293,8 @@ jobs:
             az staticwebapp create \
               --name ${{ env.SWA_NAME }} \
               --resource-group ${{ env.AZURE_RG }} \
-              --location uksouth \
-              --sku Free \
-              --branch main \
-              --source https://github.com/${{ github.repository }} \
-              --no-wait
+              --location westeurope \
+              --sku Free
           else
             echo "Static Web App already exists"
           fi
