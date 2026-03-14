@@ -275,8 +275,40 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
+    env:
+      AZURE_RG: tymblok-prod
+      SWA_NAME: tymblok-web
     steps:
       - uses: actions/checkout@v4
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure Static Web App exists
+        run: |
+          if ! az staticwebapp show --name ${{ env.SWA_NAME }} --resource-group ${{ env.AZURE_RG }} &>/dev/null; then
+            echo "Creating Static Web App..."
+            az staticwebapp create \
+              --name ${{ env.SWA_NAME }} \
+              --resource-group ${{ env.AZURE_RG }} \
+              --location uksouth \
+              --sku Free \
+              --branch main \
+              --source https://github.com/${{ github.repository }} \
+              --no-wait
+          else
+            echo "Static Web App already exists"
+          fi
+
+      - name: Get deployment token
+        id: swa-token
+        run: |
+          TOKEN=$(az staticwebapp secrets list --name ${{ env.SWA_NAME }} --resource-group ${{ env.AZURE_RG }} --query "properties.apiKey" -o tsv)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
       - uses: pnpm/action-setup@v2
         with:
           version: 8
@@ -285,14 +317,16 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+
       - name: Build web app
         run: pnpm --filter @tymblok/web build
         env:
           VITE_API_URL: https://tymblok-api.azurewebsites.net
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_TOKEN }}
+          azure_static_web_apps_api_token: ${{ steps.swa-token.outputs.token }}
           action: upload
           app_location: apps/web/dist
           skip_app_build: true
