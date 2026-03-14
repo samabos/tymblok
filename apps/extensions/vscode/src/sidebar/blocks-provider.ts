@@ -9,7 +9,7 @@ interface BlockDto {
   endTime: string;
   isCompleted: boolean;
   elapsedSeconds?: number;
-  status?: string;
+  timerState?: string;
   category?: { name: string; color: string } | null;
   externalUrl?: string | null;
 }
@@ -80,9 +80,9 @@ export class BlocksProvider
       const isActive = block.id === this.activeBlockId;
       const state = block.isCompleted
         ? 'completed'
-        : block.status === 'Running'
+        : block.timerState === 'Running'
           ? 'running'
-          : block.status === 'Paused'
+          : block.timerState === 'Paused'
             ? 'paused'
             : 'not_started';
 

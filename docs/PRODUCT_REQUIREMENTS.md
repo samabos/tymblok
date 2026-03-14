@@ -6,7 +6,7 @@
 
 ## Vision
 
-Tymblok helps developers take control of their time by combining visual time blocking with deep integrations into their existing workflow tools (GitHub, Jira, Calendar). Unlike generic productivity apps, Tymblok understands developer workflows — PRs, tickets, deep work sessions, and meetings.
+Tymblok helps developers take control of their time by combining visual time blocking with deep integrations into their existing workflow tools (GitHub, Jira, Calendar). Unlike generic productivity apps, Tymblok understands developer workflows - PRs, tickets, deep work sessions, and meetings.
 
 ---
 
@@ -106,13 +106,49 @@ Tymblok helps developers take control of their time by combining visual time blo
 | F7.7 | As a user, I can export my data                  | P3       | JSON/CSV download                  |
 | F7.8 | As a user, I can delete my account               | P2       | Confirmation, 30-day grace period  |
 
-### F8: Notifications (Future)
+### F8: Adaptive Scheduling (Core Differentiator)
 
-| ID   | Story                                                 | Priority | Acceptance Criteria                       |
-| ---- | ----------------------------------------------------- | -------- | ----------------------------------------- |
-| F8.1 | As a user, I receive a reminder before a block starts | P3       | Push notification, configurable lead time |
-| F8.2 | As a user, I receive a notification when a block ends | P3       | Optional                                  |
-| F8.3 | As a user, I can configure notification preferences   | P3       | Per-type toggles                          |
+| ID   | Story                                                              | Priority | Acceptance Criteria                                                      |
+| ---- | ------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------ |
+| F8.1 | As a user, my schedule auto-adjusts when a block overruns          | P1       | Downstream blocks shift, conflicts flagged, user confirms or adjusts     |
+| F8.2 | As a user, I get smart suggestions for when to schedule deep work  | P1       | Based on historical patterns, meeting gaps, and energy level preferences |
+| F8.3 | As a user, I can set energy level preferences per time of day      | P2       | Morning/afternoon/evening energy profiles, influences scheduling         |
+| F8.4 | As a user, unfinished blocks carry forward to tomorrow             | P1       | Auto-creates inbox item or next-day block with remaining time            |
+| F8.5 | As a user, I see a "reschedule" suggestion when my day derails     | P2       | One-tap reflow of remaining blocks based on available time               |
+| F8.6 | As a user, the app learns my scheduling patterns over time         | P2       | Tracks completion rates, preferred times per category, improves suggestions |
+
+### F9: IDE Extension
+
+| ID   | Story                                                                 | Priority | Acceptance Criteria                                                     |
+| ---- | --------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------- |
+| F9.1 | As a user, I can see my current time block in the IDE status bar      | P1       | VS Code extension, shows block title + time remaining                   |
+| F9.2 | As a user, I can start/stop/complete blocks from the IDE              | P1       | Command palette + status bar actions, syncs to mobile in real-time      |
+| F9.3 | As a user, I can quick-add a block from the IDE                       | P1       | Command palette "Tymblok: Add Block", opens inline form                 |
+| F9.4 | As a user, I see a focus timer in the IDE during deep work blocks     | P2       | Countdown in status bar, optional Pomodoro mode                         |
+| F9.5 | As a user, the IDE auto-detects what I'm working on                   | P2       | Reads current branch/file, suggests linking to matching ticket/PR block |
+| F9.6 | As a user, I can view my day at a glance in the IDE sidebar           | P2       | Sidebar panel with today's blocks, clickable to navigate                |
+| F9.7 | As a user, the extension can set Do Not Disturb during focus blocks   | P3       | Mutes VS Code notifications, optional Slack status sync                 |
+
+### F10: Multi-Source Data Integration
+
+| ID    | Story                                                                    | Priority | Acceptance Criteria                                                  |
+| ----- | ------------------------------------------------------------------------ | -------- | -------------------------------------------------------------------- |
+| F10.1 | As a user, my GitHub PRs/issues auto-appear in my inbox                  | P1       | Assigned PRs, review requests, mentioned issues - real-time sync     |
+| F10.2 | As a user, my Jira tickets auto-appear in my inbox                       | P1       | Assigned tickets, sprint items, watched issues - configurable        |
+| F10.3 | As a user, my Google Calendar events auto-create blocks                  | P1       | Two-way sync, calendar events become read-only blocks                |
+| F10.4 | As a user, I see a unified timeline merging all sources                  | P1       | Single view: blocks + calendar events + PR deadlines + sprint dates  |
+| F10.5 | As a user, I can set rules for auto-scheduling integration items         | P2       | "PR reviews always at 9 AM", "Jira bugs get 30min blocks"           |
+| F10.6 | As a user, I can see cross-source context on each block                  | P2       | Block linked to PR shows PR status, comments count, CI status inline |
+| F10.7 | As a user, completing a block can trigger actions in connected tools     | P3       | Mark Jira ticket "In Progress", post Slack update, etc.              |
+| F10.8 | As a user, I can connect Linear, Notion, Asana as additional sources    | P3       | Plugin architecture for adding new integrations                      |
+
+### F11: Notifications (Future)
+
+| ID    | Story                                                 | Priority | Acceptance Criteria                       |
+| ----- | ----------------------------------------------------- | -------- | ----------------------------------------- |
+| F11.1 | As a user, I receive a reminder before a block starts | P3       | Push notification, configurable lead time |
+| F11.2 | As a user, I receive a notification when a block ends | P3       | Optional                                  |
+| F11.3 | As a user, I can configure notification preferences   | P3       | Per-type toggles                          |
 
 ---
 
@@ -158,25 +194,39 @@ Tymblok helps developers take control of their time by combining visual time blo
 - Today view
 - Basic stats
 - Settings (theme)
+- Adaptive scheduling foundations (block overrun detection, carry-forward)
 
-### Phase 2: Integrations (4 weeks)
+### Phase 2: Integrations & Data (4 weeks)
 
-- GitHub integration
-- Jira integration
-- Inbox
+- GitHub integration (PRs, issues → inbox)
+- Jira integration (tickets → inbox)
+- Google Calendar two-way sync
+- Multi-source unified timeline
+- Inbox with cross-source context
 - Enhanced stats
 
-### Phase 3: Polish (2-3 weeks)
+### Phase 3: IDE Extension & Polish (3-4 weeks)
 
-- Onboarding
-- Google Calendar
+- VS Code extension (status bar, command palette, sidebar)
+- Auto-detect current branch/file context
+- Focus timer in IDE
+- Onboarding flow
 - Profile management
 - Accessibility features
 
-### Phase 4: Growth (Ongoing)
+### Phase 4: Adaptive Intelligence (3-4 weeks)
 
-- Slack integration
-- Notifications
+- Smart scheduling suggestions (energy levels, meeting gaps)
+- Auto-scheduling rules for integration items
+- Pattern learning (completion rates, preferred times)
+- One-tap day reflow on schedule derailment
+
+### Phase 5: Growth (Ongoing)
+
+- Slack integration + DND sync
+- Linear, Notion, Asana integrations (plugin architecture)
+- Cross-tool actions (complete block → update Jira)
+- Notifications & reminders
 - Team features
 - Premium tier
 
@@ -194,16 +244,16 @@ Tymblok helps developers take control of their time by combining visual time blo
 
 ---
 
-### F9: Subscriptions & Billing
+### F12: Subscriptions & Billing
 
-| ID   | Story                                       | Priority | Acceptance Criteria                   |
-| ---- | ------------------------------------------- | -------- | ------------------------------------- |
-| F9.1 | As a user, I can view subscription plans    | P0       | Free vs Pro comparison                |
-| F9.2 | As a user, I can subscribe to Pro plan      | P0       | Stripe checkout, monthly/yearly       |
-| F9.3 | As a user, I can manage my subscription     | P1       | View status, cancel, change plan      |
-| F9.4 | As a user, I can view billing history       | P2       | List of invoices, download PDF        |
-| F9.5 | As a Pro user, I get unlimited integrations | P0       | Free = 1 integration, Pro = unlimited |
-| F9.6 | As a Pro user, I get priority support       | P2       | In-app support chat badge             |
+| ID    | Story                                       | Priority | Acceptance Criteria                   |
+| ----- | ------------------------------------------- | -------- | ------------------------------------- |
+| F12.1 | As a user, I can view subscription plans    | P0       | Free vs Pro comparison                |
+| F12.2 | As a user, I can subscribe to Pro plan      | P0       | Stripe checkout, monthly/yearly       |
+| F12.3 | As a user, I can manage my subscription     | P1       | View status, cancel, change plan      |
+| F12.4 | As a user, I can view billing history       | P2       | List of invoices, download PDF        |
+| F12.5 | As a Pro user, I get unlimited integrations | P0       | Free = 1 integration, Pro = unlimited |
+| F12.6 | As a Pro user, I get priority support       | P2       | In-app support chat badge             |
 
 **Plan Limits:**
 
@@ -224,15 +274,15 @@ The following features are planned for post-launch Phase 2:
 
 | Feature                         | Priority | Notes                              |
 | ------------------------------- | -------- | ---------------------------------- |
-| Team/collaboration              | P2.1     | Shared blocks, team stats          |
+| Team/collaboration              | P5.1     | Shared blocks, team stats          |
 | Calendar view (week/month)      | P2.1     | Visual calendar interface          |
 | Recurring blocks                | P2.2     | Daily/weekly repeat patterns       |
-| Time tracking billing/invoicing | P2.3     | Client billing, reports            |
-| Desktop menu bar app            | P2.2     | Quick add from menu bar            |
-| Browser extension               | P2.3     | Block websites during focus        |
-| AI scheduling suggestions       | P2.4     | Smart scheduling based on patterns |
-| Slack integration               | P2.1     | Status sync, notifications         |
-| Notifications/reminders         | P2.1     | Push notifications for blocks      |
+| Time tracking billing/invoicing | P5.2     | Client billing, reports            |
+| Desktop menu bar app            | P5.2     | Quick add from menu bar            |
+| Browser extension               | P5.3     | Block websites during focus        |
+| JetBrains IDE extension         | P3.2     | IntelliJ/WebStorm support          |
+| Neovim plugin                   | P5.3     | For terminal-based workflows       |
+| Mobile widgets                  | P5.1     | iOS/Android home screen widgets    |
 
 ---
 

@@ -62,7 +62,7 @@ export class GitHubService {
   ): Promise<{ created: number; updated: number }> {
     if (prs.length === 0) return { created: 0, updated: 0 };
 
-    const response = await axios.post('/integrations/vscode/sync-prs', {
+    const response = await axios.post('integrations/vscode/sync-prs', {
       pullRequests: prs.map((pr) => ({
         externalId: `github:${pr.owner}/${pr.repo}#${pr.number}`,
         title: `Review: ${pr.title}`,

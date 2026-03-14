@@ -6,6 +6,7 @@ import {
   StatsCollector,
   StatsAggregator,
   GitHubService,
+  RealtimeClient,
 } from '@tymblok/ide-core';
 import { VscodeSecureStorage } from './auth-provider';
 import { VscodeLocalStorage } from './local-storage';
@@ -26,10 +27,7 @@ export async function activate(
 ): Promise<void> {
   // Read config
   const config = vscode.workspace.getConfiguration('tymblok');
-  const apiUrl = config.get<string>(
-    'apiUrl',
-    'https://tymblok-api.azurewebsites.net',
-  );
+  const apiUrl = config.get<string>('apiUrl')!;
   const statsEnabled = config.get<boolean>('statsEnabled', true);
   const idleTimeout = config.get<number>('idleTimeout', 300) * 1000;
 
@@ -98,6 +96,19 @@ export async function activate(
     statusBar,
   });
 
+  // Realtime sync via SignalR
+  const realtimeClient = new RealtimeClient(
+    apiUrl,
+    async () => (await authManager.getAccessToken()) ?? '',
+  );
+
+  // On BlockUpdated: refetch sidebar + update status bar
+  realtimeClient.on('BlockUpdated', async () => {
+    await blocksProvider.refresh();
+    const progress = blocksProvider.getProgress();
+    statusBar.updateProgress(progress.completed, progress.total);
+  });
+
   // React to auth state changes
   context.subscriptions.push(
     authManager.onStateChange(async (state) => {
@@ -105,6 +116,9 @@ export async function activate(
         await Promise.all([blocksProvider.refresh(), inboxProvider.refresh()]);
         const progress = blocksProvider.getProgress();
         statusBar.updateProgress(progress.completed, progress.total);
+        try { await realtimeClient.connect(); } catch { /* auto-reconnect handles retries */ }
+      } else {
+        await realtimeClient.disconnect();
       }
     }),
   );
@@ -114,10 +128,12 @@ export async function activate(
     await Promise.all([blocksProvider.refresh(), inboxProvider.refresh()]);
     const progress = blocksProvider.getProgress();
     statusBar.updateProgress(progress.completed, progress.total);
+    try { await realtimeClient.connect(); } catch { /* auto-reconnect handles retries */ }
   }
 
-  // Cleanup timer on deactivate
+  // Cleanup on deactivate
   context.subscriptions.push({ dispose: () => timer.dispose() });
+  context.subscriptions.push({ dispose: () => realtimeClient.disconnect() });
 }
 
 export async function deactivate(): Promise<void> {

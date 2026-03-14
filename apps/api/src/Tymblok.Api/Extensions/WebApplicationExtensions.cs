@@ -2,6 +2,7 @@ using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
+using Tymblok.Api.Hubs;
 using Tymblok.Api.Middleware;
 
 namespace Tymblok.Api.Extensions;
@@ -49,6 +50,9 @@ public static class WebApplicationExtensions
         // Static files (for avatar images, etc.)
         app.UseStaticFiles();
 
+        // Rate limiting
+        app.UseRateLimiter();
+
         // Authentication & Authorization
         app.UseAuthentication();
         app.UseAuthorization();
@@ -58,6 +62,9 @@ public static class WebApplicationExtensions
         {
             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
         });
+
+        // SignalR hubs
+        app.MapHub<TymblokHub>("/hubs/tymblok");
 
         // Controllers
         app.MapControllers();

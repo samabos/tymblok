@@ -21,3 +21,4 @@ export { TimerManager, type TimerInfo } from './timer-manager';
 export { StatsCollector } from './stats-collector';
 export { StatsAggregator } from './stats-aggregator';
 export { GitHubService } from './github-service';
+export { RealtimeClient } from './realtime-client';

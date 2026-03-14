@@ -15,6 +15,7 @@ public class BlockService : IBlockService
     private readonly IInboxRepository _inboxRepository;
     private readonly IRecurrenceService _recurrenceService;
     private readonly IAuditService _auditService;
+    private readonly IBlockNotifier _blockNotifier;
     private readonly TymblokDbContext _context;
 
     // Default category GUID for inbox-generated blocks (Focus category)
@@ -27,6 +28,7 @@ public class BlockService : IBlockService
         IInboxRepository inboxRepository,
         IRecurrenceService recurrenceService,
         IAuditService auditService,
+        IBlockNotifier blockNotifier,
         TymblokDbContext context)
     {
         _repository = repository;
@@ -35,6 +37,7 @@ public class BlockService : IBlockService
         _inboxRepository = inboxRepository;
         _recurrenceService = recurrenceService;
         _auditService = auditService;
+        _blockNotifier = blockNotifier;
         _context = context;
     }
 
@@ -623,6 +626,9 @@ public class BlockService : IBlockService
         _repository.Update(block);
         await _repository.SaveChangesAsync(ct);
 
+        // Notify connected clients (real-time sync)
+        await _blockNotifier.NotifyBlockUpdatedAsync(userId, block.Id, "Completed", ct);
+
         // Load category separately
         var category = await _categoryRepository.GetByIdWithUserAsync(block.CategoryId, userId);
         if (category == null)
@@ -799,6 +805,9 @@ public class BlockService : IBlockService
         _repository.Update(block);
         await _repository.SaveChangesAsync(ct);
 
+        // Notify connected clients (real-time sync)
+        await _blockNotifier.NotifyBlockUpdatedAsync(userId, block.Id, block.TimerState.ToString(), ct);
+
         // Load category separately
         var category = await _categoryRepository.GetByIdWithUserAsync(block.CategoryId, userId);
         if (category == null)
@@ -860,6 +869,9 @@ public class BlockService : IBlockService
         // Save changes
         _repository.Update(block);
         await _repository.SaveChangesAsync(ct);
+
+        // Notify connected clients (real-time sync)
+        await _blockNotifier.NotifyBlockUpdatedAsync(userId, block.Id, block.TimerState.ToString(), ct);
 
         // Load category separately
         var category = await _categoryRepository.GetByIdWithUserAsync(block.CategoryId, userId);
