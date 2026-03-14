@@ -293,7 +293,7 @@ jobs:
             az staticwebapp create \
               --name ${{ env.SWA_NAME }} \
               --resource-group ${{ env.AZURE_RG }} \
-              --location uksouth \
+              --location westeurope \
               --sku Free
           else
             echo "Static Web App already exists"
