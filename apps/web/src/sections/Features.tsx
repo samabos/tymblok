@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { motion, useInView } from 'motion/react';
 import { Layers, Github, Zap } from 'lucide-react';
 
-function LightFeatureCard({ icon: Icon, title, description, delay }: { icon: any; title: string; description: string; delay: number }) {
+function LightFeatureCard({ icon: Icon, title, description, delay }: { icon: React.ElementType; title: string; description: string; delay: number }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 

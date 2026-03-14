@@ -34,7 +34,7 @@ export default function BottomCTA() {
           </div>
 
           <p className="text-sm text-slate-400">
-            Free to join - No spam - We'll notify you when Tymblok launches
+            Free to join - No spam - We&apos;ll notify you when Tymblok launches
           </p>
         </motion.div>
       </div>
