@@ -24,4 +24,9 @@ public interface IEmailService
     /// Send a welcome email after registration
     /// </summary>
     Task SendWelcomeEmailAsync(string email, string name, CancellationToken ct = default);
+
+    /// <summary>
+    /// Send a waitlist subscription confirmation email
+    /// </summary>
+    Task SendWaitlistConfirmationAsync(string email, string? name, CancellationToken ct = default);
 }

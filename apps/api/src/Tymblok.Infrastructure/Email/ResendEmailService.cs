@@ -1,25 +1,34 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
+using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MimeKit;
 using Tymblok.Core.Interfaces;
 
 namespace Tymblok.Infrastructure.Email;
 
-/// <summary>
-/// Email service implementation using MailKit
-/// For development, configure Ethereal Email credentials
-/// </summary>
-public class EmailService : IEmailService
+public class ResendEmailService : IEmailService
 {
+    private readonly HttpClient _httpClient;
     private readonly EmailSettings _settings;
-    private readonly ILogger<EmailService> _logger;
+    private readonly ILogger<ResendEmailService> _logger;
 
-    public EmailService(IOptions<EmailSettings> settings, ILogger<EmailService> logger)
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public ResendEmailService(
+        HttpClient httpClient,
+        IOptions<EmailSettings> settings,
+        ILogger<ResendEmailService> logger)
+    {
+        _httpClient = httpClient;
         _settings = settings.Value;
         _logger = logger;
+
+        _httpClient.BaseAddress = new Uri(_settings.ApiBaseUrl);
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _settings.ApiKey);
     }
 
     public async Task SendEmailVerificationAsync(string email, string name, string verificationLink, CancellationToken ct = default)
@@ -51,18 +60,7 @@ public class EmailService : IEmailService
             </body>
             </html>";
 
-        var plainTextBody = $@"
-Welcome to Tymblok, {name}!
-
-Please verify your email address to complete your registration.
-
-Click here to verify: {verificationLink}
-
-This link will expire in 24 hours.
-
-If you didn't create a Tymblok account, you can safely ignore this email.";
-
-        await SendEmailAsync(email, subject, htmlBody, plainTextBody, ct);
+        await SendEmailAsync(email, subject, htmlBody, ct);
     }
 
     public async Task SendPasswordResetAsync(string email, string name, string resetLink, CancellationToken ct = default)
@@ -90,25 +88,12 @@ If you didn't create a Tymblok account, you can safely ignore this email.";
                 </p>
                 <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;'>
                 <p style='color: #94a3b8; font-size: 12px;'>
-                    If you didn't request a password reset, you can safely ignore this email. Your password won't be changed.
+                    If you didn't request a password reset, you can safely ignore this email.
                 </p>
             </body>
             </html>";
 
-        var plainTextBody = $@"
-Password Reset Request
-
-Hi {name},
-
-We received a request to reset your password. Click the link below to create a new password.
-
-Reset your password: {resetLink}
-
-This link will expire in 1 hour.
-
-If you didn't request a password reset, you can safely ignore this email. Your password won't be changed.";
-
-        await SendEmailAsync(email, subject, htmlBody, plainTextBody, ct);
+        await SendEmailAsync(email, subject, htmlBody, ct);
     }
 
     public async Task SendPasswordChangedNotificationAsync(string email, string name, CancellationToken ct = default)
@@ -131,18 +116,7 @@ If you didn't request a password reset, you can safely ignore this email. Your p
             </body>
             </html>";
 
-        var plainTextBody = $@"
-Password Changed
-
-Hi {name},
-
-Your Tymblok password was successfully changed.
-
-If you didn't make this change, please contact support immediately or reset your password.
-
-This is an automated security notification from Tymblok.";
-
-        await SendEmailAsync(email, subject, htmlBody, plainTextBody, ct);
+        await SendEmailAsync(email, subject, htmlBody, ct);
     }
 
     public async Task SendWelcomeEmailAsync(string email, string name, CancellationToken ct = default)
@@ -175,61 +149,63 @@ This is an automated security notification from Tymblok.";
             </body>
             </html>";
 
-        var plainTextBody = $@"
-Welcome to Tymblok!
-
-Hi {name},
-
-Thanks for joining Tymblok! We're excited to help you master your time and boost your productivity.
-
-Get Started:
-- Create your first time block
-- Connect your GitHub and Jira accounts
-- Sync your calendar
-- Start tracking your focus time
-
-Open Tymblok: {_settings.AppBaseUrl}
-
-Need help? Reply to this email and we'll get back to you.";
-
-        await SendEmailAsync(email, subject, htmlBody, plainTextBody, ct);
+        await SendEmailAsync(email, subject, htmlBody, ct);
     }
 
-    private async Task SendEmailAsync(string to, string subject, string htmlBody, string plainTextBody, CancellationToken ct)
+    public async Task SendWaitlistConfirmationAsync(string email, string? name, CancellationToken ct = default)
     {
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromEmail));
-        message.To.Add(MailboxAddress.Parse(to));
-        message.Subject = subject;
+        var displayName = !string.IsNullOrWhiteSpace(name) ? EscapeHtml(name) : "there";
+        var subject = "You're on the Tymblok waitlist!";
+        var htmlBody = $@"
+            <html>
+            <body style='font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                <h1 style='color: #6366f1;'>You're on the list!</h1>
+                <p>Hi {displayName},</p>
+                <p>Thanks for joining the Tymblok waitlist. We're building a time-blocking app designed specifically for developers — and you'll be among the first to try it.</p>
+                <p>We'll send you an email as soon as Tymblok is ready to download.</p>
+                <div style='margin: 30px 0; padding: 20px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #6366f1;'>
+                    <p style='margin: 0; color: #334155; font-weight: 600;'>What's coming:</p>
+                    <ul style='color: #475569; margin-top: 8px;'>
+                        <li>Visual time blocking for your dev day</li>
+                        <li>GitHub &amp; Jira integration</li>
+                        <li>Smart scheduling that respects deep work</li>
+                        <li>Developer-focused inbox</li>
+                    </ul>
+                </div>
+                <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;'>
+                <p style='color: #94a3b8; font-size: 12px;'>
+                    You're receiving this because you signed up for the Tymblok waitlist. No further action needed.
+                </p>
+            </body>
+            </html>";
 
-        var builder = new BodyBuilder
+        await SendEmailAsync(email, subject, htmlBody, ct);
+    }
+
+    private async Task SendEmailAsync(string to, string subject, string htmlBody, CancellationToken ct)
+    {
+        var payload = new
         {
-            HtmlBody = htmlBody,
-            TextBody = plainTextBody
+            from = $"{_settings.FromName} <{_settings.FromEmail}>",
+            to = new[] { to },
+            subject,
+            html = htmlBody
         };
-        message.Body = builder.ToMessageBody();
 
         try
         {
-            using var client = new SmtpClient();
+            var response = await _httpClient.PostAsJsonAsync("emails", payload, JsonOptions, ct);
 
-            var secureSocketOptions = _settings.UseSsl
-                ? SecureSocketOptions.SslOnConnect
-                : _settings.UseStartTls
-                    ? SecureSocketOptions.StartTls
-                    : SecureSocketOptions.None;
-
-            await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, secureSocketOptions, ct);
-
-            if (!string.IsNullOrEmpty(_settings.SmtpUsername))
+            if (response.IsSuccessStatusCode)
             {
-                await client.AuthenticateAsync(_settings.SmtpUsername, _settings.SmtpPassword, ct);
+                _logger.LogInformation("Email sent to {Email}, subject: {Subject}", to, subject);
             }
-
-            var response = await client.SendAsync(message, ct);
-            _logger.LogInformation("Email sent to {Email}, subject: {Subject}, response: {Response}", to, subject, response);
-
-            await client.DisconnectAsync(true, ct);
+            else
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError("Resend API error sending email to {Email}: {StatusCode} {Error}",
+                    to, response.StatusCode, errorBody);
+            }
         }
         catch (Exception ex)
         {

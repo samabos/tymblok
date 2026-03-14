@@ -22,6 +22,7 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
     public DbSet<RecurrenceRule> RecurrenceRules => Set<RecurrenceRule>();
     public DbSet<SupportContent> SupportContents => Set<SupportContent>();
     public DbSet<CodingSession> CodingSessions => Set<CodingSession>();
+    public DbSet<WaitlistSubscriber> WaitlistSubscribers => Set<WaitlistSubscriber>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,6 +44,7 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
         ConfigureRecurrenceRule(modelBuilder);
         ConfigureSupportContent(modelBuilder);
         ConfigureCodingSession(modelBuilder);
+        ConfigureWaitlistSubscriber(modelBuilder);
 
         // Global query filter for soft deletes
         modelBuilder.Entity<ApplicationUser>()
@@ -549,6 +551,27 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
                 .WithMany()
                 .HasForeignKey(s => s.BlockId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureWaitlistSubscriber(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<WaitlistSubscriber>(entity =>
+        {
+            entity.ToTable("waitlist_subscribers");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Source)
+                .HasMaxLength(50);
+
+            entity.HasIndex(e => e.Email).IsUnique();
         });
     }
 

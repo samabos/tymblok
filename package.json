@@ -8,6 +8,7 @@
     "dev:mobile": "cd apps/mobile && expo start",
     "dev:desktop": "turbo run dev --filter=@tymblok/desktop",
     "dev:api": "cd apps/api && dotnet watch run --project src/Tymblok.Api",
+    "dev:web": "turbo run dev --filter=@tymblok/web",
     "build": "turbo run build",
     "build:api": "cd apps/api && dotnet build -c Release",
     "build:shared": "turbo run build --filter=@tymblok/shared",

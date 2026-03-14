@@ -94,7 +94,9 @@ public static class DependencyInjection
         // Services
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAuditService, AuditService>();
-        services.AddScoped<IEmailService, EmailService>();
+        services.AddHttpClient<ResendEmailService>();
+        services.AddScoped<IEmailService, ResendEmailService>();
+        services.AddScoped<IWaitlistService, WaitlistService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IInboxService, InboxService>();

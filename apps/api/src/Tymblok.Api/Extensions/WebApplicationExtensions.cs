@@ -50,6 +50,9 @@ public static class WebApplicationExtensions
         // Static files (for avatar images, etc.)
         app.UseStaticFiles();
 
+        // Rate limiting
+        app.UseRateLimiter();
+
         // Authentication & Authorization
         app.UseAuthentication();
         app.UseAuthorization();

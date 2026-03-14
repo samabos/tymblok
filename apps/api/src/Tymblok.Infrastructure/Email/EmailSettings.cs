@@ -1,47 +1,23 @@
 namespace Tymblok.Infrastructure.Email;
 
-/// <summary>
-/// Email service configuration settings
-/// For development, use Ethereal Email (https://ethereal.email/)
-/// </summary>
 public class EmailSettings
 {
     public const string SectionName = "Email";
 
     /// <summary>
-    /// SMTP server host (e.g., smtp.ethereal.email for dev)
+    /// Resend API key (re_xxxxx)
     /// </summary>
-    public string SmtpHost { get; set; } = "smtp.ethereal.email";
+    public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// SMTP server port (587 for TLS, 465 for SSL)
+    /// Resend API base URL
     /// </summary>
-    public int SmtpPort { get; set; } = 587;
-
-    /// <summary>
-    /// SMTP username (Ethereal email address)
-    /// </summary>
-    public string SmtpUsername { get; set; } = string.Empty;
-
-    /// <summary>
-    /// SMTP password (Ethereal password)
-    /// </summary>
-    public string SmtpPassword { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Use SSL/TLS for SMTP connection
-    /// </summary>
-    public bool UseSsl { get; set; } = false;
-
-    /// <summary>
-    /// Use STARTTLS for SMTP connection
-    /// </summary>
-    public bool UseStartTls { get; set; } = true;
+    public string ApiBaseUrl { get; set; } = "https://api.resend.com/";
 
     /// <summary>
     /// Sender email address
     /// </summary>
-    public string FromEmail { get; set; } = "noreply@tymblok.app";
+    public string FromEmail { get; set; } = "noreply@tymblok.com";
 
     /// <summary>
     /// Sender display name

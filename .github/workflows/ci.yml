@@ -178,13 +178,8 @@ jobs:
               { "name": "OAuth__GitHub__ClientSecret", "value": "${{ secrets.CLIENT_SECRET_GITHUB }}", "slotSetting": false },
               { "name": "OAuth__WebCallbackUrl", "value": "${{ vars.WEB_CALLBACK_URL }}", "slotSetting": false },
               { "name": "Integrations__EncryptionKey", "value": "${{ secrets.INTEGRATION_ENCRYPTION_KEY }}", "slotSetting": false },
-              { "name": "Email__SmtpHost", "value": "${{ vars.SMTP_HOST }}", "slotSetting": false },
-              { "name": "Email__SmtpPort", "value": "${{ vars.SMTP_PORT }}", "slotSetting": false },
-              { "name": "Email__SmtpUsername", "value": "${{ vars.SMTP_USERNAME }}", "slotSetting": false },
-              { "name": "Email__SmtpPassword", "value": "${{ secrets.SMTP_PASSWORD }}", "slotSetting": false },
-              { "name": "Email__UseSsl", "value": "true", "slotSetting": false },
-              { "name": "Email__UseStartTls", "value": "false", "slotSetting": false },
-              { "name": "Email__FromEmail", "value": "noreply@tymblok.app", "slotSetting": false },
+              { "name": "Email__ApiKey", "value": "${{ secrets.RESEND_API_KEY }}", "slotSetting": false },
+              { "name": "Email__FromEmail", "value": "noreply@tymblok.com", "slotSetting": false },
               { "name": "Email__FromName", "value": "Tymblok", "slotSetting": false },
               { "name": "Email__AppBaseUrl", "value": "${{ vars.APP_BASE_URL }}", "slotSetting": false }
             ]
@@ -255,13 +250,8 @@ jobs:
               { "name": "OAuth__GitHub__ClientSecret", "value": "${{ secrets.CLIENT_SECRET_GITHUB }}", "slotSetting": false },
               { "name": "OAuth__WebCallbackUrl", "value": "${{ vars.PROD_WEB_CALLBACK_URL }}", "slotSetting": false },
               { "name": "Integrations__EncryptionKey", "value": "${{ secrets.PROD_INTEGRATION_ENCRYPTION_KEY }}", "slotSetting": false },
-              { "name": "Email__SmtpHost", "value": "${{ vars.SMTP_HOST }}", "slotSetting": false },
-              { "name": "Email__SmtpPort", "value": "${{ vars.SMTP_PORT }}", "slotSetting": false },
-              { "name": "Email__SmtpUsername", "value": "${{ vars.SMTP_USERNAME }}", "slotSetting": false },
-              { "name": "Email__SmtpPassword", "value": "${{ secrets.SMTP_PASSWORD }}", "slotSetting": false },
-              { "name": "Email__UseSsl", "value": "true", "slotSetting": false },
-              { "name": "Email__UseStartTls", "value": "false", "slotSetting": false },
-              { "name": "Email__FromEmail", "value": "noreply@tymblok.app", "slotSetting": false },
+              { "name": "Email__ApiKey", "value": "${{ secrets.PROD_RESEND_API_KEY }}", "slotSetting": false },
+              { "name": "Email__FromEmail", "value": "noreply@tymblok.com", "slotSetting": false },
               { "name": "Email__FromName", "value": "Tymblok", "slotSetting": false },
               { "name": "Email__AppBaseUrl", "value": "${{ vars.PROD_APP_BASE_URL }}", "slotSetting": false }
             ]
@@ -270,12 +260,42 @@ jobs:
         run: |
           # Add custom domain if not already configured
           DOMAINS=$(az webapp config hostname list --webapp-name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RG }} --query "[].name" -o tsv)
-          if ! echo "$DOMAINS" | grep -q "api.tymblok.app"; then
-            echo "Custom domain not yet configured. Add a CNAME record pointing api.tymblok.app to ${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net, then run:"
-            echo "  az webapp config hostname add --webapp-name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RG }} --hostname api.tymblok.app"
+          if ! echo "$DOMAINS" | grep -q "api.tymblok.com"; then
+            echo "Custom domain not yet configured. Add a CNAME record pointing api.tymblok.com to ${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net, then run:"
+            echo "  az webapp config hostname add --webapp-name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RG }} --hostname api.tymblok.com"
           else
             echo "Custom domain already configured"
           fi
+
+  # --- Deploy Web (landing page → Azure Static Web Apps) ---
+
+  deploy-web:
+    name: Deploy Web
+    needs: [lint]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Build web app
+        run: pnpm --filter @tymblok/web build
+        env:
+          VITE_API_URL: https://tymblok-api.azurewebsites.net
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_TOKEN }}
+          action: upload
+          app_location: apps/web/dist
+          skip_app_build: true
 
   # --- EAS Build (mobile) ---
 
