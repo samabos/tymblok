@@ -42,7 +42,7 @@ public class WaitlistService : IWaitlistService
 
                 _logger.LogInformation("Waitlist resubscribe: {Email}", normalizedEmail);
 
-                _ = Task.Run(() => _emailService.SendWaitlistConfirmationAsync(normalizedEmail, name, ct), ct);
+                await SendConfirmationEmailAsync(normalizedEmail, name);
 
                 return (existing, false);
             }
@@ -64,9 +64,21 @@ public class WaitlistService : IWaitlistService
 
         _logger.LogInformation("New waitlist subscriber: {Email}", normalizedEmail);
 
-        // Fire-and-forget confirmation email
-        _ = Task.Run(() => _emailService.SendWaitlistConfirmationAsync(normalizedEmail, name, ct), ct);
+        await SendConfirmationEmailAsync(normalizedEmail, name);
 
         return (subscriber, false);
+    }
+
+    private async Task SendConfirmationEmailAsync(string email, string? name)
+    {
+        try
+        {
+            await _emailService.SendWaitlistConfirmationAsync(email, name);
+        }
+        catch (Exception ex)
+        {
+            // Log but don't fail the subscription if email fails
+            _logger.LogError(ex, "Failed to send waitlist confirmation email to {Email}", email);
+        }
     }
 }

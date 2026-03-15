@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
+using Tymblok.Core.Interfaces;
 
 namespace Tymblok.Api.Tests;
 
@@ -15,5 +18,12 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         // Use Testing environment which enables in-memory database
         // See: Program.cs useInMemoryDatabase: isTestEnvironment
         builder.UseEnvironment("Testing");
+
+        builder.ConfigureServices(services =>
+        {
+            // Replace email service with a no-op mock so tests never hit Resend
+            var mockEmail = new Mock<IEmailService>();
+            services.AddScoped(_ => mockEmail.Object);
+        });
     }
 }

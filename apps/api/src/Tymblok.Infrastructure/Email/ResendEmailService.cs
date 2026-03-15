@@ -161,7 +161,7 @@ public class ResendEmailService : IEmailService
             <body style='font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
                 <h1 style='color: #6366f1;'>You're on the list!</h1>
                 <p>Hi {displayName},</p>
-                <p>Thanks for joining the Tymblok waitlist. We're building a time-blocking app designed specifically for developers — and you'll be among the first to try it.</p>
+                <p>Thanks for joining the Tymblok waitlist. We're building a time-blocking app designed specifically for tech engineers, and you'll be among the first to try it.</p>
                 <p>We'll send you an email as soon as Tymblok is ready to download.</p>
                 <div style='margin: 30px 0; padding: 20px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #6366f1;'>
                     <p style='margin: 0; color: #334155; font-weight: 600;'>What's coming:</p>
@@ -169,7 +169,7 @@ public class ResendEmailService : IEmailService
                         <li>Visual time blocking for your dev day</li>
                         <li>GitHub &amp; Jira integration</li>
                         <li>Smart scheduling that respects deep work</li>
-                        <li>Developer-focused inbox</li>
+                        <li>Engineer-focused inbox</li>
                     </ul>
                 </div>
                 <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;'>
