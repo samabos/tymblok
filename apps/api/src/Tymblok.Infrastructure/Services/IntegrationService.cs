@@ -77,6 +77,14 @@ public class IntegrationService : IIntegrationService
         var providerService = GetProviderService(provider);
         var tokenResult = await providerService.ExchangeCodeAsync(code, redirectUri, ct);
 
+        // Prevent duplicate: same provider + same external account
+        var existing = await _repository.GetByExternalAccountAsync(userId, provider, tokenResult.ExternalUserId);
+        if (existing != null)
+        {
+            throw new ConflictException("ACCOUNT_ALREADY_CONNECTED",
+                $"This {GenerateProviderDisplayName(provider)} account ({tokenResult.ExternalUsername ?? tokenResult.ExternalUserId}) is already connected.");
+        }
+
         // Default name: provider display name + external username (e.g. "GitHub - octocat")
         var displayName = name ?? GenerateDefaultName(provider, tokenResult.ExternalUsername);
 
@@ -307,19 +315,20 @@ public class IntegrationService : IIntegrationService
         return service;
     }
 
+    private static string GenerateProviderDisplayName(IntegrationProvider provider) => provider switch
+    {
+        IntegrationProvider.GitHub => "GitHub",
+        IntegrationProvider.GoogleCalendar => "Google Calendar",
+        IntegrationProvider.Jira => "Jira",
+        IntegrationProvider.Slack => "Slack",
+        IntegrationProvider.Notion => "Notion",
+        IntegrationProvider.Linear => "Linear",
+        _ => provider.ToString()
+    };
+
     private static string GenerateDefaultName(IntegrationProvider provider, string? externalUsername)
     {
-        var providerName = provider switch
-        {
-            IntegrationProvider.GitHub => "GitHub",
-            IntegrationProvider.GoogleCalendar => "Google Calendar",
-            IntegrationProvider.Jira => "Jira",
-            IntegrationProvider.Slack => "Slack",
-            IntegrationProvider.Notion => "Notion",
-            IntegrationProvider.Linear => "Linear",
-            _ => provider.ToString()
-        };
-
+        var providerName = GenerateProviderDisplayName(provider);
         return string.IsNullOrEmpty(externalUsername)
             ? providerName
             : $"{providerName} - {externalUsername}";

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { IntegrationsApi } from '../api/integrations';
-import type { IntegrationProvider, IntegrationCallbackRequest } from '../types/integration';
+import type { IntegrationProvider } from '../types/integration';
 import { inboxKeys } from './useInbox';
 import { blockKeys } from './useBlocks';
 
@@ -29,23 +29,6 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
         redirectUri?: string;
         name?: string;
       }) => integrationsApi.connect(provider, redirectUri, name),
-    });
-  };
-
-  const useIntegrationCallback = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-      mutationFn: ({
-        provider,
-        data,
-      }: {
-        provider: IntegrationProvider;
-        data: IntegrationCallbackRequest;
-      }) => integrationsApi.callback(provider, data),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
-      },
     });
   };
 
@@ -103,7 +86,6 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
   return {
     useIntegrations,
     useConnectIntegration,
-    useIntegrationCallback,
     useDisconnectIntegration,
     useRenameIntegration,
     useSyncIntegration,
