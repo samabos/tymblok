@@ -243,14 +243,14 @@ jobs:
           app-settings-json: |
             [
               { "name": "ConnectionStrings__DefaultConnection", "value": "${{ secrets.PROD_DATABASE_URL }}", "slotSetting": false },
-              { "name": "Jwt__Secret", "value": "${{ secrets.PROD_JWT_SECRET }}", "slotSetting": false },
+              { "name": "Jwt__Secret", "value": "${{ secrets.JWT_SECRET }}", "slotSetting": false },
               { "name": "OAuth__Google__ClientId", "value": "${{ secrets.GOOGLE_CLIENT_ID }}", "slotSetting": false },
               { "name": "OAuth__Google__ClientSecret", "value": "${{ secrets.GOOGLE_CLIENT_SECRET }}", "slotSetting": false },
               { "name": "OAuth__GitHub__ClientId", "value": "${{ secrets.CLIENT_ID_GITHUB }}", "slotSetting": false },
               { "name": "OAuth__GitHub__ClientSecret", "value": "${{ secrets.CLIENT_SECRET_GITHUB }}", "slotSetting": false },
               { "name": "OAuth__WebCallbackUrl", "value": "${{ vars.PROD_WEB_CALLBACK_URL }}", "slotSetting": false },
-              { "name": "Integrations__EncryptionKey", "value": "${{ secrets.PROD_INTEGRATION_ENCRYPTION_KEY }}", "slotSetting": false },
-              { "name": "Email__ApiKey", "value": "${{ secrets.PROD_RESEND_API_KEY }}", "slotSetting": false },
+              { "name": "Integrations__EncryptionKey", "value": "${{ secrets.INTEGRATION_ENCRYPTION_KEY }}", "slotSetting": false },
+              { "name": "Email__ApiKey", "value": "${{ secrets.RESEND_API_KEY }}", "slotSetting": false },
               { "name": "Email__FromEmail", "value": "noreply@tymblok.com", "slotSetting": false },
               { "name": "Email__FromName", "value": "Tymblok", "slotSetting": false },
               { "name": "Email__AppBaseUrl", "value": "${{ vars.PROD_APP_BASE_URL }}", "slotSetting": false }

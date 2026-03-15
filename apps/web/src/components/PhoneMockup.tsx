@@ -3,13 +3,16 @@ import { Sparkles } from 'lucide-react';
 
 export default function PhoneMockup({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
   const isDark = variant === 'dark';
+  const now = new Date();
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const blocks = [
     { time: '9:00', title: 'Stand-up', color: '#a855f7', height: 30 },
     { time: '10:30', title: 'Review PR #247', color: '#10b981', height: 90 },
     { time: '2:00', title: 'Deep work', color: '#3b82f6', height: 120 },
   ];
 
-  return (
+  return ( 
     <motion.div
       className="relative"
       initial={{ opacity: 0, y: 40 }}
@@ -22,8 +25,8 @@ export default function PhoneMockup({ variant = 'dark' }: { variant?: 'dark' | '
 
         <div className="p-6 pt-10 h-full overflow-hidden">
           <div className="mb-6">
-            <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider mb-1`}>Tuesday</div>
-            <div className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Mar 14</div>
+            <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider mb-1`}>{dayName}</div>
+            <div className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{dateStr}</div>
           </div>
 
           <div className="space-y-3">

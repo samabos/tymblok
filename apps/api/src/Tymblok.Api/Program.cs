@@ -30,7 +30,7 @@ try
 
     // Configure services
     builder.Services
-        .AddApiServices(builder.Configuration, skipDatabaseHealthCheck: isTestEnvironment)
+        .AddApiServices(builder.Configuration, skipDatabaseHealthCheck: isTestEnvironment, isTestEnvironment: isTestEnvironment)
         .AddInfrastructure(builder.Configuration, useInMemoryDatabase: isTestEnvironment);
 
     var app = builder.Build();

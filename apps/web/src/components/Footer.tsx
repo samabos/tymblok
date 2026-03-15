@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <BlockTowerLogo size={24} variant="color" />
+            <BlockTowerLogo size={24} variant="white" />
             <span className="text-sm text-slate-400">
               &copy; {new Date().getFullYear()} Tymblok. All rights reserved.
             </span>

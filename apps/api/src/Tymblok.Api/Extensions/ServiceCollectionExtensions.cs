@@ -21,7 +21,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApiServices(
         this IServiceCollection services,
         IConfiguration configuration,
-        bool skipDatabaseHealthCheck = false)
+        bool skipDatabaseHealthCheck = false,
+        bool isTestEnvironment = false)
     {
         // SignalR
         services.AddSignalR();
@@ -201,7 +202,7 @@ public static class ServiceCollectionExtensions
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.AddFixedWindowLimiter("waitlist", opt =>
             {
-                opt.PermitLimit = 5;
+                opt.PermitLimit = isTestEnvironment ? 10000 : 5;
                 opt.Window = TimeSpan.FromMinutes(15);
                 opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                 opt.QueueLimit = 0;
