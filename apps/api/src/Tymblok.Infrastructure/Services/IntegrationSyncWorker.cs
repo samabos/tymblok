@@ -62,7 +62,7 @@ public class IntegrationSyncWorker : BackgroundService
             {
                 using var syncScope = _scopeFactory.CreateScope();
                 var integrationService = syncScope.ServiceProvider.GetRequiredService<IIntegrationService>();
-                await integrationService.SyncAsync(integration.UserId, integration.Provider, ct);
+                await integrationService.SyncAsync(integration.UserId, integration.Id, ct);
             }
             catch (Exception ex)
             {

@@ -36,35 +36,20 @@ public class IntegrationService : IIntegrationService
     public async Task<IList<IntegrationData>> GetAllAsync(Guid userId, CancellationToken ct = default)
     {
         var integrations = await _repository.GetByUserIdAsync(userId);
-        return integrations.Select(i => new IntegrationData(
-            i.Id,
-            i.Provider,
-            i.ExternalUsername,
-            i.ExternalAvatarUrl,
-            i.LastSyncAt,
-            i.LastSyncError,
-            i.CreatedAt
-        )).ToList();
+        return integrations.Select(ToData).ToList();
     }
 
-    public async Task<OAuthConfig> ConnectAsync(Guid userId, IntegrationProvider provider, string? apiCallbackUrl, string? mobileRedirectUri = null, CancellationToken ct = default)
+    public async Task<OAuthConfig> ConnectAsync(Guid userId, IntegrationProvider provider, string? name, string? apiCallbackUrl, string? mobileRedirectUri = null, CancellationToken ct = default)
     {
-        // Check if already connected
-        var existing = await _repository.GetByProviderAsync(userId, provider);
-        if (existing != null)
-        {
-            throw new ConflictException("INTEGRATION_ALREADY_CONNECTED",
-                $"{provider} is already connected. Disconnect first to reconnect.");
-        }
-
-        // Store the mobile redirect URI in the OAuth state so the callback can redirect back
+        // Store the mobile redirect URI and name in the OAuth state so the callback can use them
         var providerService = GetProviderService(provider);
-        return await providerService.GetAuthUrlAsync(userId, apiCallbackUrl, mobileRedirectUri, ct);
+        return await providerService.GetAuthUrlAsync(userId, apiCallbackUrl, mobileRedirectUri, name, ct);
     }
 
     public async Task<IntegrationData> CallbackAsync(
         Guid userId,
         IntegrationProvider provider,
+        string? name,
         string code,
         string? state,
         string? redirectUri,
@@ -83,25 +68,32 @@ public class IntegrationService : IIntegrationService
             {
                 throw new ValidationException("STATE_MISMATCH", "OAuth state does not match the request");
             }
-        }
 
-        // Check if already connected (race condition guard)
-        var existing = await _repository.GetByProviderAsync(userId, provider);
-        if (existing != null)
-        {
-            throw new ConflictException("INTEGRATION_ALREADY_CONNECTED",
-                $"{provider} is already connected.");
+            // Use the name from state if not provided directly
+            name ??= stateData.Name;
         }
 
         // Exchange code for tokens
         var providerService = GetProviderService(provider);
         var tokenResult = await providerService.ExchangeCodeAsync(code, redirectUri, ct);
 
+        // Prevent duplicate: same provider + same external account
+        var existing = await _repository.GetByExternalAccountAsync(userId, provider, tokenResult.ExternalUserId);
+        if (existing != null)
+        {
+            throw new ConflictException("ACCOUNT_ALREADY_CONNECTED",
+                $"This {GenerateProviderDisplayName(provider)} account ({tokenResult.ExternalUsername ?? tokenResult.ExternalUserId}) is already connected.");
+        }
+
+        // Default name: provider display name + external username (e.g. "GitHub - octocat")
+        var displayName = name ?? GenerateDefaultName(provider, tokenResult.ExternalUsername);
+
         // Create integration with encrypted tokens
         var integration = new Integration
         {
             UserId = userId,
             Provider = provider,
+            Name = displayName,
             AccessToken = _encryption.Encrypt(tokenResult.AccessToken),
             RefreshToken = tokenResult.RefreshToken != null ? _encryption.Encrypt(tokenResult.RefreshToken) : null,
             TokenExpiresAt = tokenResult.ExpiresAt,
@@ -118,19 +110,19 @@ public class IntegrationService : IIntegrationService
             entityType: "Integration",
             entityId: integration.Id.ToString(),
             userId: userId,
-            newValues: new { integration.Provider, integration.ExternalUsername });
+            newValues: new { integration.Provider, integration.Name, integration.ExternalUsername });
 
-        _logger.LogInformation("Integration connected | Provider: {Provider} | UserId: {UserId} | ExternalUser: {ExternalUser}",
-            provider, userId, tokenResult.ExternalUsername);
+        _logger.LogInformation("Integration connected | Provider: {Provider} | Name: {Name} | UserId: {UserId} | ExternalUser: {ExternalUser}",
+            provider, displayName, userId, tokenResult.ExternalUsername);
 
         // Trigger initial sync (best-effort)
         try
         {
-            var syncResult = await SyncAsync(userId, provider, ct);
+            var syncResult = await SyncIntegrationAsync(integration, ct);
             _logger.LogInformation("Initial sync after connect | Provider: {Provider} | UserId: {UserId} | Items: {ItemsSynced}",
                 provider, userId, syncResult.ItemsSynced);
             // Refresh integration data to include LastSyncAt
-            integration = (await _repository.GetByProviderAsync(userId, provider))!;
+            integration = (await _repository.GetByIdAndUserAsync(integration.Id, userId))!;
         }
         catch (Exception ex)
         {
@@ -138,35 +130,27 @@ public class IntegrationService : IIntegrationService
                 provider, userId);
         }
 
-        return new IntegrationData(
-            integration.Id,
-            integration.Provider,
-            integration.ExternalUsername,
-            integration.ExternalAvatarUrl,
-            integration.LastSyncAt,
-            integration.LastSyncError,
-            integration.CreatedAt
-        );
+        return ToData(integration);
     }
 
-    public async Task DisconnectAsync(Guid userId, IntegrationProvider provider, CancellationToken ct = default)
+    public async Task DisconnectAsync(Guid userId, Guid integrationId, CancellationToken ct = default)
     {
-        var integration = await _repository.GetByProviderAsync(userId, provider);
+        var integration = await _repository.GetByIdAndUserAsync(integrationId, userId);
         if (integration == null)
         {
-            throw new NotFoundException("INTEGRATION_NOT_FOUND", $"{provider} integration not found");
+            throw new NotFoundException("INTEGRATION_NOT_FOUND", "Integration not found");
         }
 
         // Revoke access at the provider (best-effort)
         try
         {
-            var providerService = GetProviderService(provider);
+            var providerService = GetProviderService(integration.Provider);
             await providerService.RevokeAccessAsync(integration, ct);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to revoke {Provider} access for user {UserId}. Continuing with disconnect.",
-                provider, userId);
+                integration.Provider, userId);
         }
 
         // Delete the integration (InboxItems.IntegrationId will be set to null via FK cascade)
@@ -178,72 +162,36 @@ public class IntegrationService : IIntegrationService
             entityType: "Integration",
             entityId: integration.Id.ToString(),
             userId: userId,
-            oldValues: new { integration.Provider, integration.ExternalUsername });
+            oldValues: new { integration.Provider, integration.Name, integration.ExternalUsername });
 
-        _logger.LogInformation("Integration disconnected | Provider: {Provider} | UserId: {UserId}",
-            provider, userId);
+        _logger.LogInformation("Integration disconnected | Provider: {Provider} | Name: {Name} | UserId: {UserId}",
+            integration.Provider, integration.Name, userId);
     }
 
-    public async Task<SyncResult> SyncAsync(Guid userId, IntegrationProvider provider, CancellationToken ct = default)
+    public async Task<IntegrationData> RenameAsync(Guid userId, Guid integrationId, string name, CancellationToken ct = default)
     {
-        var integration = await _repository.GetByProviderAsync(userId, provider);
+        var integration = await _repository.GetByIdAndUserAsync(integrationId, userId);
         if (integration == null)
         {
-            throw new NotFoundException("INTEGRATION_NOT_FOUND", $"{provider} integration not found");
+            throw new NotFoundException("INTEGRATION_NOT_FOUND", "Integration not found");
         }
 
-        var providerService = GetProviderService(provider);
+        integration.Name = name;
+        _repository.Update(integration);
+        await _repository.SaveChangesAsync(ct);
 
-        // Refresh token if needed
-        if (integration.TokenExpiresAt.HasValue &&
-            integration.TokenExpiresAt.Value < DateTime.UtcNow.AddMinutes(5))
+        return ToData(integration);
+    }
+
+    public async Task<SyncResult> SyncAsync(Guid userId, Guid integrationId, CancellationToken ct = default)
+    {
+        var integration = await _repository.GetByIdAndUserAsync(integrationId, userId);
+        if (integration == null)
         {
-            var refreshResult = await providerService.RefreshTokenAsync(integration, ct);
-            if (refreshResult != null)
-            {
-                integration.AccessToken = _encryption.Encrypt(refreshResult.AccessToken);
-                if (refreshResult.RefreshToken != null)
-                {
-                    integration.RefreshToken = _encryption.Encrypt(refreshResult.RefreshToken);
-                }
-                integration.TokenExpiresAt = refreshResult.ExpiresAt;
-                _repository.Update(integration);
-                await _repository.SaveChangesAsync(ct);
-            }
+            throw new NotFoundException("INTEGRATION_NOT_FOUND", "Integration not found");
         }
 
-        try
-        {
-            var result = await providerService.SyncAsync(integration, userId, ct);
-
-            integration.LastSyncAt = result.SyncedAt;
-            integration.LastSyncError = null;
-            _repository.Update(integration);
-            await _repository.SaveChangesAsync(ct);
-
-            await _auditService.LogAsync(
-                action: "IntegrationSync",
-                entityType: "Integration",
-                entityId: integration.Id.ToString(),
-                userId: userId,
-                newValues: new { result.ItemsSynced, result.SyncedAt });
-
-            _logger.LogInformation("Integration synced | Provider: {Provider} | UserId: {UserId} | Items: {ItemsSynced}",
-                provider, userId, result.ItemsSynced);
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            integration.LastSyncError = ex.Message;
-            _repository.Update(integration);
-            await _repository.SaveChangesAsync(ct);
-
-            _logger.LogError(ex, "Integration sync failed | Provider: {Provider} | UserId: {UserId}",
-                provider, userId);
-
-            throw new IntegrationException("SYNC_FAILED", $"Failed to sync {provider}: {ex.Message}");
-        }
+        return await SyncIntegrationAsync(integration, ct);
     }
 
     public async Task<SyncAllResult> SyncAllAsync(Guid userId, int minIntervalSeconds = 300, CancellationToken ct = default)
@@ -278,14 +226,14 @@ public class IntegrationService : IIntegrationService
             if (ct.IsCancellationRequested) break;
             try
             {
-                var result = await SyncAsync(userId, integration.Provider, ct);
+                var result = await SyncIntegrationAsync(integration, ct);
                 totalItems += result.ItemsSynced;
                 syncedCount++;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "SyncAll: failed for provider {Provider} | UserId: {UserId}",
-                    integration.Provider, userId);
+                _logger.LogWarning(ex, "SyncAll: failed for provider {Provider} (id={IntegrationId}) | UserId: {UserId}",
+                    integration.Provider, integration.Id, integration.UserId);
             }
         }
 
@@ -297,6 +245,66 @@ public class IntegrationService : IIntegrationService
         return _stateService.ValidateState(state);
     }
 
+    /// <summary>
+    /// Internal sync that operates on a loaded Integration entity.
+    /// Handles token refresh, provider sync, and error recording.
+    /// </summary>
+    private async Task<SyncResult> SyncIntegrationAsync(Integration integration, CancellationToken ct)
+    {
+        var providerService = GetProviderService(integration.Provider);
+
+        // Refresh token if needed
+        if (integration.TokenExpiresAt.HasValue &&
+            integration.TokenExpiresAt.Value < DateTime.UtcNow.AddMinutes(5))
+        {
+            var refreshResult = await providerService.RefreshTokenAsync(integration, ct);
+            if (refreshResult != null)
+            {
+                integration.AccessToken = _encryption.Encrypt(refreshResult.AccessToken);
+                if (refreshResult.RefreshToken != null)
+                {
+                    integration.RefreshToken = _encryption.Encrypt(refreshResult.RefreshToken);
+                }
+                integration.TokenExpiresAt = refreshResult.ExpiresAt;
+                _repository.Update(integration);
+                await _repository.SaveChangesAsync(ct);
+            }
+        }
+
+        try
+        {
+            var result = await providerService.SyncAsync(integration, integration.UserId, ct);
+
+            integration.LastSyncAt = result.SyncedAt;
+            integration.LastSyncError = null;
+            _repository.Update(integration);
+            await _repository.SaveChangesAsync(ct);
+
+            await _auditService.LogAsync(
+                action: "IntegrationSync",
+                entityType: "Integration",
+                entityId: integration.Id.ToString(),
+                userId: integration.UserId,
+                newValues: new { result.ItemsSynced, result.SyncedAt });
+
+            _logger.LogInformation("Integration synced | Provider: {Provider} | Name: {Name} | UserId: {UserId} | Items: {ItemsSynced}",
+                integration.Provider, integration.Name, integration.UserId, result.ItemsSynced);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            integration.LastSyncError = ex.Message;
+            _repository.Update(integration);
+            await _repository.SaveChangesAsync(ct);
+
+            _logger.LogError(ex, "Integration sync failed | Provider: {Provider} | Name: {Name} | UserId: {UserId}",
+                integration.Provider, integration.Name, integration.UserId);
+
+            throw new IntegrationException("SYNC_FAILED", $"Failed to sync {integration.Provider}: {ex.Message}");
+        }
+    }
+
     private IIntegrationProviderService GetProviderService(IntegrationProvider provider)
     {
         var service = _providers.FirstOrDefault(p => p.Provider == provider);
@@ -306,4 +314,34 @@ public class IntegrationService : IIntegrationService
         }
         return service;
     }
+
+    private static string GenerateProviderDisplayName(IntegrationProvider provider) => provider switch
+    {
+        IntegrationProvider.GitHub => "GitHub",
+        IntegrationProvider.GoogleCalendar => "Google Calendar",
+        IntegrationProvider.Jira => "Jira",
+        IntegrationProvider.Slack => "Slack",
+        IntegrationProvider.Notion => "Notion",
+        IntegrationProvider.Linear => "Linear",
+        _ => provider.ToString()
+    };
+
+    private static string GenerateDefaultName(IntegrationProvider provider, string? externalUsername)
+    {
+        var providerName = GenerateProviderDisplayName(provider);
+        return string.IsNullOrEmpty(externalUsername)
+            ? providerName
+            : $"{providerName} - {externalUsername}";
+    }
+
+    private static IntegrationData ToData(Integration i) => new(
+        i.Id,
+        i.Provider,
+        i.Name,
+        i.ExternalUsername,
+        i.ExternalAvatarUrl,
+        i.LastSyncAt,
+        i.LastSyncError,
+        i.CreatedAt
+    );
 }

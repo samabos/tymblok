@@ -43,14 +43,14 @@ public class GoogleCalendarProviderService : IIntegrationProviderService
         _logger = logger;
     }
 
-    public Task<OAuthConfig> GetAuthUrlAsync(Guid userId, string? redirectUri, string? mobileRedirectUri = null, CancellationToken ct = default)
+    public Task<OAuthConfig> GetAuthUrlAsync(Guid userId, string? redirectUri, string? mobileRedirectUri = null, string? name = null, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(_settings.ClientId))
         {
             throw new IntegrationException("GOOGLE_CALENDAR_NOT_CONFIGURED", "Google Calendar integration is not configured");
         }
 
-        var state = _stateService.GenerateState(userId, IntegrationProvider.GoogleCalendar, mobileRedirectUri);
+        var state = _stateService.GenerateState(userId, IntegrationProvider.GoogleCalendar, mobileRedirectUri, name);
 
         var authUrl = "https://accounts.google.com/o/oauth2/v2/auth" +
             $"?client_id={Uri.EscapeDataString(_settings.ClientId)}" +

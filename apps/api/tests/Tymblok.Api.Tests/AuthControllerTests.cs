@@ -18,7 +18,8 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Register_WithValidData_ReturnsCreated()
     {
         // Arrange
-        var request = new RegisterRequest("newuser@test.com", "Password123!", "New User");
+        var email = $"newuser{Guid.NewGuid()}@test.com";
+        var request = new RegisterRequest(email, "Password123!", "New User");
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/auth/register", request);
@@ -30,7 +31,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotNull(result);
         Assert.NotEmpty(result.Data.AccessToken);
         Assert.NotEmpty(result.Data.RefreshToken);
-        Assert.Equal("newuser@test.com", result.Data.User.Email);
+        Assert.Equal(email, result.Data.User.Email);
     }
 
     [Fact]
@@ -63,10 +64,11 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Login_WithValidCredentials_ReturnsOk()
     {
         // Arrange - First register a user
-        var registerRequest = new RegisterRequest("logintest@test.com", "Password123!", "Login Test");
+        var email = $"logintest{Guid.NewGuid()}@test.com";
+        var registerRequest = new RegisterRequest(email, "Password123!", "Login Test");
         await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
 
-        var loginRequest = new LoginRequest("logintest@test.com", "Password123!");
+        var loginRequest = new LoginRequest(email, "Password123!");
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
@@ -96,7 +98,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Refresh_WithValidToken_ReturnsNewTokens()
     {
         // Arrange - First register and get tokens
-        var registerRequest = new RegisterRequest("refreshtest@test.com", "Password123!", "Refresh Test");
+        var registerRequest = new RegisterRequest($"refreshtest{Guid.NewGuid()}@test.com", "Password123!", "Refresh Test");
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
         var authResult = await registerResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
 
@@ -225,7 +227,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task Logout_WithValidRefreshToken_ReturnsOk()
     {
         // Arrange - Register and get tokens
-        var registerRequest = new RegisterRequest("logouttest@test.com", "Password123!", "Logout Test");
+        var registerRequest = new RegisterRequest($"logouttest{Guid.NewGuid()}@test.com", "Password123!", "Logout Test");
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
         var authResult = await registerResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
 
@@ -277,7 +279,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task UpdateProfile_WithAuth_ReturnsUpdatedUser()
     {
         // Arrange - Register and get tokens
-        var registerRequest = new RegisterRequest("profiletest@test.com", "Password123!", "Original Name");
+        var registerRequest = new RegisterRequest($"profiletest{Guid.NewGuid()}@test.com", "Password123!", "Original Name");
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
         var authResult = await registerResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
 
@@ -324,7 +326,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task UploadAvatar_WithAuth_ReturnsAvatarUrl()
     {
         // Arrange - Register and get tokens
-        var registerRequest = new RegisterRequest("avatartest@test.com", "Password123!", "Avatar Test");
+        var registerRequest = new RegisterRequest($"avatartest{Guid.NewGuid()}@test.com", "Password123!", "Avatar Test");
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
         var authResult = await registerResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
 
@@ -365,7 +367,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task DeleteAvatar_WithAuth_ReturnsOk()
     {
         // Arrange - Register, upload avatar, then delete
-        var registerRequest = new RegisterRequest("deleteavatar@test.com", "Password123!", "Delete Avatar Test");
+        var registerRequest = new RegisterRequest($"deleteavatar{Guid.NewGuid()}@test.com", "Password123!", "Delete Avatar Test");
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
         var authResult = await registerResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
 
@@ -407,7 +409,7 @@ public class AuthControllerTests : IClassFixture<CustomWebApplicationFactory>
     public async Task GetSessions_WithAuth_ReturnsSessions()
     {
         // Arrange - Register and login to create a session
-        var registerRequest = new RegisterRequest("sessiontest@test.com", "Password123!", "Session Test");
+        var registerRequest = new RegisterRequest($"sessiontest{Guid.NewGuid()}@test.com", "Password123!", "Session Test");
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
         var authResult = await registerResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
 

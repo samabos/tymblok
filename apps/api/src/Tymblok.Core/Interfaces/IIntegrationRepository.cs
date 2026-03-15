@@ -5,7 +5,8 @@ namespace Tymblok.Core.Interfaces;
 public interface IIntegrationRepository
 {
     Task<Integration?> GetByIdAsync(Guid integrationId);
-    Task<Integration?> GetByProviderAsync(Guid userId, IntegrationProvider provider);
+    Task<Integration?> GetByIdAndUserAsync(Guid integrationId, Guid userId);
+    Task<Integration?> GetByExternalAccountAsync(Guid userId, IntegrationProvider provider, string externalUserId);
     Task<IList<Integration>> GetByUserIdAsync(Guid userId);
     Task<IList<Integration>> GetAllWithActiveTokensAsync(CancellationToken ct = default);
     Task<Integration> CreateAsync(Integration integration);

@@ -6,6 +6,7 @@ namespace Tymblok.Api.DTOs;
 public record IntegrationDto(
     Guid Id,
     IntegrationProvider Provider,
+    string Name,
     string? ExternalUsername,
     string? ExternalAvatarUrl,
     DateTime? LastSyncAt,
@@ -17,6 +18,10 @@ public record IntegrationsResponse(
     IList<IntegrationDto> Integrations
 );
 
+public record ConnectIntegrationRequest(
+    string? Name = null
+);
+
 public record ConnectIntegrationResponse(
     string AuthUrl,
     string State
@@ -25,7 +30,12 @@ public record ConnectIntegrationResponse(
 public record IntegrationCallbackRequest(
     [Required] string Code,
     [Required] string State,
-    string? RedirectUri = null
+    string? RedirectUri = null,
+    string? Name = null
+);
+
+public record RenameIntegrationRequest(
+    [Required] string Name
 );
 
 public record SyncResponse(

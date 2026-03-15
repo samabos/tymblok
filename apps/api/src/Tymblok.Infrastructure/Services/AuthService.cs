@@ -105,18 +105,15 @@ public class AuthService : IAuthService
             email,
             ipAddress);
 
-        // Send verification email (non-blocking)
-        _ = Task.Run(async () =>
+        // Send verification email (best-effort, don't fail registration)
+        try
         {
-            try
-            {
-                await SendEmailVerificationAsync(user.Id);
-            }
-            catch
-            {
-                // Log but don't fail registration
-            }
-        });
+            await SendEmailVerificationAsync(user.Id);
+        }
+        catch
+        {
+            // Log but don't fail registration
+        }
 
         return new AuthResult(tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresIn, user);
     }

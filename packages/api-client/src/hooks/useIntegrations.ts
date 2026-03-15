@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { IntegrationsApi } from '../api/integrations';
-import type { IntegrationProvider, IntegrationCallbackRequest } from '../types/integration';
+import type { IntegrationProvider } from '../types/integration';
 import { inboxKeys } from './useInbox';
 import { blockKeys } from './useBlocks';
 
@@ -23,27 +23,12 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
       mutationFn: ({
         provider,
         redirectUri,
+        name,
       }: {
         provider: IntegrationProvider;
         redirectUri?: string;
-      }) => integrationsApi.connect(provider, redirectUri),
-    });
-  };
-
-  const useIntegrationCallback = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-      mutationFn: ({
-        provider,
-        data,
-      }: {
-        provider: IntegrationProvider;
-        data: IntegrationCallbackRequest;
-      }) => integrationsApi.callback(provider, data),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
-      },
+        name?: string;
+      }) => integrationsApi.connect(provider, redirectUri, name),
     });
   };
 
@@ -51,7 +36,19 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: (provider: IntegrationProvider) => integrationsApi.disconnect(provider),
+      mutationFn: (integrationId: string) => integrationsApi.disconnect(integrationId),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
+      },
+    });
+  };
+
+  const useRenameIntegration = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: ({ integrationId, name }: { integrationId: string; name: string }) =>
+        integrationsApi.rename(integrationId, name),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
       },
@@ -62,7 +59,7 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: (provider: IntegrationProvider) => integrationsApi.sync(provider),
+      mutationFn: (integrationId: string) => integrationsApi.sync(integrationId),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
         queryClient.invalidateQueries({ queryKey: inboxKeys.all });
@@ -89,8 +86,8 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
   return {
     useIntegrations,
     useConnectIntegration,
-    useIntegrationCallback,
     useDisconnectIntegration,
+    useRenameIntegration,
     useSyncIntegration,
     useSyncAllIntegrations,
     integrationKeys,

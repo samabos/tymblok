@@ -249,11 +249,15 @@ public class TymblokDbContext : IdentityDbContext<ApplicationUser, ApplicationRo
             entity.ToTable("integrations");
             entity.HasKey(e => e.Id);
 
-            entity.HasIndex(e => new { e.UserId, e.Provider }).IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.Provider });
 
             entity.Property(e => e.Provider)
                 .HasConversion<string>()
                 .HasMaxLength(50);
+
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
 
             entity.Property(e => e.AccessToken)
                 .IsRequired()

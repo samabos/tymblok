@@ -22,11 +22,11 @@ export default function BottomCTA() {
             Ready to take control of
             <br />
             <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              your dev day?
+              your engineering day?
             </span>
           </h2>
           <p className="text-xl text-slate-200 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Join the waitlist and be the first to experience time blocking designed specifically for developers.
+            Join the waitlist and be the first to experience time blocking designed specifically for tech engineers.
           </p>
 
           <div className="flex justify-center mb-6">

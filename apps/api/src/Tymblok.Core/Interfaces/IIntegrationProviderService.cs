@@ -18,7 +18,7 @@ public record SyncResult(int ItemsSynced, DateTime SyncedAt);
 public interface IIntegrationProviderService
 {
     IntegrationProvider Provider { get; }
-    Task<OAuthConfig> GetAuthUrlAsync(Guid userId, string? redirectUri, string? mobileRedirectUri = null, CancellationToken ct = default);
+    Task<OAuthConfig> GetAuthUrlAsync(Guid userId, string? redirectUri, string? mobileRedirectUri = null, string? name = null, CancellationToken ct = default);
     Task<OAuthTokenResult> ExchangeCodeAsync(string code, string? redirectUri, CancellationToken ct = default);
     Task<SyncResult> SyncAsync(Integration integration, Guid userId, CancellationToken ct = default);
     Task RevokeAccessAsync(Integration integration, CancellationToken ct = default);
