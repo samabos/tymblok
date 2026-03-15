@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using AspNet.Security.OAuth.GitHub;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -554,14 +555,15 @@ public class AuthController : BaseApiController
     /// OAuth callback endpoint - handles provider redirect
     /// </summary>
     [HttpGet("external/callback")]
-    public async Task<IActionResult> ExternalLoginCallback(
-        [FromQuery] string? returnUrl = null,
-        [FromQuery] string? state = null,
-        [FromQuery] string? redirectUrl = null)
+    public async Task<IActionResult> ExternalLoginCallback()
     {
         var ipAddress = GetIpAddress();
         var (deviceType, deviceName, deviceOs) = GetDeviceInfo();
-        var isMobile = state == "mobile";
+
+        // Default values before we can read from auth properties
+        var isMobile = false;
+        string? returnUrl = null;
+        string? redirectUrl = null;
 
         try
         {
@@ -602,6 +604,21 @@ public class AuthController : BaseApiController
                 _logger.LogWarning("External auth failed | IP: {IpAddress}", ipAddress);
                 return RedirectWithError("AUTH_FAILED", "External authentication failed", isMobile, returnUrl);
             }
+
+            // Read mobile/redirectUrl from stored auth properties (query params are not preserved by OAuth middleware)
+            var properties = authenticateResult.Properties;
+            if (properties?.Items != null)
+            {
+                isMobile = properties.Items.TryGetValue("mobile", out var mobileVal) &&
+                           string.Equals(mobileVal, "true", StringComparison.OrdinalIgnoreCase);
+                properties.Items.TryGetValue("returnUrl", out returnUrl);
+                properties.Items.TryGetValue("redirectUrl", out var storedRedirectUrl);
+                if (!string.IsNullOrEmpty(storedRedirectUrl))
+                    redirectUrl = storedRedirectUrl;
+            }
+
+            // Sign out the external cookie so the ticket can't be replayed
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             var claims = authenticateResult.Principal?.Claims.ToList();
 
