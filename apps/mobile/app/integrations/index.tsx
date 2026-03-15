@@ -161,6 +161,8 @@ function IntegrationsContent() {
             queryClient.invalidateQueries({ queryKey: ['inbox'] });
             queryClient.invalidateQueries({ queryKey: ['blocks'] });
           }
+        } else if (result.type === 'cancel' || result.type === 'dismiss') {
+          // User closed the browser or session expired — no action needed
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : `Failed to connect ${provider}`;

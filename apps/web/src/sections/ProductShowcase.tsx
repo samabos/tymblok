@@ -25,13 +25,14 @@ export default function ProductShowcase() {
               </span>
             </h2>
             <p className="text-xl text-slate-200 mb-8 leading-relaxed">
-              Visualize your schedule with color-coded time blocks. GitHub PRs in green, Jira tickets in blue, meetings in purple. Everything organized, nothing overlooked.
+              Visualize your schedule with color-coded time blocks. Tasks, tickets, and meetings organized by category. Everything visible, nothing overlooked.
             </p>
             <ul className="space-y-4">
               {[
-                'Drag-and-drop scheduling',
-                'Adaptive task estimation',
+                'Cognitive load score prediction',
+                'Adaptive block scheduler',
                 'Auto-sync with your tools',
+                'GitHub, Jira & Calendar integrations',
                 'Focus mode with timers',
               ].map((feature, i) => (
                 <motion.li

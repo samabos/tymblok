@@ -157,8 +157,9 @@ public static class ServiceCollectionExtensions
             // Cookie scheme for OAuth intermediate state (not used for API auth)
             .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
             {
-                options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.HttpOnly = true;
             });
 
         // Add Google OAuth if configured
@@ -174,6 +175,8 @@ public static class ServiceCollectionExtensions
                 options.Scope.Add("profile");
                 options.SaveTokens = true;
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.CorrelationCookie.SameSite = SameSiteMode.None;
+                options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
             });
         }
 
@@ -189,6 +192,8 @@ public static class ServiceCollectionExtensions
                 options.Scope.Add("user:email");
                 options.SaveTokens = true;
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.CorrelationCookie.SameSite = SameSiteMode.None;
+                options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
             });
         }
 

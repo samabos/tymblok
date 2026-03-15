@@ -73,17 +73,13 @@ public class IntegrationsController : BaseApiController
 
         try
         {
-            // Build a clean API callback URL (no query params) — must match what's registered in Google/GitHub
-            var apiCallbackUrl = Url.Action(
-                nameof(OAuthCallback), "Integrations",
-                new { provider },
-                Request.Scheme);
+            var apiCallbackUrl = BuildOAuthCallbackUrl(provider);
 
             // The mobile redirectUri is stored in the OAuth state, not in the redirect_uri
             var config = await _integrationService.ConnectAsync(userId, provider, request?.Name, apiCallbackUrl, redirectUri, ct);
 
-            _logger.LogInformation("OAuth flow started | Provider: {Provider} | UserId: {UserId}",
-                provider, userId);
+            _logger.LogInformation("OAuth flow started | Provider: {Provider} | UserId: {UserId} | CallbackUrl: {CallbackUrl}",
+                provider, userId, apiCallbackUrl);
 
             return Ok(WrapResponse(new ConnectIntegrationResponse(config.AuthUrl, config.State)));
         }
@@ -108,6 +104,7 @@ public class IntegrationsController : BaseApiController
     {
         var mobileScheme = _configuration["OAuth:MobileCallbackScheme"] ?? "tymblok";
         var defaultRedirect = $"{mobileScheme}://integrations/callback";
+        var mobileRedirectUri = defaultRedirect;
 
         // Handle OAuth errors from the provider
         if (!string.IsNullOrEmpty(error) || string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
@@ -128,21 +125,18 @@ public class IntegrationsController : BaseApiController
             }
 
             var userId = stateData.UserId;
-            var mobileRedirectUri = stateData.MobileRedirectUri ?? defaultRedirect;
+            mobileRedirectUri = stateData.MobileRedirectUri ?? defaultRedirect;
 
-            // Build the same clean redirect_uri that was sent to the provider
-            var apiCallbackUrl = Url.Action(
-                nameof(OAuthCallback), "Integrations",
-                new { provider },
-                Request.Scheme);
+            var apiCallbackUrl = BuildOAuthCallbackUrl(provider);
 
             // Pass null for state — we already consumed it above via ValidateOAuthState
             // Name flows through from the state data
             var result = await _integrationService.CallbackAsync(
                 userId, provider, stateData.Name, code, null, apiCallbackUrl, ct);
 
-            _logger.LogInformation("Integration connected via OAuth callback | Provider: {Provider} | UserId: {UserId}",
-                provider, userId);
+            _logger.LogInformation(
+                "Integration connected via OAuth callback | Provider: {Provider} | UserId: {UserId} | CallbackUrl: {CallbackUrl} | RedirectTo: {RedirectTo}",
+                provider, userId, apiCallbackUrl, mobileRedirectUri);
 
             // Redirect back to the mobile app with the new integration ID
             var sep = mobileRedirectUri.Contains('?') ? '&' : '?';
@@ -151,7 +145,14 @@ public class IntegrationsController : BaseApiController
         catch (Exception ex) when (ex is ValidationException or ConflictException or IntegrationException)
         {
             _logger.LogWarning("OAuth callback failed | Provider: {Provider} | Error: {Error}", provider, ex.Message);
-            return Redirect($"{defaultRedirect}?error={Uri.EscapeDataString(ex.Message)}&provider={provider}");
+            var sep = mobileRedirectUri.Contains('?') ? '&' : '?';
+            return Redirect($"{mobileRedirectUri}{sep}error={Uri.EscapeDataString(ex.Message)}&provider={provider}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during OAuth callback | Provider: {Provider}", provider);
+            var sep = mobileRedirectUri.Contains('?') ? '&' : '?';
+            return Redirect($"{mobileRedirectUri}{sep}error={Uri.EscapeDataString("An unexpected error occurred. Please try again.")}&provider={provider}");
         }
     }
 
@@ -344,6 +345,22 @@ public class IntegrationsController : BaseApiController
             created, updated, userId);
 
         return Ok(WrapResponse(new SyncPRsResponse(created, updated)));
+    }
+
+    /// <summary>
+    /// Builds a deterministic OAuth callback URL.
+    /// Uses Api:BaseUrl config if set (recommended for production behind reverse proxies),
+    /// otherwise falls back to the current request's scheme and host.
+    /// </summary>
+    private string BuildOAuthCallbackUrl(IntegrationProvider provider)
+    {
+        var baseUrl = _configuration["Api:BaseUrl"];
+        if (string.IsNullOrEmpty(baseUrl))
+        {
+            baseUrl = $"{Request.Scheme}://{Request.Host}";
+        }
+
+        return $"{baseUrl.TrimEnd('/')}/api/integrations/{provider}/oauth-callback";
     }
 
 }
