@@ -39,6 +39,9 @@ export interface InboxItemDto {
   isRecurring: boolean;
   recurrenceRuleId: string | null;
   recurrenceRule: RecurrenceRuleDto | null;
+  startTime: string | null;
+  durationMinutes: number | null;
+  categoryId: string | null;
 }
 
 export interface CreateInboxItemRequest {
@@ -54,6 +57,9 @@ export interface CreateInboxItemRequest {
   recurrenceDaysOfWeek?: string | null;
   recurrenceEndDate?: string | null;
   recurrenceMaxOccurrences?: number | null;
+  startTime?: string | null;
+  durationMinutes?: number | null;
+  categoryId?: string | null;
 }
 
 export interface UpdateInboxItemRequest {
@@ -61,6 +67,9 @@ export interface UpdateInboxItemRequest {
   description?: string | null;
   priority?: InboxPriority;
   isDismissed?: boolean;
+  startTime?: string | null;
+  durationMinutes?: number | null;
+  categoryId?: string | null;
 }
 
 export interface InboxItemsResponse {

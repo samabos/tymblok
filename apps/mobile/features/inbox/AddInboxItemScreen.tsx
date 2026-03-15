@@ -12,6 +12,21 @@ import { RecurrencePicker, type RecurrenceConfig } from '../../components/Recurr
 import { useCreateInboxItem, useCategories } from '../../services/apiHooks';
 import { InboxPriority } from '@tymblok/api-client';
 
+/** Round current time up to the next 5-minute interval and return "HH:mm" */
+function getDefaultStartTime(): string {
+  const now = new Date();
+  const minutes = now.getMinutes();
+  const roundedMinutes = Math.ceil(minutes / 5) * 5;
+  const d = new Date(now);
+  d.setMinutes(roundedMinutes, 0, 0);
+  if (roundedMinutes >= 60) {
+    d.setHours(d.getHours() + 1, 0, 0, 0);
+  }
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
 export default function AddInboxItemScreen() {
   return (
     <AuthGuard>
@@ -28,8 +43,8 @@ function AddInboxItemContent() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<InboxPriority>(InboxPriority.Medium);
-  const [startTime, setStartTime] = useState('09:00');
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [startTime, setStartTime] = useState(getDefaultStartTime);
+  const [showTimePicker, setShowTimePicker] = useState(Platform.OS === 'ios');
   const [duration, setDuration] = useState(60);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [recurrence, setRecurrence] = useState<RecurrenceConfig>({
@@ -97,6 +112,9 @@ function AddInboxItemContent() {
         recurrenceType: recurrence.recurrenceType,
         recurrenceInterval: recurrence.recurrenceInterval,
         recurrenceEndDate: recurrence.recurrenceEndDate,
+        startTime,
+        durationMinutes: duration,
+        categoryId: effectiveCategoryId,
       });
 
       router.back();

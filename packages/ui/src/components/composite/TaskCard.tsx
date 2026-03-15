@@ -31,6 +31,8 @@ export interface TaskCardData {
   isNow?: boolean;
   timerState?: TimerStatus;
   elapsedSeconds?: number;
+  startedAt?: string | null;
+  resumedAt?: string | null;
   isRecurring?: boolean;
   externalSource?: string | null;
 }
@@ -45,6 +47,7 @@ export interface TaskCardProps {
   onUndoComplete?: () => void;
   onStart?: () => void;
   onPause?: () => void;
+  onResume?: () => void;
   dragging?: boolean;
   style?: ViewStyle;
 }
@@ -59,6 +62,7 @@ export function TaskCard({
   onUndoComplete,
   onStart,
   onPause,
+  onResume,
   dragging = false,
   style,
 }: TaskCardProps) {
@@ -72,6 +76,19 @@ export function TaskCard({
   const expanded = externalExpanded !== undefined ? externalExpanded : internalExpanded;
 
   const timerState: TimerStatus = task.timerState || 'NotStarted';
+
+  // Compute elapsed from server timestamps — recalculated when query refetches (every 15s)
+  const liveElapsed = (() => {
+    const base = task.elapsedSeconds || 0;
+    if (timerState === 'Running') {
+      const resumedAt = task.resumedAt || task.startedAt;
+      if (resumedAt) {
+        const runSeconds = Math.floor((Date.now() - new Date(resumedAt).getTime()) / 1000);
+        return base + Math.max(0, runSeconds);
+      }
+    }
+    return base;
+  })();
 
   // Accent bar: blue when live, muted when completed, task color otherwise
   const typeColor = task.completed
@@ -168,7 +185,7 @@ export function TaskCard({
             {!task.completed && task.urgent && <Badge variant="urgent" size="sm" label="Urgent" />}
 
             {/* Start/Pause button */}
-            {!task.completed && timerState !== 'Running' && onStart && (
+            {!task.completed && timerState === 'NotStarted' && onStart && (
               <Pressable
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -182,17 +199,27 @@ export function TaskCard({
                 <Ionicons name="play" size={14} color={colors.white} />
               </Pressable>
             )}
-            {!task.completed && timerState === 'Running' && (
+            {(task.completed && liveElapsed > 0) && (
+              <Text
+                style={[
+                  styles.inlineTimer,
+                  { color: colors.status.done, fontFamily: typography.fonts.mono },
+                ]}
+              >
+                {formatElapsed(liveElapsed)}
+              </Text>
+            )}
+            {!task.completed && (timerState === 'Running' || (timerState === 'Paused' && liveElapsed > 0)) && (
               <View style={styles.runningTimerRow}>
                 <Text
                   style={[
                     styles.inlineTimer,
-                    { color: colors.indigo[500], fontFamily: typography.fonts.mono },
+                    { color: timerState === 'Running' ? colors.indigo[500] : colors.status.urgent, fontFamily: typography.fonts.mono },
                   ]}
                 >
-                  {formatElapsed(task.elapsedSeconds || 0)}
+                  {formatElapsed(liveElapsed)}
                 </Text>
-                {onPause && (
+                {timerState === 'Running' && onPause && (
                   <Pressable
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -204,6 +231,20 @@ export function TaskCard({
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Ionicons name="pause" size={14} color={colors.white} />
+                  </Pressable>
+                )}
+                {timerState === 'Paused' && onResume && (
+                  <Pressable
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      onResume();
+                    }}
+                    style={({ pressed }) => [styles.timerButton, { backgroundColor: colors.indigo[500], opacity: pressed ? 0.7 : 1 }]}
+                    accessibilityLabel="Resume task"
+                    accessibilityRole="button"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="play" size={14} color={colors.white} />
                   </Pressable>
                 )}
               </View>
@@ -321,7 +362,7 @@ export function TaskCard({
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                       onComplete();
                     }}
-                    style={({ pressed }) => [styles.circleButton, { backgroundColor: colors.indigo[500], opacity: pressed ? 0.7 : 1 }]}
+                    style={({ pressed }) => [styles.circleButton, { backgroundColor: colors.status.done, opacity: pressed ? 0.7 : 1 }]}
                     accessibilityLabel="Mark task as complete"
                     accessibilityRole="button"
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
@@ -371,10 +412,9 @@ function getExternalSourceLabel(source: string): string {
 function formatElapsed(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
   const pad = (n: number) => n.toString().padStart(2, '0');
-  if (hours > 0) return `${hours}:${pad(minutes)}:${pad(seconds)}`;
-  return `${pad(minutes)}:${pad(seconds)}`;
+  if (hours > 0) return `${hours}:${pad(minutes)}`;
+  return `${minutes}m`;
 }
 
 const styles = StyleSheet.create({

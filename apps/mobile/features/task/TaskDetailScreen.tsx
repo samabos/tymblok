@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme, Input } from '@tymblok/ui';
 import { spacing, typography, colors } from '@tymblok/theme';
 import { AuthGuard } from '../../components/AuthGuard';
@@ -15,6 +16,7 @@ import {
   useResumeBlock,
   useCompleteBlock,
   useDeleteBlock,
+  useCategories,
 } from '../../services/apiHooks';
 import { TimerState } from '@tymblok/api-client';
 
@@ -41,26 +43,28 @@ function TaskDetailContent() {
   const completeMutation = useCompleteBlock();
   const deleteMutation = useDeleteBlock();
 
+  const { data: categories } = useCategories();
+
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [duration, setDuration] = useState(60);
-  const [, setTimerTick] = useState(0);
+  const [startTime, setStartTime] = useState('09:00');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [showTimePicker, setShowTimePicker] = useState(Platform.OS === 'ios');
+  const [initialized, setInitialized] = useState(false);
 
+  // Only sync from server on initial load — not on every refetch,
+  // otherwise TanStack Query refetches overwrite user edits
   useEffect(() => {
-    if (task) {
+    if (task && !initialized) {
       setTitle(task.title);
       setSubtitle(task.subtitle || '');
       setDuration(task.durationMinutes);
+      setStartTime(task.startTime);
+      setSelectedCategoryId(task.categoryId);
+      setInitialized(true);
     }
-  }, [task]);
-
-  useEffect(() => {
-    if (task?.timerState !== TimerState.Running) return;
-    const interval = setInterval(() => {
-      setTimerTick(t => t + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [task?.timerState]);
+  }, [task, initialized]);
 
   const elapsed = (() => {
     if (!task) return 0;
@@ -87,10 +91,33 @@ function TaskDetailContent() {
   const formatElapsed = (totalSeconds: number): string => {
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
     const pad = (n: number) => n.toString().padStart(2, '0');
-    if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
-    return `${pad(m)}:${pad(s)}`;
+    if (h > 0) return `${h}:${pad(m)}`;
+    return `${m}m`;
+  };
+
+  // Build a Date from the startTime string for the picker
+  const timeDate = (() => {
+    const [h, m] = startTime.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+  })();
+
+  const formatTimeDisplay = (time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+  };
+
+  const handleTimeChange = (_event: unknown, selectedDate?: Date) => {
+    if (Platform.OS === 'android') setShowTimePicker(false);
+    if (selectedDate) {
+      const hours = String(selectedDate.getHours()).padStart(2, '0');
+      const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
+      setStartTime(`${hours}:${minutes}`);
+    }
   };
 
   const handleSave = async () => {
@@ -98,7 +125,13 @@ function TaskDetailContent() {
     try {
       await updateMutation.mutateAsync({
         id: task.id,
-        data: { title, subtitle: subtitle || undefined, durationMinutes: duration },
+        data: {
+          title,
+          subtitle: subtitle || undefined,
+          durationMinutes: duration,
+          startTime,
+          categoryId: selectedCategoryId,
+        },
       });
       router.back();
     } catch {
@@ -339,75 +372,6 @@ function TaskDetailContent() {
           )}
         </View>
 
-        {/* Category & Schedule row */}
-        <View style={{ flexDirection: 'row', gap: spacing[3], marginBottom: spacing[5] }}>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing[2],
-              padding: spacing[3],
-              borderRadius: 12,
-              backgroundColor: themeColors.card,
-              borderWidth: isDark ? 1 : 0,
-              borderColor: themeColors.border,
-              ...(isDark
-                ? {}
-                : {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }),
-            }}
-          >
-            <View
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 5,
-                backgroundColor: task.category.color,
-              }}
-            />
-            <Text
-              style={{ fontSize: typography.sizes.sm, color: themeColors.text, fontWeight: '500' }}
-            >
-              {task.category.name}
-            </Text>
-          </View>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing[2],
-              padding: spacing[3],
-              borderRadius: 12,
-              backgroundColor: themeColors.card,
-              borderWidth: isDark ? 1 : 0,
-              borderColor: themeColors.border,
-              ...(isDark
-                ? {}
-                : {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }),
-            }}
-          >
-            <Ionicons name="time-outline" size={14} color={themeColors.textMuted} />
-            <Text
-              style={{ fontSize: typography.sizes.sm, color: themeColors.text, fontWeight: '500' }}
-            >
-              {task.durationMinutes}min
-            </Text>
-          </View>
-        </View>
-
         {/* Title */}
         <Text
           style={{
@@ -435,7 +399,69 @@ function TaskDetailContent() {
         >
           DESCRIPTION
         </Text>
-        <Input value={subtitle} onChangeText={setSubtitle} placeholder="Add description..." />
+        <View style={{ marginBottom: spacing[5] }}>
+          <Input value={subtitle} onChangeText={setSubtitle} placeholder="Add description..." />
+        </View>
+
+        {/* Start Time */}
+        <Text
+          style={{
+            fontSize: typography.sizes.xs,
+            fontWeight: '600',
+            color: themeColors.textMuted,
+            marginBottom: spacing[2],
+            letterSpacing: 0.5,
+          }}
+        >
+          START TIME
+        </Text>
+        <View style={{ marginBottom: spacing[5] }}>
+          {Platform.OS === 'android' && (
+            <Pressable
+              onPress={() => setShowTimePicker(true)}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: themeColors.card,
+                borderWidth: isDark ? 1 : 0,
+                borderColor: themeColors.border,
+                ...(isDark
+                  ? {}
+                  : {
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.06,
+                      shadowRadius: 8,
+                      elevation: 2,
+                    }),
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: typography.sizes.lg,
+                  fontWeight: '600',
+                  fontFamily: typography.fonts.mono,
+                  color: themeColors.text,
+                }}
+              >
+                {formatTimeDisplay(startTime)}
+              </Text>
+            </Pressable>
+          )}
+          {(Platform.OS === 'ios' || showTimePicker) && (
+            <DateTimePicker
+              value={timeDate}
+              mode="time"
+              is24Hour={false}
+              minuteInterval={5}
+              onChange={handleTimeChange}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              themeVariant={isDark ? 'dark' : 'light'}
+            />
+          )}
+        </View>
 
         {/* Duration */}
         <Text
@@ -444,13 +470,12 @@ function TaskDetailContent() {
             fontWeight: '600',
             color: themeColors.textMuted,
             marginBottom: spacing[2],
-            marginTop: spacing[5],
             letterSpacing: 0.5,
           }}
         >
           DURATION
         </Text>
-        <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+        <View style={{ flexDirection: 'row', gap: spacing[2], marginBottom: spacing[5] }}>
           {durations.map(d => (
             <Pressable
               key={d.value}
@@ -482,6 +507,50 @@ function TaskDetailContent() {
                 }}
               >
                 {d.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Category */}
+        <Text
+          style={{
+            fontSize: typography.sizes.xs,
+            fontWeight: '600',
+            color: themeColors.textMuted,
+            marginBottom: spacing[2],
+            letterSpacing: 0.5,
+          }}
+        >
+          CATEGORY
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] }}>
+          {categories?.filter(c => c.isSystem).map(cat => (
+            <Pressable
+              key={cat.id}
+              onPress={() => setSelectedCategoryId(cat.id)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: spacing[3],
+                paddingVertical: spacing[1.5],
+                borderRadius: 10,
+                borderWidth: 1.5,
+                backgroundColor:
+                  selectedCategoryId === cat.id ? colors.indigo[500] + '20' : 'transparent',
+                borderColor:
+                  selectedCategoryId === cat.id ? colors.indigo[500] : themeColors.border,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: typography.sizes.sm,
+                  fontWeight: '500',
+                  color:
+                    selectedCategoryId === cat.id ? colors.indigo[500] : themeColors.text,
+                }}
+              >
+                {cat.name}
               </Text>
             </Pressable>
           ))}
