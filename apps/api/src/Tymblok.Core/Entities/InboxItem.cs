@@ -15,6 +15,12 @@ public class InboxItem : BaseEntity
     public InboxItemType Type { get; set; }
     public InboxPriority Priority { get; set; } = InboxPriority.Medium;
 
+    // Scheduling hints (used when converting to a TimeBlock)
+    public string? StartTime { get; set; }           // "HH:mm"
+    public int? DurationMinutes { get; set; }
+    public Guid? CategoryId { get; set; }
+    public Category? Category { get; set; }
+
     // External reference
     public string? ExternalId { get; set; }
     public string? ExternalUrl { get; set; }

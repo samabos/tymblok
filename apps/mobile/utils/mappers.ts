@@ -17,6 +17,8 @@ export function mapBlockToTaskCard(block: BlockDto): TaskCardData {
     isNow: determineIsNow(block),
     timerState: (block.timerState as TimerStatus) || 'NotStarted',
     elapsedSeconds: block.elapsedSeconds || 0,
+    startedAt: block.startedAt ?? null,
+    resumedAt: block.resumedAt ?? null,
     isRecurring: block.isRecurring,
     externalSource: block.externalSource,
   };

@@ -15,14 +15,20 @@ public record CreateInboxItemRequest(
     int RecurrenceInterval = 1,
     string? RecurrenceDaysOfWeek = null,
     DateOnly? RecurrenceEndDate = null,
-    int? RecurrenceMaxOccurrences = null
+    int? RecurrenceMaxOccurrences = null,
+    string? StartTime = null,
+    int? DurationMinutes = null,
+    Guid? CategoryId = null
 );
 
 public record UpdateInboxItemRequest(
     [Required][MinLength(1)][MaxLength(200)] string Title,
     [MaxLength(2000)] string? Description,
     InboxPriority? Priority = null,
-    bool? IsDismissed = null
+    bool? IsDismissed = null,
+    string? StartTime = null,
+    int? DurationMinutes = null,
+    Guid? CategoryId = null
 );
 
 public record InboxItemDto(
@@ -41,7 +47,10 @@ public record InboxItemDto(
     DateTime? DismissedAt,
     bool IsRecurring,
     Guid? RecurrenceRuleId,
-    RecurrenceRuleDto? RecurrenceRule
+    RecurrenceRuleDto? RecurrenceRule,
+    string? StartTime,
+    int? DurationMinutes,
+    Guid? CategoryId
 );
 
 public record InboxItemsResponse(

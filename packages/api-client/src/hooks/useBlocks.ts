@@ -21,9 +21,20 @@ export const createBlockHooks = (blocksApi: BlocksApi) => {
     params?: GetBlocksParams,
     options?: Pick<UseQueryOptions<BlockDto[]>, 'enabled'>,
   ) => {
+    const queryClient = useQueryClient();
+
     return useQuery({
       queryKey: blockKeys.list(params),
-      queryFn: () => blocksApi.list(params),
+      queryFn: async () => {
+        const blocks = await blocksApi.list(params);
+        // Populate individual block cache so TaskDetailScreen reads fresh data
+        // without its own polling
+        blocks.forEach(block => {
+          queryClient.setQueryData(blockKeys.detail(block.id), block);
+        });
+        return blocks;
+      },
+      refetchInterval: 15_000,
       ...options,
     });
   };

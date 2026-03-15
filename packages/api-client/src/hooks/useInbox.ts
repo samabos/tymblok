@@ -16,6 +16,7 @@ export const createInboxHooks = (inboxApi: InboxApi) => {
     return useQuery({
       queryKey: inboxKeys.list(),
       queryFn: () => inboxApi.list(),
+      refetchInterval: 30_000,
     });
   };
 

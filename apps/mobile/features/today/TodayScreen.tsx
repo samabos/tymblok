@@ -25,6 +25,7 @@ import {
   useCompleteBlock,
   useStartBlock,
   usePauseBlock,
+  useResumeBlock,
   useUpdateBlocksSortOrder,
   useCarryOver,
   useCreateBlock,
@@ -79,9 +80,17 @@ export default function TodayScreen() {
   const completeBlockMutation = useCompleteBlock();
   const startBlockMutation = useStartBlock();
   const pauseBlockMutation = usePauseBlock();
+  const resumeBlockMutation = useResumeBlock();
   const updateSortOrderMutation = useUpdateBlocksSortOrder();
   const createBlockMutation = useCreateBlock();
   const { data: categories } = useCategories();
+
+  // Memoize modal props so AddTaskModal doesn't re-render on timer ticks
+  const systemCategories = useMemo(
+    () => categories?.filter(c => c.isSystem).map(c => ({ id: c.id, name: c.name, color: c.color })),
+    [categories]
+  );
+  const handleCloseAddModal = useCallback(() => setShowAddModal(false), []);
 
   // Timer and task mapping
   const { allTasks, activeTasks, completedTasks } = useBlockTimer(blocks);
@@ -149,6 +158,9 @@ export default function TodayScreen() {
   const handleTaskPause = (taskId: string) => {
     pauseBlockMutation.mutate(taskId);
   };
+  const handleTaskResume = (taskId: string) => {
+    resumeBlockMutation.mutate(taskId);
+  };
 
   const handleTaskPress = (taskId: string) => {
     const isExpanding = expandedTaskId !== taskId;
@@ -180,7 +192,7 @@ export default function TodayScreen() {
     setExpandedTaskId(null);
   };
 
-  const handleAddBlock = (task: {
+  const handleAddBlock = useCallback((task: {
     title: string;
     startTime: string;
     duration: number;
@@ -197,7 +209,7 @@ export default function TodayScreen() {
       startTime: task.startTime,
       durationMinutes: task.duration,
     });
-  };
+  }, [categories, createBlockMutation, currentDateStr]);
 
   const handleOpenDetail = (task: TaskCardData) => {
     setExpandedTaskId(null);
@@ -227,6 +239,7 @@ export default function TodayScreen() {
           onLongPress={drag}
           onStart={() => handleTaskStart(item.id)}
           onPause={() => handleTaskPause(item.id)}
+          onResume={() => handleTaskResume(item.id)}
           onComplete={() => handleTaskComplete(item.id)}
           onUndoComplete={() => handleTaskUndoComplete(item.id)}
           onPress={() => handleTaskPress(item.id)}
@@ -455,10 +468,10 @@ export default function TodayScreen() {
       {/* Add Block Modal */}
       <AddTaskModal
         visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={handleCloseAddModal}
         onSubmit={handleAddBlock}
         initialDate={currentDate}
-        apiCategories={categories?.filter(c => c.isSystem).map(c => ({ id: c.id, name: c.name, color: c.color }))}
+        apiCategories={systemCategories}
       />
     </SafeAreaView>
   );

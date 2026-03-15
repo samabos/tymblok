@@ -14,14 +14,20 @@ public record CreateInboxItemData(
     int RecurrenceInterval = 1,
     string? RecurrenceDaysOfWeek = null,
     DateOnly? RecurrenceEndDate = null,
-    int? RecurrenceMaxOccurrences = null
+    int? RecurrenceMaxOccurrences = null,
+    string? StartTime = null,
+    int? DurationMinutes = null,
+    Guid? CategoryId = null
 );
 
 public record UpdateInboxItemData(
     string Title,
     string? Description,
     InboxPriority? Priority,
-    bool? IsDismissed
+    bool? IsDismissed,
+    string? StartTime = null,
+    int? DurationMinutes = null,
+    Guid? CategoryId = null
 );
 
 public record InboxItemFilters(

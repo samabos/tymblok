@@ -56,7 +56,10 @@ public class InboxService : IInboxService
             IsDismissed = false,
             IsScheduled = false,
             IsRecurring = data.IsRecurring,
-            RecurrenceRuleId = recurrenceRule?.Id
+            RecurrenceRuleId = recurrenceRule?.Id,
+            StartTime = data.StartTime,
+            DurationMinutes = data.DurationMinutes,
+            CategoryId = data.CategoryId
         };
 
         // Save via repository
@@ -109,7 +112,10 @@ public class InboxService : IInboxService
             item.Title,
             item.Description,
             item.Priority,
-            item.IsDismissed
+            item.IsDismissed,
+            item.StartTime,
+            item.DurationMinutes,
+            item.CategoryId
         };
 
         // Update properties
@@ -134,6 +140,11 @@ public class InboxService : IInboxService
             }
         }
 
+        // Update scheduling hints
+        if (data.StartTime != null) item.StartTime = data.StartTime;
+        if (data.DurationMinutes.HasValue) item.DurationMinutes = data.DurationMinutes;
+        if (data.CategoryId.HasValue) item.CategoryId = data.CategoryId;
+
         // Save changes
         _repository.Update(item);
         await _repository.SaveChangesAsync(ct);
@@ -145,7 +156,7 @@ public class InboxService : IInboxService
             entityId: item.Id.ToString(),
             userId: userId,
             oldValues: oldValues,
-            newValues: new { item.Title, item.Description, item.Priority, item.IsDismissed });
+            newValues: new { item.Title, item.Description, item.Priority, item.IsDismissed, item.StartTime, item.DurationMinutes, item.CategoryId });
 
         return item;
     }

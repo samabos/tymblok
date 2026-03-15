@@ -49,7 +49,10 @@ public class InboxController : BaseApiController
             request.RecurrenceInterval,
             request.RecurrenceDaysOfWeek,
             request.RecurrenceEndDate,
-            request.RecurrenceMaxOccurrences
+            request.RecurrenceMaxOccurrences,
+            request.StartTime,
+            request.DurationMinutes,
+            request.CategoryId
         );
         var item = await _inboxService.CreateAsync(data, userId, ct);
 
@@ -118,7 +121,10 @@ public class InboxController : BaseApiController
                 request.Title,
                 request.Description,
                 request.Priority,
-                request.IsDismissed
+                request.IsDismissed,
+                request.StartTime,
+                request.DurationMinutes,
+                request.CategoryId
             );
             var item = await _inboxService.UpdateAsync(id, data, userId, ct);
 
@@ -232,7 +238,10 @@ public class InboxController : BaseApiController
             item.DismissedAt,
             item.IsRecurring,
             item.RecurrenceRuleId,
-            recurrenceRuleDto
+            recurrenceRuleDto,
+            item.StartTime,
+            item.DurationMinutes,
+            item.CategoryId
         );
     }
 }
