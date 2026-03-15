@@ -10,6 +10,7 @@ export enum IntegrationProvider {
 export interface IntegrationDto {
   id: string;
   provider: IntegrationProvider;
+  name: string;
   externalUsername: string | null;
   externalAvatarUrl: string | null;
   lastSyncAt: string | null;
@@ -21,6 +22,10 @@ export interface IntegrationsResponse {
   integrations: IntegrationDto[];
 }
 
+export interface ConnectIntegrationRequest {
+  name?: string;
+}
+
 export interface ConnectIntegrationResponse {
   authUrl: string;
   state: string;
@@ -30,6 +35,11 @@ export interface IntegrationCallbackRequest {
   code: string;
   state: string;
   redirectUri?: string;
+  name?: string;
+}
+
+export interface RenameIntegrationRequest {
+  name: string;
 }
 
 export interface SyncIntegrationResponse {

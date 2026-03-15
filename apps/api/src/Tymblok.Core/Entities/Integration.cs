@@ -7,6 +7,9 @@ public class Integration : BaseEntity
 
     public IntegrationProvider Provider { get; set; }
 
+    // User-facing label (e.g., "Work GitHub", "Personal Calendar")
+    public string Name { get; set; } = string.Empty;
+
     // OAuth tokens (encrypted at rest)
     public string AccessToken { get; set; } = string.Empty;
     public string? RefreshToken { get; set; }

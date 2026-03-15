@@ -47,7 +47,7 @@ public class IntegrationsController : BaseApiController
         var integrations = await _integrationService.GetAllAsync(userId, ct);
 
         var dtos = integrations.Select(i => new IntegrationDto(
-            i.Id, i.Provider, i.ExternalUsername, i.ExternalAvatarUrl,
+            i.Id, i.Provider, i.Name, i.ExternalUsername, i.ExternalAvatarUrl,
             i.LastSyncAt, i.LastSyncError, i.CreatedAt
         )).ToList();
 
@@ -57,15 +57,16 @@ public class IntegrationsController : BaseApiController
     /// <summary>
     /// Start OAuth flow to connect an integration.
     /// Returns an authUrl to open in a browser. The callback routes through the API.
+    /// Supports multiple integrations per provider (e.g. multiple GitHub accounts).
     /// </summary>
     [HttpPost("{provider}/connect")]
     [ProducesResponseType(typeof(ApiResponse<ConnectIntegrationResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiError), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Connect(
         IntegrationProvider provider,
         [FromQuery] string? redirectUri,
+        [FromBody] ConnectIntegrationRequest? request = null,
         CancellationToken ct = default)
     {
         var userId = _currentUser.UserId;
@@ -79,16 +80,12 @@ public class IntegrationsController : BaseApiController
                 Request.Scheme);
 
             // The mobile redirectUri is stored in the OAuth state, not in the redirect_uri
-            var config = await _integrationService.ConnectAsync(userId, provider, apiCallbackUrl, redirectUri, ct);
+            var config = await _integrationService.ConnectAsync(userId, provider, request?.Name, apiCallbackUrl, redirectUri, ct);
 
             _logger.LogInformation("OAuth flow started | Provider: {Provider} | UserId: {UserId}",
                 provider, userId);
 
             return Ok(WrapResponse(new ConnectIntegrationResponse(config.AuthUrl, config.State)));
-        }
-        catch (ConflictException ex)
-        {
-            return Conflict(CreateErrorResponse(ex.Code, ex.Message));
         }
         catch (ValidationException ex)
         {
@@ -123,7 +120,7 @@ public class IntegrationsController : BaseApiController
         try
         {
             // Validate state — this also consumes it (one-time use).
-            // State contains userId, provider, and the mobile redirect URI.
+            // State contains userId, provider, the mobile redirect URI, and optional name.
             var stateData = _integrationService.ValidateOAuthState(state);
             if (stateData == null)
             {
@@ -140,15 +137,16 @@ public class IntegrationsController : BaseApiController
                 Request.Scheme);
 
             // Pass null for state — we already consumed it above via ValidateOAuthState
+            // Name flows through from the state data
             var result = await _integrationService.CallbackAsync(
-                userId, provider, code, null, apiCallbackUrl, ct);
+                userId, provider, stateData.Name, code, null, apiCallbackUrl, ct);
 
             _logger.LogInformation("Integration connected via OAuth callback | Provider: {Provider} | UserId: {UserId}",
                 provider, userId);
 
-            // Redirect back to the mobile app
+            // Redirect back to the mobile app with the new integration ID
             var sep = mobileRedirectUri.Contains('?') ? '&' : '?';
-            return Redirect($"{mobileRedirectUri}{sep}success=true&provider={provider}");
+            return Redirect($"{mobileRedirectUri}{sep}success=true&provider={provider}&integrationId={result.Id}");
         }
         catch (Exception ex) when (ex is ValidationException or ConflictException or IntegrationException)
         {
@@ -163,7 +161,6 @@ public class IntegrationsController : BaseApiController
     [HttpPost("{provider}/callback")]
     [ProducesResponseType(typeof(ApiResponse<IntegrationDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiError), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Callback(
         IntegrationProvider provider,
@@ -175,13 +172,13 @@ public class IntegrationsController : BaseApiController
         try
         {
             var result = await _integrationService.CallbackAsync(
-                userId, provider, request.Code, request.State, request.RedirectUri, ct);
+                userId, provider, request.Name, request.Code, request.State, request.RedirectUri, ct);
 
             _logger.LogInformation("Integration connected | Provider: {Provider} | UserId: {UserId}",
                 provider, userId);
 
             var dto = new IntegrationDto(
-                result.Id, result.Provider, result.ExternalUsername,
+                result.Id, result.Provider, result.Name, result.ExternalUsername,
                 result.ExternalAvatarUrl, result.LastSyncAt, result.LastSyncError, result.CreatedAt);
 
             return StatusCode(StatusCodes.Status201Created, WrapResponse(dto));
@@ -201,22 +198,21 @@ public class IntegrationsController : BaseApiController
     }
 
     /// <summary>
-    /// Disconnect an integration
+    /// Disconnect an integration by ID
     /// </summary>
-    [HttpDelete("{provider}")]
+    [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Disconnect(IntegrationProvider provider, CancellationToken ct)
+    public async Task<IActionResult> Disconnect(Guid id, CancellationToken ct)
     {
         var userId = _currentUser.UserId;
 
         try
         {
-            await _integrationService.DisconnectAsync(userId, provider, ct);
+            await _integrationService.DisconnectAsync(userId, id, ct);
 
-            _logger.LogInformation("Integration disconnected | Provider: {Provider} | UserId: {UserId}",
-                provider, userId);
+            _logger.LogInformation("Integration disconnected | Id: {Id} | UserId: {UserId}", id, userId);
 
             return NoContent();
         }
@@ -227,20 +223,47 @@ public class IntegrationsController : BaseApiController
     }
 
     /// <summary>
-    /// Manually trigger a sync for an integration
+    /// Rename an integration
     /// </summary>
-    [HttpPost("{provider}/sync")]
-    [ProducesResponseType(typeof(ApiResponse<SyncResponse>), StatusCodes.Status200OK)]
+    [HttpPatch("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<IntegrationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiError), StatusCodes.Status502BadGateway)]
     [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Sync(IntegrationProvider provider, CancellationToken ct)
+    public async Task<IActionResult> Rename(Guid id, [FromBody] RenameIntegrationRequest request, CancellationToken ct)
     {
         var userId = _currentUser.UserId;
 
         try
         {
-            var result = await _integrationService.SyncAsync(userId, provider, ct);
+            var result = await _integrationService.RenameAsync(userId, id, request.Name, ct);
+
+            var dto = new IntegrationDto(
+                result.Id, result.Provider, result.Name, result.ExternalUsername,
+                result.ExternalAvatarUrl, result.LastSyncAt, result.LastSyncError, result.CreatedAt);
+
+            return Ok(WrapResponse(dto));
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(CreateErrorResponse(ex.Code, ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Manually trigger a sync for an integration by ID
+    /// </summary>
+    [HttpPost("{id:guid}/sync")]
+    [ProducesResponseType(typeof(ApiResponse<SyncResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status502BadGateway)]
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Sync(Guid id, CancellationToken ct)
+    {
+        var userId = _currentUser.UserId;
+
+        try
+        {
+            var result = await _integrationService.SyncAsync(userId, id, ct);
 
             return Ok(WrapResponse(new SyncResponse(result.ItemsSynced, result.SyncedAt)));
         }

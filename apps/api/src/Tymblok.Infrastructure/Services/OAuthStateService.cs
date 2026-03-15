@@ -7,16 +7,16 @@ namespace Tymblok.Infrastructure.Services;
 
 public class OAuthStateService : IOAuthStateService
 {
-    private readonly ConcurrentDictionary<string, (Guid UserId, IntegrationProvider Provider, string? MobileRedirectUri, DateTime ExpiresAt)> _states = new();
+    private readonly ConcurrentDictionary<string, (Guid UserId, IntegrationProvider Provider, string? MobileRedirectUri, string? Name, DateTime ExpiresAt)> _states = new();
 
-    public string GenerateState(Guid userId, IntegrationProvider provider, string? mobileRedirectUri = null)
+    public string GenerateState(Guid userId, IntegrationProvider provider, string? mobileRedirectUri = null, string? name = null)
     {
         CleanupExpired();
 
         var state = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
         var expiresAt = DateTime.UtcNow.AddMinutes(10);
 
-        _states[state] = (userId, provider, mobileRedirectUri, expiresAt);
+        _states[state] = (userId, provider, mobileRedirectUri, name, expiresAt);
         return state;
     }
 
@@ -28,7 +28,7 @@ public class OAuthStateService : IOAuthStateService
         if (entry.ExpiresAt < DateTime.UtcNow)
             return null;
 
-        return new OAuthStateData(entry.UserId, entry.Provider, entry.MobileRedirectUri);
+        return new OAuthStateData(entry.UserId, entry.Provider, entry.MobileRedirectUri, entry.Name);
     }
 
     private void CleanupExpired()

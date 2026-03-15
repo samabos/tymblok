@@ -18,8 +18,10 @@ public class InboxControllerTests : IClassFixture<CustomWebApplicationFactory>
 
     private async Task<string> GetAuthTokenAsync()
     {
+        _client.DefaultRequestHeaders.Authorization = null;
         var registerRequest = new RegisterRequest($"test{Guid.NewGuid()}@test.com", "Password123!", "Test User");
         var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+        registerResponse.EnsureSuccessStatusCode();
         var authResult = await registerResponse.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
         return authResult!.Data.AccessToken;
     }

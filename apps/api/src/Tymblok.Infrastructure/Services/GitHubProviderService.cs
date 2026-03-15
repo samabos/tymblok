@@ -36,14 +36,14 @@ public class GitHubProviderService : IIntegrationProviderService
         _logger = logger;
     }
 
-    public Task<OAuthConfig> GetAuthUrlAsync(Guid userId, string? redirectUri, string? mobileRedirectUri = null, CancellationToken ct = default)
+    public Task<OAuthConfig> GetAuthUrlAsync(Guid userId, string? redirectUri, string? mobileRedirectUri = null, string? name = null, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(_settings.ClientId))
         {
             throw new IntegrationException("GITHUB_NOT_CONFIGURED", "GitHub integration is not configured");
         }
 
-        var state = _stateService.GenerateState(userId, IntegrationProvider.GitHub, mobileRedirectUri);
+        var state = _stateService.GenerateState(userId, IntegrationProvider.GitHub, mobileRedirectUri, name);
 
         var authUrl = $"https://github.com/login/oauth/authorize" +
             $"?client_id={Uri.EscapeDataString(_settings.ClientId)}" +

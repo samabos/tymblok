@@ -23,10 +23,12 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
       mutationFn: ({
         provider,
         redirectUri,
+        name,
       }: {
         provider: IntegrationProvider;
         redirectUri?: string;
-      }) => integrationsApi.connect(provider, redirectUri),
+        name?: string;
+      }) => integrationsApi.connect(provider, redirectUri, name),
     });
   };
 
@@ -51,7 +53,19 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: (provider: IntegrationProvider) => integrationsApi.disconnect(provider),
+      mutationFn: (integrationId: string) => integrationsApi.disconnect(integrationId),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
+      },
+    });
+  };
+
+  const useRenameIntegration = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: ({ integrationId, name }: { integrationId: string; name: string }) =>
+        integrationsApi.rename(integrationId, name),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
       },
@@ -62,7 +76,7 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-      mutationFn: (provider: IntegrationProvider) => integrationsApi.sync(provider),
+      mutationFn: (integrationId: string) => integrationsApi.sync(integrationId),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: integrationKeys.lists() });
         queryClient.invalidateQueries({ queryKey: inboxKeys.all });
@@ -91,6 +105,7 @@ export const createIntegrationHooks = (integrationsApi: IntegrationsApi) => {
     useConnectIntegration,
     useIntegrationCallback,
     useDisconnectIntegration,
+    useRenameIntegration,
     useSyncIntegration,
     useSyncAllIntegrations,
     integrationKeys,

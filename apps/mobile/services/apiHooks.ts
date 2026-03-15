@@ -42,6 +42,7 @@ export const {
   useIntegrations,
   useConnectIntegration,
   useDisconnectIntegration,
+  useRenameIntegration,
   useSyncIntegration,
   useSyncAllIntegrations,
 } = integrationHooks;

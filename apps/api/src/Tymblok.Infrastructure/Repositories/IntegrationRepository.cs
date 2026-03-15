@@ -20,10 +20,24 @@ public class IntegrationRepository : IIntegrationRepository
             .FirstOrDefaultAsync(i => i.Id == integrationId);
     }
 
+    public async Task<Integration?> GetByIdAndUserAsync(Guid integrationId, Guid userId)
+    {
+        return await _context.Integrations
+            .FirstOrDefaultAsync(i => i.Id == integrationId && i.UserId == userId);
+    }
+
     public async Task<Integration?> GetByProviderAsync(Guid userId, IntegrationProvider provider)
     {
         return await _context.Integrations
             .FirstOrDefaultAsync(i => i.UserId == userId && i.Provider == provider);
+    }
+
+    public async Task<IList<Integration>> GetAllByProviderAsync(Guid userId, IntegrationProvider provider)
+    {
+        return await _context.Integrations
+            .Where(i => i.UserId == userId && i.Provider == provider)
+            .OrderBy(i => i.Name)
+            .ToListAsync();
     }
 
     public async Task<IList<Integration>> GetByUserIdAsync(Guid userId)
@@ -31,6 +45,7 @@ public class IntegrationRepository : IIntegrationRepository
         return await _context.Integrations
             .Where(i => i.UserId == userId)
             .OrderBy(i => i.Provider)
+            .ThenBy(i => i.Name)
             .ToListAsync();
     }
 
