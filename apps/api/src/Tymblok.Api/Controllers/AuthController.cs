@@ -690,7 +690,30 @@ public class AuthController : BaseApiController
                         $"&emailVerified={result.User.EmailConfirmed.ToString().ToLower()}" +
                         $"&hasPassword={hasPassword.ToString().ToLower()}";
                 }
-                return Redirect(deepLink);
+                // Serve an HTML page that redirects via JS to the deep link.
+                // Chrome Custom Tabs on Android cannot handle 302 redirects to custom
+                // schemes (tymblok://), so we load an HTTPS page first (which Chrome can
+                // render), then JS triggers the deep link navigation. This is the same
+                // pattern used by Firebase Auth and Auth0 for mobile OAuth.
+                var escapedDeepLink = deepLink.Replace("\"", "&quot;").Replace("'", "\\'");
+                return Content(
+                    $"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <title>Redirecting...</title>
+                    </head>
+                    <body>
+                        <p style="text-align:center;margin-top:40vh;font-family:system-ui;color:#666;">
+                            Redirecting to Tymblok...
+                        </p>
+                        <script>window.location.href = '{escapedDeepLink}';</script>
+                    </body>
+                    </html>
+                    """,
+                    "text/html");
             }
             else
             {
