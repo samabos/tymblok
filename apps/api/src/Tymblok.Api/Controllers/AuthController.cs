@@ -617,10 +617,11 @@ public class AuthController : BaseApiController
                     redirectUrl = storedRedirectUrl;
             }
 
-            _logger.LogInformation("OAuth callback | isMobile: {IsMobile} | redirectUrl: {RedirectUrl} | Properties items: {Items}",
-                isMobile, redirectUrl, properties?.Items != null ? string.Join(", ", properties.Items.Select(kv => $"{kv.Key}={kv.Value}")) : "null");
+            _logger.LogInformation("OAuth callback | isMobile: {IsMobile} | redirectUrl: {RedirectUrl}",
+                isMobile, redirectUrl);
 
-            // Sign out the external cookie so the ticket can't be replayed
+            // Sign out the external cookie (server-side ticket store ensures this is effective
+            // even when the browser doesn't process Set-Cookie on custom scheme redirects)
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             var claims = authenticateResult.Principal?.Claims.ToList();

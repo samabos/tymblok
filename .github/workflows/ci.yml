@@ -171,6 +171,7 @@ jobs:
           app-settings-json: |
             [
               { "name": "ConnectionStrings__DefaultConnection", "value": "${{ secrets.DATABASE_URL }}", "slotSetting": false },
+              { "name": "ConnectionStrings__Redis", "value": "${{ secrets.REDIS_CONNECTION_STRING }}", "slotSetting": false },
               { "name": "Jwt__Secret", "value": "${{ secrets.JWT_SECRET }}", "slotSetting": false },
               { "name": "OAuth__Google__ClientId", "value": "${{ secrets.GOOGLE_CLIENT_ID }}", "slotSetting": false },
               { "name": "OAuth__Google__ClientSecret", "value": "${{ secrets.GOOGLE_CLIENT_SECRET }}", "slotSetting": false },
@@ -243,6 +244,7 @@ jobs:
           app-settings-json: |
             [
               { "name": "ConnectionStrings__DefaultConnection", "value": "${{ secrets.PROD_DATABASE_URL }}", "slotSetting": false },
+              { "name": "ConnectionStrings__Redis", "value": "${{ secrets.REDIS_CONNECTION_STRING }}", "slotSetting": false },
               { "name": "Jwt__Secret", "value": "${{ secrets.JWT_SECRET }}", "slotSetting": false },
               { "name": "OAuth__Google__ClientId", "value": "${{ secrets.GOOGLE_CLIENT_ID }}", "slotSetting": false },
               { "name": "OAuth__Google__ClientSecret", "value": "${{ secrets.GOOGLE_CLIENT_SECRET }}", "slotSetting": false },

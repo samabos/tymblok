@@ -13,6 +13,7 @@ using System.Text.Json.Serialization;
 using Tymblok.Api.Hubs;
 using Tymblok.Api.Services;
 using Tymblok.Core.Interfaces;
+using Tymblok.Infrastructure.Services;
 
 namespace Tymblok.Api.Extensions;
 
@@ -24,6 +25,23 @@ public static class ServiceCollectionExtensions
         bool skipDatabaseHealthCheck = false,
         bool isTestEnvironment = false)
     {
+        // Redis distributed cache for OAuth ticket store (and general caching)
+        var redisConnection = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrEmpty(redisConnection))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnection;
+                options.InstanceName = "Tymblok:";
+            });
+        }
+        else
+        {
+            // Fallback to in-memory distributed cache for local dev without Redis
+            services.AddDistributedMemoryCache();
+        }
+        services.AddSingleton<ITicketStore, DistributedTicketStore>();
+
         // SignalR
         services.AddSignalR();
         services.AddSingleton<IBlockNotifier, BlockNotifier>();
@@ -161,6 +179,11 @@ public static class ServiceCollectionExtensions
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.Cookie.HttpOnly = true;
             });
+
+        // Store OAuth tickets server-side so SignOutAsync reliably invalidates them
+        // even when the browser doesn't process Set-Cookie (e.g., custom scheme redirects)
+        services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
+            .Configure<ITicketStore>((options, store) => options.SessionStore = store);
 
         // Add Google OAuth if configured
         var googleClientId = googleSettings["ClientId"];
