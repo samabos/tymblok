@@ -617,6 +617,9 @@ public class AuthController : BaseApiController
                     redirectUrl = storedRedirectUrl;
             }
 
+            _logger.LogInformation("OAuth callback | isMobile: {IsMobile} | redirectUrl: {RedirectUrl} | Properties items: {Items}",
+                isMobile, redirectUrl, properties?.Items != null ? string.Join(", ", properties.Items.Select(kv => $"{kv.Key}={kv.Value}")) : "null");
+
             // Sign out the external cookie so the ticket can't be replayed
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
