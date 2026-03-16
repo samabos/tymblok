@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using AspNet.Security.OAuth.GitHub;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -554,14 +555,15 @@ public class AuthController : BaseApiController
     /// OAuth callback endpoint - handles provider redirect
     /// </summary>
     [HttpGet("external/callback")]
-    public async Task<IActionResult> ExternalLoginCallback(
-        [FromQuery] string? returnUrl = null,
-        [FromQuery] string? state = null,
-        [FromQuery] string? redirectUrl = null)
+    public async Task<IActionResult> ExternalLoginCallback()
     {
         var ipAddress = GetIpAddress();
         var (deviceType, deviceName, deviceOs) = GetDeviceInfo();
-        var isMobile = state == "mobile";
+
+        // Default values before we can read from auth properties
+        var isMobile = false;
+        string? returnUrl = null;
+        string? redirectUrl = null;
 
         try
         {
@@ -602,6 +604,25 @@ public class AuthController : BaseApiController
                 _logger.LogWarning("External auth failed | IP: {IpAddress}", ipAddress);
                 return RedirectWithError("AUTH_FAILED", "External authentication failed", isMobile, returnUrl);
             }
+
+            // Read mobile/redirectUrl from stored auth properties (query params are not preserved by OAuth middleware)
+            var properties = authenticateResult.Properties;
+            if (properties?.Items != null)
+            {
+                isMobile = properties.Items.TryGetValue("mobile", out var mobileVal) &&
+                           string.Equals(mobileVal, "true", StringComparison.OrdinalIgnoreCase);
+                properties.Items.TryGetValue("returnUrl", out returnUrl);
+                properties.Items.TryGetValue("redirectUrl", out var storedRedirectUrl);
+                if (!string.IsNullOrEmpty(storedRedirectUrl))
+                    redirectUrl = storedRedirectUrl;
+            }
+
+            _logger.LogInformation("OAuth callback | isMobile: {IsMobile} | redirectUrl: {RedirectUrl}",
+                isMobile, redirectUrl);
+
+            // Sign out the external cookie (server-side ticket store ensures this is effective
+            // even when the browser doesn't process Set-Cookie on custom scheme redirects)
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             var claims = authenticateResult.Principal?.Claims.ToList();
 
@@ -669,7 +690,30 @@ public class AuthController : BaseApiController
                         $"&emailVerified={result.User.EmailConfirmed.ToString().ToLower()}" +
                         $"&hasPassword={hasPassword.ToString().ToLower()}";
                 }
-                return Redirect(deepLink);
+                // Serve an HTML page that redirects via JS to the deep link.
+                // Chrome Custom Tabs on Android cannot handle 302 redirects to custom
+                // schemes (tymblok://), so we load an HTTPS page first (which Chrome can
+                // render), then JS triggers the deep link navigation. This is the same
+                // pattern used by Firebase Auth and Auth0 for mobile OAuth.
+                var escapedDeepLink = deepLink.Replace("\"", "&quot;").Replace("'", "\\'");
+                return Content(
+                    $"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <title>Redirecting...</title>
+                    </head>
+                    <body>
+                        <p style="text-align:center;margin-top:40vh;font-family:system-ui;color:#666;">
+                            Redirecting to Tymblok...
+                        </p>
+                        <script>window.location.href = '{escapedDeepLink}';</script>
+                    </body>
+                    </html>
+                    """,
+                    "text/html");
             }
             else
             {
