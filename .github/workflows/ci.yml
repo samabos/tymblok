@@ -255,7 +255,7 @@ jobs:
               { "name": "Email__ApiKey", "value": "${{ secrets.RESEND_API_KEY }}", "slotSetting": false },
               { "name": "Email__FromEmail", "value": "noreply@tymblok.com", "slotSetting": false },
               { "name": "Email__FromName", "value": "Tymblok", "slotSetting": false },
-              { "name": "Email__AppBaseUrl", "value": "${{ vars.PROD_APP_BASE_URL }}", "slotSetting": false }
+              { "name": "Email__AppBaseUrl", "value": "${{ vars.APP_BASE_URL }}", "slotSetting": false }
             ]
 
       - name: Configure Custom Domain
